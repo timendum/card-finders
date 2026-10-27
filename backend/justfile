@@ -1,0 +1,54 @@
+default: help
+
+help:
+  @just --list --unsorted
+
+# build all packages
+build:
+  @echo "==> build"
+  go build ./...
+
+# run the server with the dev frontend dir. Supports extra args, e.g. just run --seed 1
+run *ARGS:
+  @echo "==> run server"
+  go run ./cmd/server --static-dir ../frontend/dist {{ARGS}}
+
+# run tests. Supports extra args, e.g. just test -run TestFoo ./internal/engine
+test *ARGS:
+  @echo "==> test"
+  go test ./... {{ARGS}}
+
+# sanity checks
+checks: lint staticcheck test fmt-check
+
+# vet all packages
+lint *ARGS:
+  @echo "==> vet"
+  go vet ./... {{ARGS}}
+
+# staticcheck
+staticcheck *ARGS:
+  @echo "==> staticcheck"
+  staticcheck ./... {{ARGS}}
+
+# format all packages
+fmt *ARGS:
+  @echo "==> format"
+  gofmt -w . {{ARGS}}
+
+# verify formatting
+fmt-check:
+  @echo "==> format check"
+  @test -z "$(gofmt -l .)" || (echo "unformatted files:"; gofmt -l .; exit 1)
+
+format: fmt
+
+# regenerate frontend engine types from Go structs (needs tygo installed)
+generate:
+  @echo "==> generate"
+  go generate ./...
+
+# remove build and test caches
+clean:
+  @echo "==> clean"
+  go clean -cache -testcache

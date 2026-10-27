@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "react",
+    "typescript",
+    "unicorn",
+    "react-perf",
+    "oxc",
+    "import",
+    "node",
+    "promise"
+  ],
+  // "jsPlugins": ["eslint-plugin-react-you-might-not-need-an-effect"],
+  "categories": {
+    "correctness": "error",
+    "pedantic": "warn"
+  },
+  "rules": {
+    "max-lines-per-function": "allow",
+    "no-inline-comments": "allow",
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_"
+      }
+    ]
+  },
+  "settings": {
+    "react": {
+      "formComponents": [],
+      "linkComponents": [],
+      "componentWrapperFunctions": []
+    }
+  },
+  "env": {
+    "builtin": true
+  },
+  "globals": {},
+  "ignorePatterns": ["dist/"]
+}

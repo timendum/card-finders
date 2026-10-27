@@ -1,0 +1,92 @@
+// Command server is the Card Finders entrypoint. It resolves the level-config
+// path (flag > env > default levels.toml), loads the levels (or the dummy
+// fallback), constructs the engine and HTTP server, and listens.
+package main
+
+import (
+	"cardfinders/internal/config"
+	"cardfinders/internal/engine"
+	"cardfinders/internal/server"
+	"flag"
+	"log"
+	"math/rand"
+	"net/http"
+	"os"
+	"time"
+)
+
+// envLevelsConfig is the environment variable consulted for the level-config
+// path when the --config flag is not set.
+const envLevelsConfig = "CARD_FINDERS_LEVELS"
+
+// defaultLevelsConfig is the path used when neither the --config flag nor the
+// CARD_FINDERS_LEVELS env var supplies one. A missing file at this default path
+// is a soft outcome: the engine falls back to the built-in dummy level.
+const defaultLevelsConfig = "levels.toml"
+
+// resolveConfigPath applies the precedence flag > env > default and reports
+// whether the chosen path is "explicit" (came from the flag or the env var)
+// rather than the default levels.toml. The explicit flag is passed to
+// config.LoadLevels so a missing file is a hard error for an explicit path but
+// a soft dummy fallback for the default.
+func resolveConfigPath(flagValue string) (path string, explicit bool) {
+	if flagValue != "" {
+		return flagValue, true
+	}
+	if env := os.Getenv(envLevelsConfig); env != "" {
+		return env, true
+	}
+	return defaultLevelsConfig, false
+}
+
+func main() {
+	var (
+		configPath string
+		staticDir  string
+		listenAddr string
+		seed       int64
+	)
+	flag.StringVar(&configPath, "config", "",
+		"path to the level-config TOML file (overrides "+envLevelsConfig+"; "+
+			"default "+defaultLevelsConfig+")")
+	flag.StringVar(&staticDir, "static-dir", "",
+		"on-disk directory holding the built frontend, served from root "+
+			"(empty serves API and WS only)")
+	flag.StringVar(&listenAddr, "listen", ":8080", "HTTP listen address")
+	flag.Int64Var(&seed, "seed", 0,
+		"RNG seed for deterministic dealing/pool selection (0 = time-based)")
+	flag.Parse()
+
+	// Resolve the level-config path and load the levels. A missing file at an
+	// explicit path (flag/env) and any malformed/invalid config are hard errors
+	// that abort startup; a missing file at the default path is a soft fallback
+	// to the built-in dummy level.
+	path, explicit := resolveConfigPath(configPath)
+	levels, usedDummy, err := config.LoadLevels(path, explicit)
+	if err != nil {
+		log.Fatalf("loading level config: %v", err)
+	}
+	if usedDummy {
+		log.Printf("level config %q not found; continuing with the built-in dummy level",
+			path)
+	} else {
+		log.Printf("loaded %d level(s) from %q", len(levels), path)
+	}
+
+	// Seed the RNG deterministically when --seed is given; otherwise derive a
+	// time-based seed so each run deals differently.
+	if seed == 0 {
+		seed = time.Now().UnixNano()
+	}
+	rng := rand.New(rand.NewSource(seed))
+
+	eng := engine.NewEngine(levels, rng)
+	srv := server.New(eng, server.Config{
+		StaticDir: staticDir,
+	})
+
+	log.Printf("Card Finders listening on %s", listenAddr)
+	if err := http.ListenAndServe(listenAddr, srv.Handler()); err != nil {
+		log.Fatalf("http server: %v", err)
+	}
+}

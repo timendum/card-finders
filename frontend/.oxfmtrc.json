@@ -1,0 +1,7 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": ["dist/", ".github/", "**/*.json", "**/*.md", "assets/"],
+  "lineWidth": 100,
+  "indentStyle": "space",
+  "endOfLine": "lf"
+}

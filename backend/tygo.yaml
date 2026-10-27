@@ -1,0 +1,21 @@
+# tygo config: generate TypeScript for the engine types from the Go source, so
+# frontend/src/generated/engine.ts never drifts from the structs the backend
+# marshals. The engine value types carry NO json tags, so Go serializes them
+# with their PascalCase field names; tygo mirrors that.
+#
+# tygo is the single source of truth for the engine value types AND their enum
+# groups: the iota values are read straight from the Go source, which removes
+# the drift risk of hand-maintaining those integers. enum_style "enum" emits
+# real TypeScript enums; it is a PER-PACKAGE option (tygo PackageConfig), so it
+# lives inside the package entry below, not at the top level.
+#
+# Regenerate with `go generate ./...` from backend/ (see gen.go).
+packages:
+  - path: cardfinders/internal/engine
+    output_path: ../frontend/src/generated/engine.ts
+    enum_style: "enum"
+    frontmatter: |
+      // Engine types generated from backend/internal/engine by tygo. The enum
+      // groups are generated here too, with their iota values read from the Go
+      // source. The transport envelopes (WS frames, REST wrappers) are
+      // hand-written in ../types, which re-exports everything below.
