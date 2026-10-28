@@ -18,6 +18,7 @@
   "rules": {
     "max-lines-per-function": "allow",
     "no-inline-comments": "allow",
+    "eqeqeq": ["warn", "always", { "null": "ignore" }],
     "no-unused-vars": [
       "error",
       {
@@ -39,5 +40,5 @@
     "builtin": true
   },
   "globals": {},
-  "ignorePatterns": ["dist/"]
+  "ignorePatterns": ["dist/", "src/generated/"]
 }

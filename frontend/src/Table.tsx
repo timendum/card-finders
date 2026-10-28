@@ -1,14 +1,5 @@
-// Table — the four-seat table layout with the center Value_Summary.
-//
-// The viewing player's hand is pinned to the BOTTOM edge; the three other
-// seats are placed at left, top, and right so that clockwise turn order,
-// starting from the bottom, visits bottom -> left -> top -> right. That mapping
-// is the shared pure seatLayout function. The ValueSummary
-// occupies the center slot. Each edge renders a HandArea for the
-// seat mapped to it, fed the cards that seat owns from the projected view.
-//
-// Table is pure/presentational: it derives everything from the PlayerView and
-// holds no state. Cards are grouped by owner once per view.
+// Table — four-seat layout (edge placement via seatLayout) with the center
+// Value_Summary. Pure/presentational: derived entirely from the PlayerView.
 
 import { useMemo } from "react";
 import { HandArea } from "./HandArea.tsx";
@@ -17,14 +8,11 @@ import { seatLayout } from "./seatLayout.ts";
 import type { PlayerView, SeatID, ViewCard } from "./types.ts";
 
 export interface TableProps {
-  /** The viewer's current snapshot. */
   view: PlayerView;
 }
 
-/** The four seats and an empty-hand fallback, keyed by seat id. */
 type CardsBySeat = Map<SeatID, ViewCard[]>;
 
-/** Group the view's projected cards by owning seat. */
 function groupBySeat(cards: ViewCard[]): CardsBySeat {
   const bySeat: CardsBySeat = new Map();
   for (let seat = 0; seat < 4; seat++) {

@@ -1,17 +1,10 @@
-// EndBanner — the end-of-game result overlay shown once the game has ended
-// with a win or a loss. The engine ends the game and
-// records the Result in every seat's PlayerView, so each client simply reflects
-// view.Result here when the phase is Ended.
-//
-// It is a pure presentational component: GameScreen decides when to render it
-// (phase Ended / Result != None) and passes the result and a leave handler.
+// the end-of-game result overlay shown once the game has ended
+// with a win or a loss.
 
 import { Result } from "./types.ts";
 
 export interface EndBannerProps {
-  /** The terminal result: Win or Loss. */
   result: Result;
-  /** Leave the game and return to the lobby. */
   onLeave: () => void;
 }
 

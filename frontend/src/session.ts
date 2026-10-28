@@ -1,53 +1,56 @@
-// Persistence of the Session_Token (and the seat it was issued for) in
-// localStorage. `App` reads this on mount to decide whether to show the
-// JoinScreen or the GameScreen, and the join flow writes it on a successful
-// create+join or join so a page reload resumes the same seat. All access is
-// wrapped so a browser with storage disabled degrades to an in-memory-only
-// session rather than throwing.
+// Session_Token lives in the URL hash (#token=...&seat=2), so
+// each tab carries its own session. The hash never reaches the server.
 
 import type { SeatID, SessionToken } from "./types.ts";
 
-const TOKEN_KEY = "cardfinders.sessionToken";
-const SEAT_KEY = "cardfinders.seat";
+const TOKEN_PARAM = "token";
+const SEAT_PARAM = "seat";
 
-/** A stored session: the token bound to a seat and that seat's id. */
 export interface StoredSession {
   token: SessionToken;
   seat: SeatID;
 }
 
-/** Read the persisted session, or null when none is stored or storage is unavailable. */
+function hashParams(): URLSearchParams {
+  return new URLSearchParams(window.location.hash.replace(/^#/, ""));
+}
+
 export function loadSession(): StoredSession | null {
   try {
-    const token = window.localStorage.getItem(TOKEN_KEY);
-    const seatRaw = window.localStorage.getItem(SEAT_KEY);
+    const params = hashParams();
+    const token = params.get(TOKEN_PARAM);
     if (!token) {
       return null;
     }
-    const seat = seatRaw === null ? 0 : Number.parseInt(seatRaw, 10);
+    const seatRaw = params.get(SEAT_PARAM);
+    const seat = seatRaw === null ? 0 : Math.trunc(Number(seatRaw));
     return { token, seat: Number.isNaN(seat) ? 0 : seat };
   } catch {
     return null;
   }
 }
 
-/** Persist the session so a reload resumes the same seat. */
 export function saveSession(session: StoredSession): void {
   try {
-    window.localStorage.setItem(TOKEN_KEY, session.token);
-    window.localStorage.setItem(SEAT_KEY, String(session.seat));
+    const params = new URLSearchParams();
+    params.set(TOKEN_PARAM, session.token);
+    params.set(SEAT_PARAM, String(session.seat));
+    // replaceState, not push: reload-resume without piling up history entries.
+    window.history.replaceState(null, "", `#${params.toString()}`);
   } catch {
-    // Storage unavailable (private mode, quota). The caller still holds the
-    // token in React state for this tab, so the game is playable without
-    // reload-resume.
+    // URL update unavailable: caller still holds the token in React state, so
+    // the game is playable this tab without reload-resume.
   }
 }
 
-/** Remove the persisted session (e.g. on an explicit leave). */
 export function clearSession(): void {
   try {
-    window.localStorage.removeItem(TOKEN_KEY);
-    window.localStorage.removeItem(SEAT_KEY);
+    // Drop the hash, keep path/query.
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search,
+    );
   } catch {
     // ignore
   }

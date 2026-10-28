@@ -21,11 +21,6 @@ import {
   type ViewCard,
 } from "./types.ts";
 
-// Pure action-selection logic (actions.ts). These tests use hand-built
-// PlayerView snapshots and a fast-check generator; no DOM is involved, matching
-// the project's pure-logic test style (valueSummary.test, handSort, etc.).
-
-/** Build a ViewCard; the viewer sees owned cards' values, so Value is set. */
 function card(
   id: number,
   owner: SeatID,
@@ -35,12 +30,10 @@ function card(
   return { ID: id, Owner: owner, Facing: facing, Value: value };
 }
 
-/** A suited value for the given rank (suit is irrelevant to selection). */
 function suited(rank: number): CardValue {
   return { Rank: rank, Kind: SpecialKind.None, Suit: 0 };
 }
 
-/** Wrap a card list in an otherwise-minimal PlayerView for seat 0. */
 function viewWith(cards: ViewCard[], seat: SeatID = 0): PlayerView {
   return {
     Seat: seat,

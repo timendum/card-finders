@@ -1,17 +1,8 @@
-// ActionBar — the viewing player's context-sensitive turn controls: a guess
-// (silver feat when the source is silver), a safe call against two cards of one
-// other player, and a self-reveal of a fully-held value. The whole control set
-// is disabled when it is not the viewer's turn; the server remains the
-// authority and rejects anything illegal with an `error` frame, so the bar only
-// has to offer plausibly legal choices.
-//
-// Selection logic (which cards/seats/values are offerable, and how each choice
-// maps to a ClientMessage) is the pure actions.ts module; this component is a
-// thin controlled view over that logic plus React state for the in-progress
-// selection. On submit it hands the built message to sendAction (threaded down
-// from GameScreen's useGameSocket) and resets the selection.
+// ActionBar — the viewer's turn controls for the three turn actions. Offerable
+// choices and message construction live in actions.ts; this is a controlled
+// view over that logic plus React state for the in-progress selection.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   buildGuess,
   buildSafeCall,
@@ -31,31 +22,21 @@ import type {
   ViewCard,
 } from "./types.ts";
 
-/**
- * Parse a <select> value string back into a self-reveal value: the specials
- * "silver"/"gold" pass through, anything else is a suited rank number. "" (the
- * placeholder option) yields null. The option strings come from
- * selfRevealOptions, so this only ever sees those three shapes.
- */
+// Placeholder "" yields null; "silver"/"gold" pass through; else a suited rank.
 function parseSelfRevealValue(raw: string): SelfRevealValue | null {
   if (raw === "") return null;
   if (raw === "silver" || raw === "gold") return raw;
   return Number(raw);
 }
 
-/** The three turn actions the bar can assemble. */
 type Mode = "guess" | "safeCall" | "selfReveal";
 
 export interface ActionBarProps {
-  /** The current snapshot, driving turn state and legal actions. */
   view: PlayerView;
-  /** Serialize and send a built action over the socket (from useGameSocket). */
   sendAction: (msg: ClientMessage) => boolean;
-  /** Leave the game and return to the lobby. */
   onLeave: () => void;
 }
 
-/** Label a selectable card: the viewer's own cards always carry a value. */
 function optionLabel(card: ViewCard): string {
   return card.Value ? cardLabel(card.Value) : `#${card.ID}`;
 }
@@ -63,9 +44,8 @@ function optionLabel(card: ViewCard): string {
 export function ActionBar({ view, sendAction, onLeave }: ActionBarProps) {
   const yourTurn = view.YourTurn;
 
-  // In-progress selection. State mirrors the game-domain values (card ids, a
-  // seat id, a self-reveal value), not the DOM; null means "nothing picked".
-  // The string<->value conversion lives only at each <select>'s edge.
+  // Selection holds domain values (null = unset); string conversion stays at
+  // each <select>'s edge.
   const [mode, setMode] = useState<Mode>("guess");
   const [source, setSource] = useState<CardID | null>(null);
   const [targetSeat, setTargetSeat] = useState<SeatID | null>(null);
@@ -73,7 +53,6 @@ export function ActionBar({ view, sendAction, onLeave }: ActionBarProps) {
   const [target2, setTarget2] = useState<CardID | null>(null);
   const [selfValue, setSelfValue] = useState<SelfRevealValue | null>(null);
 
-  // Offerable choices, recomputed from each snapshot.
   const sources = useMemo(() => sourceCards(view), [view]);
   const seats = useMemo(() => targetableSeats(view), [view]);
   const selfOptions = useMemo(() => selfRevealOptions(view), [view]);
@@ -90,24 +69,24 @@ export function ActionBar({ view, sendAction, onLeave }: ActionBarProps) {
     setSelfValue(null);
   };
 
-  // When it stops being the viewer's turn, clear any half-made selection so the
-  // bar doesn't resume mid-action on the next turn.
-  useEffect(() => {
+  // Both adjustments below run during render (adjust-state-on-prop-change)
+  // rather than in an effect, to avoid a cascading extra commit.
+
+  // Clear a half-made selection when the turn ends.
+  const [prevYourTurn, setPrevYourTurn] = useState(yourTurn);
+  if (prevYourTurn !== yourTurn) {
+    setPrevYourTurn(yourTurn);
     if (!yourTurn) resetSelection();
-  }, [yourTurn]);
+  }
 
-  // A target seat that is no longer targetable (its cards got revealed) is
-  // dropped so stale targets can't be submitted.
-  useEffect(() => {
-    if (targetSeat !== null && !seats.includes(targetSeat)) {
-      setTargetSeat(null);
-      setTarget1(null);
-      setTarget2(null);
-    }
-  }, [seats, targetSeat]);
+  // Drop a target seat that is no longer targetable.
+  if (targetSeat !== null && !seats.includes(targetSeat)) {
+    setTargetSeat(null);
+    setTarget1(null);
+    setTarget2(null);
+  }
 
-  // Whether the current selection is complete enough to send. Final legality
-  // is the server's call; this only gates obviously-incomplete submissions.
+  // Gate only obviously-incomplete submissions; the server decides legality.
   const canGuess = source !== null && target1 !== null;
   const canSafeCall =
     source !== null && target1 !== null && target2 !== null && target1 !== target2;

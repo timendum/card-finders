@@ -1,27 +1,16 @@
-// JoinScreen — the pre-game lobby with two modes:
-//
-//   Create: fetch GET /api/levels, show a level picker (name / silver / gold /
-//     lives), POST /api/game to create the single game, then show the join
-//     code so the host can share it. The host still has to join a seat, so the
-//     create panel then offers a one-click "Join this game" using that code.
-//   Join:  enter a join code and POST /api/game/join.
-//
-// On a successful join (either mode) the parent is handed the issued
-// Session_Token + seat; App persists it and swaps in the GameScreen.
+// JoinScreen — pre-game lobby with Create and Join panels. Both end by handing
+// the issued session up to the parent via onJoined.
 
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, createGame, fetchLevels, joinGame } from "./api.ts";
 import type { JoinGameResponse, Level } from "./types.ts";
 
 export interface JoinScreenProps {
-  /** Called with the issued session once a seat is taken. */
   onJoined: (session: JoinGameResponse) => void;
 }
 
-/** Which of the two panels is active. */
 type Mode = "create" | "join";
 
-/** Narrow any thrown value to a user-facing message. */
 function messageOf(err: unknown): string {
   if (err instanceof ApiError) {
     return err.message;
@@ -60,12 +49,8 @@ export function JoinScreen({ onJoined }: JoinScreenProps) {
   );
 }
 
-/**
- * CreatePanel loads the level list on mount, lets the host pick one, creates
- * the game, and then surfaces the join code. Because creating a game does not
- * seat the host, the panel finishes by joining the host into the game it just
- * created so the create flow ends in a seat like the join flow does.
- */
+// CreatePanel picks a level and creates the game. Creating does not seat the
+// host, so it finishes by joining the host into the freshly created game.
 function CreatePanel({ onJoined }: JoinScreenProps) {
   const [levels, setLevels] = useState<Level[] | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
@@ -73,7 +58,6 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Fetch the levels once when the panel mounts.
   useEffect(() => {
     let cancelled = false;
     fetchLevels()
@@ -119,7 +103,6 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
     }
   }, [joinCode, busy, onJoined]);
 
-  // Once a game exists, show the shareable code and let the host take a seat.
   if (joinCode) {
     return (
       <section aria-label="Game created">
@@ -179,10 +162,7 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
   );
 }
 
-/**
- * JoinPanel takes a join code and seats the player via POST /api/game/join
- *. On success the issued Session_Token + seat flow up to App.
- */
+// JoinPanel seats the player from a join code.
 function JoinPanel({ onJoined }: JoinScreenProps) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
