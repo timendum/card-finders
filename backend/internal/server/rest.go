@@ -4,6 +4,7 @@ package server
 
 import (
 	"cardfinders/internal/engine"
+	"log/slog"
 	"net/http"
 )
 
@@ -58,6 +59,7 @@ func (s *Server) handleCreateGame(w http.ResponseWriter, r *http.Request) {
 		writeError(w, classifyCreateError(err), err)
 		return
 	}
+	slog.Info("game created", "level", req.LevelNumber, "joinCode", joinCode)
 	writeJSON(w, http.StatusCreated, createResponse{JoinCode: joinCode})
 }
 
@@ -79,8 +81,19 @@ func (s *Server) handleJoin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, classifyJoinError(err), err)
 		return
 	}
+	slog.Info("player joined", "joinCode", req.JoinCode, "seat", seat,
+		"token", tokenTag(string(token)))
 	writeJSON(w, http.StatusOK, joinResponse{
 		SessionToken: string(token),
 		Seat:         int(seat),
 	})
+}
+
+// tokenTag abbreviates a session token so full tokens never reach the logs.
+func tokenTag(token string) string {
+	const n = 6
+	if len(token) <= n {
+		return token
+	}
+	return token[:n] + "…"
 }

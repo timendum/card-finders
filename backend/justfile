@@ -13,6 +13,11 @@ run *ARGS:
   @echo "==> run server"
   go run ./cmd/server --static-dir ../frontend/dist {{ARGS}}
 
+  # run the server with the dev frontend dir. Supports extra args, e.g. just run --seed 1
+dev *ARGS:
+  @echo "==> run server"
+  go run ./cmd/server --static-dir ../frontend/dist --debug {{ARGS}}
+
 # run tests. Supports extra args, e.g. just test -run TestFoo ./internal/engine
 test *ARGS:
   @echo "==> test"

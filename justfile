@@ -10,7 +10,7 @@ help:
 [script('pwsh', '-NoProfile', '-Command')]
 dev:
   Write-Host "==> dev (backend :8080 + vite)"
-  $backend = Start-Process -PassThru -NoNewWindow just -ArgumentList 'backend','run'
+  $backend = Start-Process -PassThru -NoNewWindow just -ArgumentList 'backend','dev'
   $frontend = Start-Process -PassThru -NoNewWindow just -ArgumentList 'frontend','dev'
   try {
     Wait-Process -Id $backend.Id, $frontend.Id -ErrorAction SilentlyContinue

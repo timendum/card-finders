@@ -8,7 +8,7 @@ import (
 	"cardfinders/internal/engine"
 	"cardfinders/internal/server"
 	"flag"
-	"log"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"os"
@@ -45,6 +45,7 @@ func main() {
 		staticDir  string
 		listenAddr string
 		seed       int64
+		debug      bool
 	)
 	flag.StringVar(&configPath, "config", "",
 		"path to the level-config TOML file (overrides "+envLevelsConfig+"; "+
@@ -55,7 +56,17 @@ func main() {
 	flag.StringVar(&listenAddr, "listen", ":8080", "HTTP listen address")
 	flag.Int64Var(&seed, "seed", 0,
 		"RNG seed for deterministic dealing/pool selection (0 = time-based)")
+	flag.BoolVar(&debug, "debug", false,
+		"enable debug logging (includes per-message WebSocket traffic)")
 	flag.Parse()
+
+	level := slog.LevelInfo
+	if debug {
+		level = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: level,
+	})))
 
 	// Resolve the level-config path and load the levels. A missing file at an
 	// explicit path (flag/env) and any malformed/invalid config are hard errors
@@ -64,13 +75,14 @@ func main() {
 	path, explicit := resolveConfigPath(configPath)
 	levels, usedDummy, err := config.LoadLevels(path, explicit)
 	if err != nil {
-		log.Fatalf("loading level config: %v", err)
+		slog.Error("loading level config", "path", path, "err", err)
+		os.Exit(1)
 	}
 	if usedDummy {
-		log.Printf("level config %q not found; continuing with the built-in dummy level",
-			path)
+		slog.Warn("level config not found; continuing with the built-in dummy level",
+			"path", path)
 	} else {
-		log.Printf("loaded %d level(s) from %q", len(levels), path)
+		slog.Info("loaded levels", "count", len(levels), "path", path)
 	}
 
 	// Seed the RNG deterministically when --seed is given; otherwise derive a
@@ -85,8 +97,9 @@ func main() {
 		StaticDir: staticDir,
 	})
 
-	log.Printf("Card Finders listening on %s", listenAddr)
+	slog.Info("Card Finders listening", "addr", listenAddr)
 	if err := http.ListenAndServe(listenAddr, srv.Handler()); err != nil {
-		log.Fatalf("http server: %v", err)
+		slog.Error("http server", "err", err)
+		os.Exit(1)
 	}
 }
