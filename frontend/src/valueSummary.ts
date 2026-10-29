@@ -1,13 +1,7 @@
 // Value_Summary pure logic: order the values in play and count
 // found-over-total for each. See GAME.md for the rules.
 
-import {
-  Face,
-  SpecialKind,
-  type CardValue,
-  type PlayerView,
-  type Rank,
-} from "./types.ts";
+import { Face, SpecialKind, type CardValue, type PlayerView, type Rank } from "./types.ts";
 
 export const MIN_RANK: Rank = 2;
 export const MAX_RANK: Rank = 13;
@@ -51,11 +45,11 @@ export function buildValueSummaryOrder(view: PlayerView): ValueSummaryEntry[] {
     entries.push({ Rank: rank, Kind: SpecialKind.None, SortValue: rank });
   }
 
-  for (const silver of view.SpecialPool.Silvers) {
+  for (const silver of view.SpecialPool.Silvers ?? []) {
     const id: ValueIdentity = { Rank: silver.Rank, Kind: SpecialKind.Silver };
     entries.push({ ...id, SortValue: sortValue(id) });
   }
-  for (const gold of view.SpecialPool.Golds) {
+  for (const gold of view.SpecialPool.Golds ?? []) {
     const id: ValueIdentity = { Rank: gold.Rank, Kind: SpecialKind.Gold };
     entries.push({ ...id, SortValue: sortValue(id) });
   }

@@ -22,9 +22,7 @@ export function App() {
   }, []);
 
   if (session) {
-    return (
-      <GameScreen token={session.token} seat={session.seat} onLeave={onLeave} />
-    );
+    return <GameScreen token={session.token} seat={session.seat} onLeave={onLeave} />;
   }
   return <JoinScreen onJoined={onJoined} />;
 }

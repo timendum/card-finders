@@ -29,9 +29,7 @@ function isGold(card: ViewCard): boolean {
  * be a source). A silver source makes the guess the silver feat.
  */
 export function sourceCards(view: PlayerView): ViewCard[] {
-  return view.Cards.filter(
-    (card) => card.Owner === view.Seat && isFaceDown(card) && !isGold(card),
-  );
+  return view.Cards.filter((card) => card.Owner === view.Seat && isFaceDown(card) && !isGold(card));
 }
 
 /**
@@ -40,9 +38,7 @@ export function sourceCards(view: PlayerView): ViewCard[] {
  * cannot see still appears.
  */
 export function targetCards(view: PlayerView): ViewCard[] {
-  return view.Cards.filter(
-    (card) => card.Owner !== view.Seat && isFaceDown(card) && !isGold(card),
-  );
+  return view.Cards.filter((card) => card.Owner !== view.Seat && isFaceDown(card) && !isGold(card));
 }
 
 /**

@@ -21,12 +21,7 @@ import {
   type ViewCard,
 } from "./types.ts";
 
-function card(
-  id: number,
-  owner: SeatID,
-  facing: Face,
-  value?: CardValue,
-): ViewCard {
+function card(id: number, owner: SeatID, facing: Face, value?: CardValue): ViewCard {
   return { ID: id, Owner: owner, Facing: facing, Value: value };
 }
 
@@ -75,7 +70,11 @@ describe("targetCards / targetsForSeat / targetableSeats", () => {
   ]);
 
   it("returns other players' face-down non-gold cards", () => {
-    expect(targetCards(view).map((c) => c.ID).sort()).toEqual([2, 5, 6]);
+    expect(
+      targetCards(view)
+        .map((c) => c.ID)
+        .sort(),
+    ).toEqual([2, 5, 6]);
   });
 
   it("filters targets to a single seat", () => {

@@ -3,12 +3,7 @@
 // on the close path like any other drop.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  ClientMessage,
-  ErrorMessage,
-  PlayerView,
-  ServerMessage,
-} from "./types.ts";
+import type { ClientMessage, ErrorMessage, PlayerView, ServerMessage } from "./types.ts";
 
 export type SocketStatus = "idle" | "connecting" | "open" | "closed";
 

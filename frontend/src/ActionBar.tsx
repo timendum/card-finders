@@ -147,7 +147,9 @@ export function ActionBar({ view, sendAction, onLeave }: ActionBarProps) {
               Source card
               <select
                 value={source === null ? "" : String(source)}
-                onChange={(e) => setSource(e.target.value === "" ? null : (Number(e.target.value) as CardID))}
+                onChange={(e) =>
+                  setSource(e.target.value === "" ? null : (Number(e.target.value) as CardID))
+                }
               >
                 <option value="">Choose a card…</option>
                 {sources.map((c) => (
@@ -181,7 +183,9 @@ export function ActionBar({ view, sendAction, onLeave }: ActionBarProps) {
               {mode === "safeCall" ? "First target" : "Target card"}
               <select
                 value={target1 === null ? "" : String(target1)}
-                onChange={(e) => setTarget1(e.target.value === "" ? null : (Number(e.target.value) as CardID))}
+                onChange={(e) =>
+                  setTarget1(e.target.value === "" ? null : (Number(e.target.value) as CardID))
+                }
                 disabled={targetSeat === null}
               >
                 <option value="">Choose a card…</option>
@@ -198,7 +202,9 @@ export function ActionBar({ view, sendAction, onLeave }: ActionBarProps) {
                 Second target
                 <select
                   value={target2 === null ? "" : String(target2)}
-                  onChange={(e) => setTarget2(e.target.value === "" ? null : (Number(e.target.value) as CardID))}
+                  onChange={(e) =>
+                    setTarget2(e.target.value === "" ? null : (Number(e.target.value) as CardID))
+                  }
                   disabled={targetSeat === null}
                 >
                   <option value="">Choose a card…</option>

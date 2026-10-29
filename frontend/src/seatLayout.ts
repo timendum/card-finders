@@ -16,9 +16,7 @@ function isValidSeat(seat: SeatID): boolean {
 
 export function seatLayout(viewerSeat: SeatID): SeatLayout {
   if (!isValidSeat(viewerSeat)) {
-    throw new RangeError(
-      `seatLayout: viewerSeat must be an integer in 0..3, got ${viewerSeat}`,
-    );
+    throw new RangeError(`seatLayout: viewerSeat must be an integer in 0..3, got ${viewerSeat}`);
   }
   return {
     bottom: viewerSeat,

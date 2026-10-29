@@ -12,7 +12,7 @@ export interface StoredSession {
 }
 
 function hashParams(): URLSearchParams {
-  return new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  return new URLSearchParams(window.location.hash.replace(/^#/u, ""));
 }
 
 export function loadSession(): StoredSession | null {
@@ -46,11 +46,7 @@ export function saveSession(session: StoredSession): void {
 export function clearSession(): void {
   try {
     // Drop the hash, keep path/query.
-    window.history.replaceState(
-      null,
-      "",
-      window.location.pathname + window.location.search,
-    );
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
   } catch {
     // ignore
   }

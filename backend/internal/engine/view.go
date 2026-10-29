@@ -47,7 +47,7 @@ type PlayerView struct {
 // (state == nil) it returns a zero-valued view carrying only the seat.
 func (e *Engine) View(seat SeatID) PlayerView {
 	if e.state == nil {
-		return PlayerView{Seat: seat}
+		return PlayerView{Seat: seat, SpecialPool: normalizePool(SpecialPool{})}
 	}
 	s := e.state
 
@@ -55,7 +55,7 @@ func (e *Engine) View(seat SeatID) PlayerView {
 		Seat:        seat,
 		Phase:       s.Phase,
 		Level:       s.Level,
-		SpecialPool: s.SpecialPool,
+		SpecialPool: normalizePool(s.SpecialPool),
 		LifePool:    s.LifePool,
 		MaxLife:     s.Level.StartLives,
 		CurrentSeat: s.CurrentSeat,
@@ -70,6 +70,18 @@ func (e *Engine) View(seat SeatID) PlayerView {
 	}
 	v.Cards = projectCards(s, seat)
 	return v
+}
+
+// normalizePool returns p with nil special slices replaced by empty slices so
+// the view always marshals Silvers/Golds as [] rather than null.
+func normalizePool(p SpecialPool) SpecialPool {
+	if p.Silvers == nil {
+		p.Silvers = []Card{}
+	}
+	if p.Golds == nil {
+		p.Golds = []Card{}
+	}
+	return p
 }
 
 // projectCards builds the ViewCard slice sorted by CardID for stable output.

@@ -25,26 +25,14 @@ export function JoinScreen({ onJoined }: JoinScreenProps) {
     <main>
       <h1>Card Finders</h1>
       <nav aria-label="Lobby mode">
-        <button
-          type="button"
-          aria-pressed={mode === "create"}
-          onClick={() => setMode("create")}
-        >
+        <button type="button" aria-pressed={mode === "create"} onClick={() => setMode("create")}>
           Create game
         </button>
-        <button
-          type="button"
-          aria-pressed={mode === "join"}
-          onClick={() => setMode("join")}
-        >
+        <button type="button" aria-pressed={mode === "join"} onClick={() => setMode("join")}>
           Join game
         </button>
       </nav>
-      {mode === "create" ? (
-        <CreatePanel onJoined={onJoined} />
-      ) : (
-        <JoinPanel onJoined={onJoined} />
-      )}
+      {mode === "create" ? <CreatePanel onJoined={onJoined} /> : <JoinPanel onJoined={onJoined} />}
     </main>
   );
 }
