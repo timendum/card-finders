@@ -26,6 +26,7 @@ export default defineConfig({
         target: BACKEND,
         changeOrigin: true,
         ws: true,
+        rewriteWsOrigin: true,
       },
     },
   },
