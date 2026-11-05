@@ -45,7 +45,9 @@ Phases (engine state machine; phase gates every action):
    the Special_Pool, revealed to all before any deal.
 3. **Dealing** — Base_Deck + the level's specials are combined, uniformly
    shuffled, and dealt across the 4 players (hand sizes differ by ≤1, no cards
-   left over). One of the four is chosen first player (each 0.25).
+   left over). Each hand is then laid out in a **fixed, value-sorted order**
+   (ascending Sort_Value) that never changes for the rest of the game. One of
+   the four is chosen first player (each 0.25).
 4. **Opening** — each player, in turn order, reveals one card of their choice;
    it stays **face-down** but gets a token showing its true value. Each player
    is granted one single-use Safe_Call here.
@@ -54,6 +56,23 @@ Phases (engine state machine; phase gates every action):
    actions rejected.
 
 SpecialPool + Dealing happen atomically when the 4th player joins.
+
+## Hand order and reveal in place
+
+Every hand is kept in a **fixed order** for the whole game. At deal time each
+player's cards are sorted ascending by Sort_Value (suited rank, then silver at
+`rank + 0.3`, then gold at `rank + 0.6`); ties keep their shuffled deal
+order. A card's **position never moves** once dealt.
+
+Revealing a card does not reorder or remove it: a card flips **face-up in
+place**, keeping its original position in the hand. So the layout of a hand is
+stable from deal to game end — only each card's facing (and any token) changes.
+
+Because the order is public and value-sorted, a card's **position conveys its
+relative value** even while its exact value is hidden: a player's leftmost
+(lowest-position) card is their lowest-value card, the rightmost their highest.
+This positional information is an intended part of the deduction, not a leak;
+the card's concrete value stays hidden to other players until it is revealed.
 
 ## Turns and actions
 
@@ -134,8 +153,9 @@ Guess, silver feat, or Safe_Call.
 The server computes a per-player view:
 
 - You see the true values of **only your own** cards.
-- Other players' unrevealed cards appear as face-down (position + facing only),
-  no value.
+- Other players' unrevealed cards appear as face-down: you see their **fixed
+  value-sorted position** and facing, but not their value. Position conveys
+  relative value (see Hand order and reveal in place), never the exact value.
 - A token's displayed value is visible to **everyone** (it sits on a face-down
   card).
 - Every face-up card's value is visible to everyone.

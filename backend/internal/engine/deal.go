@@ -1,5 +1,7 @@
 package engine
 
+import "sort"
+
 const seatCount = 4
 
 // nextSeat returns the seat clockwise after s: the single definition of
@@ -28,6 +30,26 @@ func (e *Engine) shuffle(deck []Card) {
 	}
 }
 
+// applyIDPermutation breaks the id-to-value correlation so an opponent's
+// face-down card leaks nothing through its id.
+func (e *Engine) applyIDPermutation(deck []Card) {
+	perm := e.rng.Perm(len(deck))
+	// A permutation is a bijection, so ids stay unique.
+	remap := make(map[CardID]CardID, len(deck))
+	for i := range deck {
+		remap[deck[i].ID] = CardID(perm[i])
+	}
+	for i := range deck {
+		deck[i].ID = remap[deck[i].ID]
+	}
+	for i := range e.state.SpecialPool.Silvers {
+		e.state.SpecialPool.Silvers[i].ID = remap[e.state.SpecialPool.Silvers[i].ID]
+	}
+	for i := range e.state.SpecialPool.Golds {
+		e.state.SpecialPool.Golds[i].ID = remap[e.state.SpecialPool.Golds[i].ID]
+	}
+}
+
 // startGame runs the fourth-join transition: form pool, deal, pick first player,
 // reach PhaseOpening. On any failure it reverts fully to PhaseWaiting with no
 // dealt hands, so the triggering Join surfaces the error cleanly.
@@ -42,6 +64,7 @@ func (e *Engine) startGame() error {
 	e.state.SpecialPool = pool
 
 	deck := e.combinedDeck()
+	e.applyIDPermutation(deck)
 	e.shuffle(deck)
 	if err := e.dealIfSufficient(deck); err != nil {
 		e.state.SpecialPool = SpecialPool{}
@@ -75,6 +98,7 @@ func (e *Engine) dealCombinedDeck(deck []Card) {
 	for i := range e.state.HandOrder {
 		e.state.HandOrder[i] = nil
 	}
+	e.state.Slot = make(map[CardID]int, len(deck))
 
 	for i, card := range deck {
 		seat := SeatID(i % seatCount)
@@ -85,5 +109,23 @@ func (e *Engine) dealCombinedDeck(deck []Card) {
 			Token:  nil,
 		}
 		e.state.HandOrder[seat] = append(e.state.HandOrder[seat], card.ID)
+	}
+
+	e.computeSlots()
+}
+
+// computeSlots assigns each card a 1-based position within its owning seat's
+// value-sorted hand: lowest Sort_Value is slot 1, ties resolved stably over the
+// shuffled deal order in HandOrder. Called once per deal; slots are never
+// mutated afterward.
+func (e *Engine) computeSlots() {
+	for seat := range e.state.HandOrder {
+		ids := append([]CardID(nil), e.state.HandOrder[seat]...)
+		sort.SliceStable(ids, func(i, j int) bool {
+			return e.state.Cards[ids[i]].Card.SortValue() < e.state.Cards[ids[j]].Card.SortValue()
+		})
+		for rank, id := range ids {
+			e.state.Slot[id] = rank + 1
+		}
 	}
 }

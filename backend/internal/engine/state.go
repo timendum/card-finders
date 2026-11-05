@@ -44,6 +44,10 @@ type GameState struct {
 	Cards     map[CardID]*PlacedCard
 	HandOrder [4][]CardID // each seat's card ids, for stable positions
 
+	// Slot is each card's 1-based value-sorted position within its owning
+	// seat's hand, fixed at deal and never mutated for the rest of the game.
+	Slot map[CardID]int
+
 	LifePool    int    // clamped to [0, Level.StartLives]
 	CurrentSeat SeatID // meaningful in Opening/Playing
 	OpeningDone [4]bool

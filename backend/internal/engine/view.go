@@ -20,6 +20,7 @@ type CardValue struct {
 type ViewCard struct {
 	ID           CardID
 	Owner        SeatID
+	Slot         int
 	Facing       Face
 	Value        *CardValue
 	Token        *TokenInfo
@@ -63,7 +64,7 @@ func (e *Engine) View(seat SeatID) PlayerView {
 		Result:      s.GameResult,
 		SeatsFilled: s.seatsFilled(),
 	}
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if p := s.Players[i]; p != nil {
 			v.PowerUsed[i] = p.PowerUsed
 		}
@@ -84,26 +85,29 @@ func normalizePool(p SpecialPool) SpecialPool {
 	return p
 }
 
-// projectCards builds the ViewCard slice sorted by CardID for stable output.
+// projectCards builds the ViewCard slice, ordered by (Owner, Slot). Ids are
+// opaque and nothing relies on Cards order; the sort is a wire-debuggability
+// convenience, as the client regroups by owner and sorts by Slot itself.
 func projectCards(s *GameState, seat SeatID) []ViewCard {
-	ids := make([]CardID, 0, len(s.Cards))
-	for id := range s.Cards {
-		ids = append(ids, id)
+	cards := make([]ViewCard, 0, len(s.Cards))
+	for _, pc := range s.Cards {
+		cards = append(cards, projectCard(pc, s.Slot[pc.Card.ID], seat))
 	}
-	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
-
-	cards := make([]ViewCard, 0, len(ids))
-	for _, id := range ids {
-		cards = append(cards, projectCard(s.Cards[id], seat))
-	}
+	sort.Slice(cards, func(i, j int) bool {
+		if cards[i].Owner != cards[j].Owner {
+			return cards[i].Owner < cards[j].Owner
+		}
+		return cards[i].Slot < cards[j].Slot
+	})
 	return cards
 }
 
 // projectCard projects a single PlacedCard for one viewer.
-func projectCard(pc *PlacedCard, seat SeatID) ViewCard {
+func projectCard(pc *PlacedCard, slot int, seat SeatID) ViewCard {
 	vc := ViewCard{
 		ID:     pc.Card.ID,
 		Owner:  pc.Owner,
+		Slot:   slot,
 		Facing: pc.Facing,
 	}
 	if pc.Facing == FaceUp || pc.Owner == seat {
