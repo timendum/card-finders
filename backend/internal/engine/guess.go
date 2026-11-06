@@ -39,17 +39,32 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 		return ResultNone, ErrGoldNotTargetable
 	}
 
+	sourceID := source.Card.ID
+	la := &LastAction{
+		Actor:          seat,
+		Kind:           ActionKindGuess,
+		AnnouncedValue: announcedValueOf(source.Card),
+		Targets:        []CardID{action.TargetCard},
+		SourceCard:     &sourceID,
+	}
+
 	if matchesAnnouncedValue(source.Card, target.Card) {
 		// Hit: Pair_Reveal flips both face-up.
 		source.Facing = FaceUp
 		target.Facing = FaceUp
+		la.Outcome = OutcomeHit
+		la.Revealed = []CardID{sourceID, action.TargetCard}
 	} else {
 		// Miss: lose one life (clamped), token the target face-down.
 		if s.LifePool > 0 {
 			s.LifePool--
+			la.LivesLost = 1
 		}
 		target.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
+		la.Outcome = OutcomeMiss
 	}
+
+	s.recordAction(la)
 
 	return e.finishTurn(s.CurrentSeat), nil
 }

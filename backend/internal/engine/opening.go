@@ -21,6 +21,14 @@ func (e *Engine) applyOpeningReveal(seat SeatID, action Action) (Result, error) 
 
 	pc.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
 	s.OpeningDone[seat] = true
+
+	s.recordAction(&LastAction{
+		Actor:   seat,
+		Kind:    ActionKindOpeningReveal,
+		Targets: []CardID{action.OpeningCard},
+		Outcome: OutcomeNone,
+	})
+
 	s.CurrentSeat = nextSeat(s.CurrentSeat)
 
 	// After the fourth reveal CurrentSeat has wrapped back to the first opener,

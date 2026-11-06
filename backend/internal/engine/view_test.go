@@ -116,3 +116,23 @@ func TestViewNoGameReturnsSeat(t *testing.T) {
 		t.Errorf("Cards = %+v, want empty for no game", v.Cards)
 	}
 }
+
+// While a double-hit choice is pending, every seat sees the same response
+// player and nobody has the turn; otherwise the fields are unset.
+func TestViewResponsePlayerProjection(t *testing.T) {
+	e := pendingState()
+	for seat := SeatID(0); seat < 4; seat++ {
+		v := e.View(seat)
+		if !v.HasResponsePlayer || v.ResponsePlayer != 1 {
+			t.Errorf("seat %d: ResponsePlayer = %d (has=%v), want 1 (true)", seat, v.ResponsePlayer, v.HasResponsePlayer)
+		}
+		if v.YourTurn {
+			t.Errorf("seat %d: YourTurn = true during AwaitingResponse", seat)
+		}
+	}
+
+	p := safeCallState(4)
+	if v := p.View(0); v.HasResponsePlayer {
+		t.Errorf("HasResponsePlayer = true in Playing phase")
+	}
+}

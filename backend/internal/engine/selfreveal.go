@@ -34,6 +34,17 @@ func (e *Engine) applySelfReveal(seat SeatID, action Action) (Result, error) {
 		pc.Facing = FaceUp
 	}
 
+	// Announce the self-revealed value from the chosen target. Use any revealed
+	// card as the concrete identity source (all share the announced value).
+	av := announcedValueOf(s.Cards[toReveal[0]].Card)
+	s.recordAction(&LastAction{
+		Actor:          seat,
+		Kind:           ActionKindSelfReveal,
+		AnnouncedValue: av,
+		Outcome:        OutcomeNone,
+		Revealed:       append([]CardID(nil), toReveal...),
+	})
+
 	return e.finishTurn(s.CurrentSeat), nil
 }
 

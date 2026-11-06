@@ -13,6 +13,35 @@ type CardValue struct {
 	Suit Suit
 }
 
+// ActionOutcome classifies how the last action resolved. OutcomeAwaitingChoice
+// marks a double-hit safe call whose Pair_Reveal is still pending the target's
+// choice, so no cards are revealed and no life is lost yet.
+type ActionOutcome uint8
+
+const (
+	OutcomeNone ActionOutcome = iota
+	OutcomeHit
+	OutcomeMiss
+	OutcomeAwaitingChoice
+)
+
+// LastAction records the most recently applied action for display. Seq is a
+// monotonic counter so clients can detect a new action even when the resolved
+// fields coincide. AnnouncedValue and SourceCard are nil for actions that carry
+// neither (e.g. opening reveal); Revealed lists cards flipped face-up by this
+// action and LivesLost is the life delta (non-negative).
+type LastAction struct {
+	Seq            uint64
+	Actor          SeatID
+	Kind           ActionKind
+	AnnouncedValue *CardValue
+	Targets        []CardID
+	Outcome        ActionOutcome
+	Revealed       []CardID
+	LivesLost      int
+	SourceCard     *CardID
+}
+
 // ViewCard is one card as projected for a single viewer. Value is non-nil only
 // when the viewer may see the card (face-up or owned). TokenDisplay is the
 // token's resolved public value, non-nil exactly when Token != nil, so a hidden
@@ -42,6 +71,12 @@ type PlayerView struct {
 	Cards       []ViewCard
 	Result      Result
 	SeatsFilled int
+	LastAction  *LastAction
+
+	// ResponsePlayer is the seat that must choose; meaningful only when
+	// HasResponsePlayer. Identical for every viewer.
+	ResponsePlayer    SeatID
+	HasResponsePlayer bool
 }
 
 // View projects state into the per-player view for seat. With no game
@@ -69,8 +104,31 @@ func (e *Engine) View(seat SeatID) PlayerView {
 			v.PowerUsed[i] = p.PowerUsed
 		}
 	}
+	if s.Phase == PhaseAwaitingResponse && s.PendingSafeChoice != nil {
+		v.ResponsePlayer = s.PendingSafeChoice.TargetPlayer
+		v.HasResponsePlayer = true
+	}
 	v.Cards = projectCards(s, seat)
+	v.LastAction = projectLastAction(s, seat)
 	return v
+}
+
+// projectLastAction projects GameState.LastAction for one viewer, gating only
+// SourceCard: it is visible to the actor, or to everyone once the source card
+// is face-up; otherwise (non-actors on a miss or while the double-hit choice is
+// pending) it is hidden. AnnouncedValue and all other fields stay public.
+func projectLastAction(s *GameState, seat SeatID) *LastAction {
+	if s.LastAction == nil {
+		return nil
+	}
+	// Copy before nulling so the shared authoritative record is never mutated.
+	la := *s.LastAction
+	if la.SourceCard != nil && seat != la.Actor {
+		if pc, ok := s.Cards[*la.SourceCard]; !ok || pc.Facing != FaceUp {
+			la.SourceCard = nil
+		}
+	}
+	return &la
 }
 
 // normalizePool returns p with nil special slices replaced by empty slices so

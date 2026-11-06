@@ -5,7 +5,9 @@ package engine
 type SessionToken string
 
 // Phase gates which actions are legal and advances in a fixed order:
-// Waiting -> SpecialPool -> Dealing -> Opening -> Playing -> Ended.
+// Waiting -> SpecialPool -> Dealing -> Opening -> Playing -> Ended, with
+// Playing <-> AwaitingResponse while another seat's response is pending.
+// Gating is by equality only; never compare phases by ordinal.
 type Phase uint8
 
 const (
@@ -14,6 +16,7 @@ const (
 	PhaseDealing
 	PhaseOpening
 	PhasePlaying
+	PhaseAwaitingResponse
 	PhaseEnded
 )
 
@@ -54,6 +57,12 @@ type GameState struct {
 
 	GameResult Result
 
+	// Seq increments once per applied action, labelling LastAction so clients
+	// can distinguish a fresh action from a repeat. LastAction holds the most
+	// recent action for display, nil until the first action lands.
+	Seq        uint64
+	LastAction *LastAction
+
 	// Set while a safe call that hit both targets awaits the targeted player's
 	// choice; nil otherwise. The turn has not passed yet — the follow-up
 	// ActionKindSafeChooseReveal resolves the Pair_Reveal and passes it.
@@ -69,6 +78,22 @@ type PendingSafeChoice struct {
 	SourceCard   CardID // flipped on resolution
 	Option1      CardID // the two matching targets TargetPlayer chooses between
 	Option2      CardID
+}
+
+// recordAction bumps Seq once and stores la as the authoritative LastAction,
+// stamping it with the new Seq. The full record is kept here including
+// SourceCard; privacy gating happens only in the view projection.
+func (s *GameState) recordAction(la *LastAction) {
+	s.Seq++
+	la.Seq = s.Seq
+	s.LastAction = la
+}
+
+// announcedValueOf returns the public value a source card announces (its natural
+// identity), as a fresh pointer for a LastAction record.
+func announcedValueOf(source Card) *CardValue {
+	v := naturalValue(source)
+	return &v
 }
 
 // seatsFilled counts non-nil Players, the source of truth for how many joined:

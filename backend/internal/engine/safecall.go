@@ -62,10 +62,20 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 
 	s.Players[seat].PowerUsed = true
 
+	sourceID := source.Card.ID
+	la := &LastAction{
+		Actor:          seat,
+		Kind:           ActionKindSafeCall,
+		AnnouncedValue: announcedValueOf(source.Card),
+		Targets:        []CardID{action.TargetCard, action.TargetCard2},
+		SourceCard:     &sourceID,
+	}
+
 	switch {
 	case match1 && match2:
 		// Double hit: record the pending choice and defer the Pair_Reveal and
-		// turn pass to applySafeChooseReveal.
+		// turn pass to applySafeChooseReveal. The source is still face-down, so
+		// projection gates SourceCard; only the two options are announced.
 		s.PendingSafeChoice = &PendingSafeChoice{
 			Caller:       seat,
 			TargetPlayer: targetPlayer,
@@ -73,6 +83,10 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 			Option1:      action.TargetCard,
 			Option2:      action.TargetCard2,
 		}
+		// CurrentSeat stays the caller; the chooser is the pending TargetPlayer.
+		s.Phase = PhaseAwaitingResponse
+		la.Outcome = OutcomeAwaitingChoice
+		s.recordAction(la)
 		return ResultNone, nil
 
 	case match1 || match2:
@@ -83,15 +97,21 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 		}
 		source.Facing = FaceUp
 		matched.Facing = FaceUp
+		la.Outcome = OutcomeHit
+		la.Revealed = []CardID{sourceID, matched.Card.ID}
 
 	default:
 		// Miss: lose one life (clamped), token each target face-down, source untouched.
 		if s.LifePool > 0 {
 			s.LifePool--
+			la.LivesLost = 1
 		}
 		t1.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
 		t2.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
+		la.Outcome = OutcomeMiss
 	}
+
+	s.recordAction(la)
 
 	return e.finishTurn(s.CurrentSeat), nil
 }
@@ -114,6 +134,9 @@ func faceDownCount(s *GameState, seat SeatID) int {
 func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, error) {
 	s := e.state
 
+	if s.Phase != PhaseAwaitingResponse {
+		return ResultNone, ErrWrongPhase
+	}
 	pending := s.PendingSafeChoice
 	if pending == nil {
 		return ResultNone, ErrNoPendingChoice
@@ -125,14 +148,30 @@ func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, erro
 		return ResultNone, ErrInvalidChoice
 	}
 
+	sourceID := pending.SourceCard
+	var av *CardValue
 	if src, ok := s.Cards[pending.SourceCard]; ok {
 		src.Facing = FaceUp
+		av = announcedValueOf(src.Card)
 	}
 	if chosen, ok := s.Cards[action.ChosenTarget]; ok {
 		chosen.Facing = FaceUp
 	}
 
 	caller := pending.Caller
+	srcID := sourceID
+	s.recordAction(&LastAction{
+		Actor:          caller,
+		Kind:           ActionKindSafeChooseReveal,
+		AnnouncedValue: av,
+		Targets:        []CardID{action.ChosenTarget},
+		Outcome:        OutcomeHit,
+		Revealed:       []CardID{srcID, action.ChosenTarget},
+		SourceCard:     &srcID,
+	})
+
 	s.PendingSafeChoice = nil
+	// Leave the response phase first; finishTurn may then move on to Ended.
+	s.Phase = PhasePlaying
 	return e.finishTurn(caller), nil
 }

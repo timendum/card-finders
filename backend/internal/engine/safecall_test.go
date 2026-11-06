@@ -428,14 +428,14 @@ func TestSafeChooseRevealWrongSeatRejected(t *testing.T) {
 	assertPendingUnchanged(t, e)
 }
 
-// A choose-reveal with no pending choice is rejected with ErrNoPendingChoice.
+// A choose-reveal outside AwaitingResponse is rejected with ErrWrongPhase.
 func TestSafeChooseRevealNoPendingRejected(t *testing.T) {
 	e := safeCallState(4)
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 
 	_, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 2})
-	if !errors.Is(err, ErrNoPendingChoice) {
-		t.Errorf("err = %v, want ErrNoPendingChoice", err)
+	if !errors.Is(err, ErrWrongPhase) {
+		t.Errorf("err = %v, want ErrWrongPhase", err)
 	}
 	if e.state.PendingSafeChoice != nil {
 		t.Errorf("PendingSafeChoice = %+v, want nil", e.state.PendingSafeChoice)
