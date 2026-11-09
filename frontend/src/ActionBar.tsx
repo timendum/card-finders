@@ -12,7 +12,7 @@ import {
   targetableSeats,
   targetsForSeat,
 } from "./actions.ts";
-import { cardLabel } from "./cardLabel.ts";
+import { valueLabel } from "./cardLabel.ts";
 import type {
   CardID,
   ClientMessage,
@@ -38,7 +38,7 @@ export interface ActionBarProps {
 }
 
 function optionLabel(card: ViewCard): string {
-  return card.Value ? cardLabel(card.Value) : `#${card.ID}`;
+  return card.Value ? valueLabel(card.Value) : `#${card.ID}`;
 }
 
 export function ActionBar({ view, sendAction, onLeave }: ActionBarProps) {

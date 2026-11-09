@@ -22,7 +22,8 @@ describe("shared types scaffold", () => {
     expect(Face.Down).toBe(0);
     expect(Face.Up).toBe(1);
     expect(Phase.Waiting).toBe(0);
-    expect(Phase.Ended).toBe(5);
+    expect(Phase.AwaitingResponse).toBe(5);
+    expect(Phase.Ended).toBe(6);
     expect(Result.None).toBe(0);
     expect(Result.Loss).toBe(2);
     expect(TokenKindValue.NaturalIdentity).toBe(1);
@@ -42,6 +43,8 @@ describe("shared types scaffold", () => {
       Cards: [],
       Result: Result.None,
       SeatsFilled: 1,
+      ResponsePlayer: 0,
+      HasResponsePlayer: false,
     };
     const msg: ServerMessage = { type: "state", view };
     expect(msg.type === "state" ? msg.view.Seat : -1).toBe(0);

@@ -22,7 +22,7 @@ import {
 } from "./types.ts";
 
 function card(id: number, owner: SeatID, facing: Face, value?: CardValue): ViewCard {
-  return { ID: id, Owner: owner, Facing: facing, Value: value };
+  return { ID: id, Owner: owner, Facing: facing, Value: value, Slot: id };
 }
 
 function suited(rank: number): CardValue {
@@ -43,6 +43,8 @@ function viewWith(cards: ViewCard[], seat: SeatID = 0): PlayerView {
     Cards: cards,
     Result: Result.None,
     SeatsFilled: 4,
+    ResponsePlayer: 0,
+    HasResponsePlayer: false,
   };
 }
 
@@ -89,24 +91,32 @@ describe("targetCards / targetsForSeat / targetableSeats", () => {
 });
 
 describe("selfRevealOptions", () => {
-  it("offers each held suited rank then silver then gold", () => {
+  it("offers only fully-held ranks and silver; gold only when nothing else is held", () => {
+    const silver: CardValue = { Rank: 4, Kind: SpecialKind.Silver, Suit: 0 };
     const view = viewWith([
       card(1, 0, Face.Down, suited(5)),
-      card(2, 0, Face.Down, suited(5)), // duplicate rank collapses
-      card(3, 0, Face.Down, suited(2)),
-      card(4, 0, Face.Down, { Rank: 4, Kind: SpecialKind.Silver, Suit: 0 }),
-      card(5, 0, Face.Down, { Rank: 9, Kind: SpecialKind.Gold, Suit: 0 }),
-      card(6, 0, Face.Up, suited(3)), // face-up -> not an option
-      card(7, 1, Face.Down, suited(8)), // other seat -> ignored
+      card(2, 0, Face.Down, suited(5)),
+      card(3, 1, Face.Up, suited(5)),
+      card(4, 2, Face.Up, suited(5)), // rank 5: 2 held + 2 face-up -> offered
+      card(5, 0, Face.Down, suited(2)), // rank 2: others may hold the rest -> not offered
+      card(6, 0, Face.Down, silver),
+      card(7, 0, Face.Down, { Rank: 9, Kind: SpecialKind.Gold, Suit: 0 }),
     ]);
+    view.SpecialPool = {
+      Silvers: [{ ID: 6, Rank: 4, Suit: 0, Kind: SpecialKind.Silver }],
+      Golds: [],
+    };
     expect(selfRevealOptions(view)).toEqual([
-      { label: "Rank 2", value: 2 },
       { label: "Rank 5", value: 5 },
       { label: "All silver", value: "silver" },
-      { label: "All gold", value: "gold" },
     ]);
-  });
 
+    const goldOnly = viewWith([
+      card(1, 0, Face.Down, { Rank: 9, Kind: SpecialKind.Gold, Suit: 0 }),
+      card(2, 0, Face.Up, suited(3)),
+    ]);
+    expect(selfRevealOptions(goldOnly)).toEqual([{ label: "All gold", value: "gold" }]);
+  });
   it("is empty when the viewer holds no face-down cards", () => {
     expect(selfRevealOptions(viewWith([card(1, 0, Face.Up, suited(5))]))).toEqual([]);
   });
@@ -166,6 +176,7 @@ describe("message builders", () => {
           ID: r.ID,
           Owner: r.Owner,
           Facing: r.Facing,
+          Slot: r.ID,
           Value: { Rank: r.Rank, Kind: r.Kind, Suit: 0 },
         }));
         const view = viewWith(cards, 0);

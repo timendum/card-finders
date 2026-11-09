@@ -19,7 +19,6 @@ export interface GameSocket {
   status: SocketStatus;
   /** Sends a ClientMessage; no-op returning false when the socket is not OPEN. */
   sendAction: (msg: ClientMessage) => boolean;
-  clearError: () => void;
 }
 
 // Exponential backoff with jitter so reconnecting clients don't align into a
@@ -55,8 +54,6 @@ export function useGameSocket(token: string | null): GameSocket {
   const attemptRef = useRef(0);
   // Bumped on every teardown; handlers that captured an older value bail.
   const genRef = useRef(0);
-
-  const clearError = useCallback(() => setError(null), []);
 
   // Reset UI state during render (React's reset-on-prop-change pattern) rather
   // than in the effect, avoiding an extra commit.
@@ -113,6 +110,7 @@ export function useGameSocket(token: string | null): GameSocket {
         switch (msg.type) {
           case "state":
             setView(msg.view);
+            setError(null); // a new snapshot makes any earlier error stale
             break;
           case "error": {
             const { code, message } = msg as ErrorMessage;
@@ -185,5 +183,5 @@ export function useGameSocket(token: string | null): GameSocket {
     return true;
   }, []);
 
-  return { view, error, status, sendAction, clearError };
+  return { view, error, status, sendAction };
 }

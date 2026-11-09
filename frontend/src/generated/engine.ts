@@ -70,6 +70,9 @@ export interface Action {
  */
 export type Suit = number; /* uint8 */
 export type Rank = number; /* uint8 */
+/**
+ * 0-4, ordered, the first to play is randomly choose
+ */
 export type SeatID = number; /* uint8 */
 export enum SpecialKind {
   None = 0, // suited card
@@ -146,7 +149,9 @@ export interface Level {
 export type SessionToken = string;
 /**
  * Phase gates which actions are legal and advances in a fixed order:
- * Waiting -> SpecialPool -> Dealing -> Opening -> Playing -> Ended.
+ * Waiting -> SpecialPool -> Dealing -> Opening -> Playing -> Ended, with
+ * Playing <-> AwaitingResponse while another seat's response is pending.
+ * Gating is by equality only; never compare phases by ordinal.
  */
 export enum Phase {
   Waiting = 0,
@@ -154,6 +159,7 @@ export enum Phase {
   Dealing,
   Opening,
   Playing,
+  AwaitingResponse,
   Ended,
 }
 export interface Player {
@@ -178,10 +184,22 @@ export interface GameState {
   Players: (Player | undefined)[]; // nil until that seat is filled
   Cards: { [key: CardID]: PlacedCard | undefined };
   HandOrder: CardID[][]; // each seat's card ids, for stable positions
+  /**
+   * Slot is each card's 1-based value-sorted position within its owning
+   * seat's hand, fixed at deal and never mutated for the rest of the game.
+   */
+  Slot: { [key: CardID]: number /* int */ };
   LifePool: number /* int */; // clamped to [0, Level.StartLives]
   CurrentSeat: SeatID; // meaningful in Opening/Playing
   OpeningDone: boolean[];
   GameResult: Result;
+  /**
+   * Seq increments once per applied action, labelling LastAction so clients
+   * can distinguish a fresh action from a repeat. LastAction holds the most
+   * recent action for display, nil until the first action lands.
+   */
+  Seq: number /* uint64 */;
+  LastAction?: LastAction;
   /**
    * Set while a safe call that hit both targets awaits the targeted player's
    * choice; nil otherwise. The turn has not passed yet — the follow-up
@@ -254,6 +272,35 @@ export interface CardValue {
   Suit: Suit;
 }
 /**
+ * Outcome classifies how the last action resolved. OutcomeAwaitingChoice
+ * marks a double-hit safe call whose Pair_Reveal is still pending the target's
+ * choice, so no cards are revealed and no life is lost yet.
+ */
+export enum Outcome {
+  None = 0,
+  Hit,
+  Miss,
+  AwaitingChoice,
+}
+/**
+ * LastAction records the most recently applied action for display. Seq is a
+ * monotonic counter so clients can detect a new action even when the resolved
+ * fields coincide. AnnouncedValue and SourceCard are nil for actions that carry
+ * neither (e.g. opening reveal); Revealed lists cards flipped face-up by this
+ * action and LivesLost is the life delta (non-negative).
+ */
+export interface LastAction {
+  Seq: number /* uint64 */;
+  Actor: SeatID;
+  Kind: ActionKind;
+  AnnouncedValue?: CardValue;
+  Targets: CardID[];
+  Outcome: Outcome;
+  Revealed: CardID[];
+  LivesLost: number /* int */;
+  SourceCard?: CardID;
+}
+/**
  * ViewCard is one card as projected for a single viewer. Value is non-nil only
  * when the viewer may see the card (face-up or owned). TokenDisplay is the
  * token's resolved public value, non-nil exactly when Token != nil, so a hidden
@@ -262,6 +309,7 @@ export interface CardValue {
 export interface ViewCard {
   ID: CardID;
   Owner: SeatID;
+  Slot: number /* int */;
   Facing: Face;
   Value?: CardValue;
   Token?: TokenInfo;
@@ -284,4 +332,11 @@ export interface PlayerView {
   Cards: ViewCard[];
   Result: Result;
   SeatsFilled: number /* int */;
+  LastAction?: LastAction;
+  /**
+   * ResponsePlayer is the seat that must choose; meaningful only when
+   * HasResponsePlayer. Identical for every viewer.
+   */
+  ResponsePlayer: SeatID;
+  HasResponsePlayer: boolean;
 }

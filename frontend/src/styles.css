@@ -1,0 +1,465 @@
+:root {
+  --color-bg: #14181f;
+  --color-surface: #1d232d;
+  --color-surface-raised: #262e3b;
+  --color-border: #3a4456;
+  --color-text: #e8ebf0;
+  --color-text-muted: #9aa5b6;
+  --color-accent: #4c9aff;
+  --color-danger: #ef5350;
+  --color-success: #4caf7d;
+
+  --color-suited: #f4f1ea;
+  --color-silver: #a9b4c2;
+  --color-gold: #e0b43c;
+  --color-on-suited: #1b1f27;
+  --color-on-silver: #1b1f27;
+  --color-on-gold: #2a2006;
+  --color-card-back: #2f4a73;
+  --color-card-back-edge: #4a6a9c;
+  --color-token: #38425a;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  --font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-size-sm: 0.8125rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+  --line-height: 1.4;
+
+  /* Everything scales from --cw, bounded by viewport height (the 11-slot side
+     column) and width (the 11-slot top/bottom row). */
+  --cw: clamp(1.5rem, min((100dvh - 4rem) / 12.5, (100vw - 6rem) / 17), 4.5rem);
+  --ch: calc(var(--cw) * 1.43);
+  --card-width: var(--cw);
+  --card-height: var(--ch);
+  --token-size: calc(var(--cw) * 0.57);
+  --outline-width: 0.1875rem;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height);
+}
+
+.table-region {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "left top right"
+    "left center right"
+    "left bottom right";
+  gap: var(--space-2);
+  block-size: 100dvh;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: var(--space-2);
+}
+
+.table-region > [data-edge="left"],
+.table-region > [data-edge="right"] {
+  align-self: stretch;
+}
+
+.table-region > [data-edge="top"] {
+  grid-area: top;
+}
+.table-region > [data-edge="left"] {
+  grid-area: left;
+}
+.table-region > [data-edge="right"] {
+  grid-area: right;
+}
+.table-region > [data-edge="bottom"] {
+  grid-area: bottom;
+}
+
+.table-center {
+  grid-area: center;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-4);
+  align-content: space-between;
+}
+
+.player-space {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  align-content: center;
+  padding: var(--space-3);
+  border: var(--outline-width) solid transparent;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.player-space[data-edge="top"] {
+  grid-template-rows: auto auto auto;
+}
+.player-space[data-edge="bottom"] {
+  grid-template-rows: auto auto auto;
+}
+.player-space[data-current="true"] {
+  border-color: var(--color-accent);
+}
+.player-space[data-responder="true"] {
+  border-color: var(--color-gold);
+}
+
+.card-row,
+.token-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--card-width);
+  gap: var(--space-1);
+}
+
+.token-row {
+  align-items: center;
+  justify-items: center;
+}
+.player-space[data-edge="top"] .card-row {
+  order: -1;
+}
+.player-space[data-edge="top"] .token-row {
+  order: 0;
+}
+
+/* Side seats: cards, tokens and labels are turned 90deg (vertical column). */
+.player-space[data-edge="left"],
+.player-space[data-edge="right"] {
+  --card-width: var(--ch);
+  --card-height: var(--cw);
+  grid-template-columns: auto auto auto;
+  grid-template-rows: auto;
+  justify-content: center;
+  align-items: center;
+  align-self: center;
+}
+
+/* Rotate each card about its centre so its top faces the table centre.
+   Layout boxes keep natural size; rows are sized to the rotated footprint. */
+.player-space[data-edge="left"] :is(.card-element, .revealed-card-mini, .token-square) {
+  place-self: center;
+  transform: rotate(90deg);
+}
+
+.player-space[data-edge="right"] :is(.card-element, .revealed-card-mini, .token-square) {
+  place-self: center;
+  transform: rotate(-90deg);
+}
+
+.player-space[data-edge="left"] .card-element,
+.player-space[data-edge="right"] .card-element {
+  inline-size: var(--cw);
+  block-size: var(--ch);
+}
+
+.player-space[data-edge="left"] .power-indicator {
+  writing-mode: vertical-rl;
+}
+.player-space[data-edge="right"] .power-indicator {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.player-space[data-edge="left"] .card-row,
+.player-space[data-edge="left"] .token-row,
+.player-space[data-edge="right"] .card-row,
+.player-space[data-edge="right"] .token-row {
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  grid-auto-rows: var(--card-height);
+}
+
+/* Cards on the outer edge, tokens toward the table centre. */
+.player-space[data-edge="left"] .card-row {
+  order: -1;
+}
+.player-space[data-edge="left"] .token-row {
+  order: 0;
+}
+.player-space[data-edge="right"] .card-row {
+  order: 1;
+}
+.player-space[data-edge="right"] .token-row {
+  order: 0;
+}
+.player-space[data-edge="right"] .power-indicator {
+  order: -1;
+}
+.player-space[data-edge="left"] .power-indicator {
+  order: 2;
+}
+
+.player-space[data-edge="left"] .revealed-card-mini,
+.player-space[data-edge="right"] .revealed-card-mini {
+  inline-size: var(--cw);
+}
+
+.player-space[data-edge="left"] .token-row,
+.player-space[data-edge="right"] .token-row {
+  grid-auto-columns: calc(var(--token-size) * 1.5);
+}
+
+.player-space[data-edge="left"] .card-row,
+.player-space[data-edge="right"] .card-row {
+  grid-auto-columns: var(--ch);
+}
+
+.card-slot-empty {
+  inline-size: var(--card-width);
+  block-size: var(--card-height);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+}
+
+.token-square {
+  inline-size: var(--token-size);
+  block-size: var(--token-size);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-token);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.token-square[data-kind="suited"] {
+  background: var(--color-suited);
+  color: var(--color-on-suited);
+}
+
+.token-square[data-kind="silver"] {
+  background: var(--color-silver);
+  color: var(--color-on-silver);
+}
+
+.token-square[data-kind="gold"] {
+  background: var(--color-gold);
+  color: var(--color-on-gold);
+}
+
+/* Taller, bordered and card-shaped so it reads as a flipped card, not a token. */
+.revealed-card-mini {
+  inline-size: var(--card-width);
+  block-size: calc(var(--token-size) * 1.5);
+  box-sizing: border-box;
+  padding: var(--space-1);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  background: var(--color-suited);
+  color: var(--color-on-suited);
+}
+
+.revealed-card-mini[data-kind="silver"] {
+  background: var(--color-silver);
+  color: var(--color-on-silver);
+}
+
+.revealed-card-mini[data-kind="gold"] {
+  background: var(--color-gold);
+  color: var(--color-on-gold);
+}
+
+.power-indicator {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.power-indicator[data-power="consumed"] {
+  opacity: 0.5;
+}
+
+.card-element {
+  position: relative;
+  inline-size: var(--card-width);
+  block-size: var(--card-height);
+  box-sizing: border-box;
+  padding: var(--space-1);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  background: var(--color-suited);
+  color: var(--color-on-suited);
+  cursor: default;
+}
+
+.card-element[data-kind="silver"] {
+  background: var(--color-silver);
+  color: var(--color-on-silver);
+}
+
+.card-element[data-kind="gold"] {
+  background: var(--color-gold);
+  color: var(--color-on-gold);
+}
+
+.card-element[data-facing="down"]:not([data-own="true"]) {
+  background: var(--color-card-back);
+  border-color: var(--color-card-back-edge);
+  color: transparent;
+}
+
+.card-element[data-own="true"][data-facing="down"] {
+  border-style: dashed;
+}
+
+.card-element[data-selectable="true"] {
+  cursor: pointer;
+  border-color: var(--color-accent);
+}
+
+.card-element[data-selected="true"] {
+  outline: var(--outline-width) solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.card-element:focus-visible {
+  outline: var(--outline-width) solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.status-panel,
+.prompt-panel {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+
+.status-panel {
+  justify-self: center;
+  inline-size: 100%;
+}
+.prompt-panel {
+  align-self: end;
+}
+
+.life-display {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.value-summary-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.value-summary-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.value-summary-label {
+  font-weight: var(--font-weight-bold);
+}
+
+.value-summary-row[data-complete="true"] {
+  color: var(--color-success);
+}
+.value-summary-row[data-partial="true"] {
+  color: #f2c94c;
+}
+
+.prompt-error {
+  color: var(--color-danger);
+}
+
+.prompt-actions {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prompt-action {
+  display: grid;
+}
+.prompt-action[data-enabled="false"] {
+  color: var(--color-text-muted);
+}
+
+.prompt-action-name {
+  font-weight: var(--font-weight-bold);
+}
+
+.prompt-action-description,
+.prompt-action-reason {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.prompt-single {
+  display: grid;
+}
+.prompt-single .prompt-action-name,
+.prompt-single .prompt-action-description {
+  margin: 0;
+}
+
+.prompt-self-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.prompt-self-value,
+.prompt-confirm {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.prompt-self-value[aria-pressed="true"] {
+  border-color: var(--color-accent);
+}
+
+.prompt-confirm {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: var(--font-weight-bold);
+}
+.prompt-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

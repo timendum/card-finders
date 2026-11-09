@@ -68,31 +68,53 @@ export interface SelfRevealOption {
 }
 
 /**
- * selfRevealOptions returns the values the viewer holds face-down: each distinct
- * suited rank (ascending), then "silver", then "gold", matching Value_Summary
- * order. Eligibility is enforced by the engine.
+ * selfRevealOptions returns the values the viewer may self-reveal: each suited
+ * rank (ascending) they hold in full, then "silver", then "gold", matching
+ * Value_Summary order. The engine remains the final authority.
  */
 export function selfRevealOptions(view: PlayerView): SelfRevealOption[] {
-  const ranks = new Set<number>();
-  let hasSilver = false;
-  let hasGold = false;
+  const heldRanks = new Map<number, number>();
+  const faceUpRanks = new Map<number, number>();
+  let heldSilver = 0;
+  let faceUpSilver = 0;
+  let heldGold = 0;
+  let heldOther = 0;
 
   for (const card of view.Cards) {
-    if (card.Owner !== view.Seat || !isFaceDown(card) || card.Value == null) {
+    const value = card.Value;
+    if (value == null) continue;
+    const mine = card.Owner === view.Seat && isFaceDown(card);
+    if (!mine) {
+      if (card.Facing === Face.Up) {
+        if (value.Kind === SpecialKind.Silver) faceUpSilver++;
+        else if (value.Kind === SpecialKind.None) {
+          faceUpRanks.set(value.Rank, (faceUpRanks.get(value.Rank) ?? 0) + 1);
+        }
+      }
       continue;
     }
-    switch (card.Value.Kind) {
+    switch (value.Kind) {
       case SpecialKind.Silver:
-        hasSilver = true;
+        heldSilver++;
+        heldOther++;
         break;
       case SpecialKind.Gold:
-        hasGold = true;
+        heldGold++;
         break;
       default:
-        ranks.add(card.Value.Rank);
+        heldRanks.set(value.Rank, (heldRanks.get(value.Rank) ?? 0) + 1);
+        heldOther++;
         break;
     }
   }
+
+  // Only offer values the viewer holds in full (every remaining face-down card).
+  const ranks = [...heldRanks.entries()]
+    .filter(([rank, held]) => held + (faceUpRanks.get(rank) ?? 0) === 4)
+    .map(([rank]) => rank);
+  const hasSilver = heldSilver > 0 && heldSilver + faceUpSilver === view.SpecialPool.Silvers.length;
+  // Gold: only once every other face-down card the viewer holds is gone.
+  const hasGold = heldGold > 0 && heldOther === 0;
 
   const options: SelfRevealOption[] = [...ranks]
     .sort((a, b) => a - b)

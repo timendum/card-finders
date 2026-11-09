@@ -1,52 +1,52 @@
-// Table — four-seat layout (edge placement via seatLayout) with the center
-// Value_Summary. Pure/presentational: derived entirely from the PlayerView.
-
-import { useMemo } from "react";
-import { HandArea } from "./HandArea.tsx";
-import { ValueSummary } from "./ValueSummary.tsx";
+import { useMemo, type ReactNode } from "react";
+import { PlayerSpace, type Edge } from "./PlayerSpace.tsx";
 import { seatLayout } from "./seatLayout.ts";
-import type { PlayerView, SeatID, ViewCard } from "./types.ts";
+import { cardsBySeat } from "./slots.ts";
+import { Phase, type CardID, type PlayerView, type SeatID, type ViewCard } from "./types.ts";
 
 export interface TableProps {
   view: PlayerView;
+  // Center column slots, top and bottom.
+  status?: ReactNode;
+  prompt?: ReactNode;
+  isSelectable?: (card: ViewCard) => boolean;
+  isSelected?: (card: ViewCard) => boolean;
+  onActivate?: (id: CardID) => void;
 }
 
-type CardsBySeat = Map<SeatID, ViewCard[]>;
-
-function groupBySeat(cards: ViewCard[]): CardsBySeat {
-  const bySeat: CardsBySeat = new Map();
-  for (let seat = 0; seat < 4; seat++) {
-    bySeat.set(seat, []);
-  }
-  for (const card of cards) {
-    const hand = bySeat.get(card.Owner);
-    if (hand) hand.push(card);
-  }
-  return bySeat;
-}
-
-export function Table({ view }: TableProps) {
+export function Table({ view, status, prompt, isSelectable, isSelected, onActivate }: TableProps) {
   const layout = useMemo(() => seatLayout(view.Seat), [view.Seat]);
-  const bySeat = useMemo(() => groupBySeat(view.Cards), [view.Cards]);
+  const bySeat = useMemo(() => cardsBySeat(view.Cards), [view.Cards]);
 
-  const renderHand = (seat: SeatID) => (
-    <HandArea
+  const awaiting = view.Phase === Phase.AwaitingResponse && view.HasResponsePlayer;
+  const highlightedSeat = awaiting ? view.ResponsePlayer : view.CurrentSeat;
+
+  const renderSpace = (seat: SeatID, edge: Edge) => (
+    <PlayerSpace
+      key={edge}
       seat={seat}
-      cards={bySeat.get(seat) ?? []}
+      edge={edge}
       isViewer={seat === view.Seat}
-      isCurrent={seat === view.CurrentSeat}
+      highlighted={seat === highlightedSeat}
+      responder={awaiting}
+      powerUsed={view.PowerUsed[seat] ?? false}
+      cards={bySeat.get(seat) ?? []}
+      isSelectable={isSelectable}
+      isSelected={isSelected}
+      onActivate={onActivate}
     />
   );
 
   return (
-    <div className="table" aria-label="Table">
-      <div className="table-top">{renderHand(layout.top)}</div>
-      <div className="table-left">{renderHand(layout.left)}</div>
+    <div className="table-region" aria-label="Table">
+      {renderSpace(layout.top, "top")}
+      {renderSpace(layout.left, "left")}
       <div className="table-center">
-        <ValueSummary view={view} />
+        <div className="table-center-status">{status}</div>
+        <div className="table-center-prompt">{prompt}</div>
       </div>
-      <div className="table-right">{renderHand(layout.right)}</div>
-      <div className="table-bottom">{renderHand(layout.bottom)}</div>
+      {renderSpace(layout.right, "right")}
+      {renderSpace(layout.bottom, "bottom")}
     </div>
   );
 }

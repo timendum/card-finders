@@ -25,10 +25,16 @@ export function ValueSummary({ view }: ValueSummaryProps) {
               key={`${row.Kind}-${row.Rank}`}
               className="value-summary-row"
               data-complete={complete}
+              data-partial={row.Found > 0 && !complete}
             >
               <span className="value-summary-label">{valueLabel(row)}</span>
               <span className="value-summary-count">
                 {row.Found}/{row.Total}
+                {complete ? (
+                  <span className="value-summary-done" role="img" aria-label="complete">
+                    {" ✓"}
+                  </span>
+                ) : null}
               </span>
             </li>
           );

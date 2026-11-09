@@ -1,4 +1,4 @@
-// Pure display-label helpers shared by HandArea and ValueSummary.
+// Pure display-label helpers shared by the card components and ValueSummary.
 
 import { SpecialKind, SuitValue, type CardValue, type Rank, type Suit } from "./types.ts";
 
@@ -48,7 +48,7 @@ export function valueLabel(value: ValueLike): string {
   }
 }
 
-// Suited card shows rank + suit glyph ("10♥"); a special shows its label ("S4", "G7").
+// Not for card rendering: cards are suit-free and use valueLabel. Kept for non-card use.
 export function cardLabel(value: CardValue): string {
   if (value.Kind === SpecialKind.None) {
     return `${rankLabel(value.Rank)}${suitGlyph(value.Suit)}`;
