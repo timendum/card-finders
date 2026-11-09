@@ -61,10 +61,11 @@ and listen address on startup.
 
 ### Command-line flags
 
-All flags are optional; the defaults are shown.
+All flags are optional except `--auth-hash` (or its env var); defaults shown.
 
 | Flag            | Default         | Purpose                                                                 |
 | --------------- | --------------- | ----------------------------------------------------------------------- |
+| `--auth-hash`   | (required)      | Argon2id PHC hash of the host password. Overrides `CARD_FINDERS_AUTH_HASH`. |
 | `--config`      | `""`            | Path to the level-config TOML file. Overrides `CARD_FINDERS_LEVELS`.    |
 | `--static-dir`  | `""`            | On-disk directory holding the built frontend, served from root.         |
 | `--listen`      | `:8080`         | HTTP listen address.                                                     |
@@ -88,6 +89,24 @@ hard error.
 Note that the default path and `frontend/dist` are both relative to the
 server's working directory. Run the server from the repository root (or pass
 absolute paths via `--config` / `--static-dir`) so these resolve as expected.
+
+## Host authentication
+
+Creating a game is protected. `GET /api/levels` and `POST /api/game` require
+`Authorization: Bearer <password>`; joining does not. A missing or wrong
+password returns `403 forbidden`, and the lobby UI stays on the password form.
+
+The server is configured with an Argon2id hash in PHC form (flag
+`--auth-hash`, else env `CARD_FINDERS_AUTH_HASH`), for example
+`$argon2id$v=19$m=8192,t=2,p=1$<salt>$<hash>`. Startup aborts if it is missing
+or unparsable, and logs the parsed parameters (never salt or hash bytes). The
+hash contains `$`, so quote it with single quotes in a shell. The repo has no
+hash generator; use any Argon2id tool. Keep memory low (the `m` value is KiB);
+verification is limited to 2 concurrent computations, and verdicts are cached
+in RAM by SHA-256 of the password.
+
+The password travels in clear text unless TLS is terminated in front of the
+server; the server itself does not do TLS.
 
 ## Serving the frontend
 
@@ -155,7 +174,7 @@ cd ..
 # 2. Build and run the server from the repo root so levels.toml and
 #    frontend/dist resolve relative to the working directory.
 go -C backend build ./...
-go -C backend run ./cmd/server --config ../levels.toml --static-dir ../frontend/dist
+go -C backend run ./cmd/server --config ../levels.toml --static-dir ../frontend/dist --auth-hash '<argon2id PHC hash>'
 ```
 
 Then open the server at its listen address (default `http://localhost:8080`),

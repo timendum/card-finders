@@ -13,6 +13,9 @@ type Config struct {
 	// StaticDir holds the built frontend, served from disk at request time;
 	// empty leaves it unmounted.
 	StaticDir string
+	// AuthHash, when non-nil, protects /api/levels and POST /api/game with a
+	// Bearer password checked against this Argon2id hash. Nil disables auth.
+	AuthHash *PasswordHash
 }
 
 type Server struct {
@@ -20,18 +23,23 @@ type Server struct {
 	engine *engine.Engine
 	cfg    Config
 	hub    *hub
+	auth   *authenticator
 }
 
 func New(eng *engine.Engine, cfg Config) *Server {
-	return &Server{engine: eng, cfg: cfg, hub: newHub()}
+	s := &Server{engine: eng, cfg: cfg, hub: newHub()}
+	if cfg.AuthHash != nil {
+		s.auth = newAuthenticator(*cfg.AuthHash)
+	}
+	return s
 }
 
 func (s *Server) Handler() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Each handler enforces its method, so a wrong method yields 405 not a miss.
-	mux.HandleFunc("/api/levels", s.handleLevels)
-	mux.HandleFunc("/api/game", s.handleCreateGame)
+	mux.HandleFunc("/api/levels", s.requireAuth(s.handleLevels))
+	mux.HandleFunc("/api/game", s.requireAuth(s.handleCreateGame))
 	mux.HandleFunc("/api/game/join", s.handleJoin)
 
 	mux.HandleFunc("/ws", s.serveWS)

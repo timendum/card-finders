@@ -57,14 +57,23 @@ function jsonPost(body: unknown): RequestInit {
   };
 }
 
-export async function fetchLevels(): Promise<Level[]> {
-  const res = await request("/api/levels", { method: "GET" });
+// Backend code returned with HTTP 403 when the Bearer password is wrong.
+export const FORBIDDEN_CODE = "forbidden";
+
+function bearer(password: string): Record<string, string> {
+  return { Authorization: `Bearer ${password}` };
+}
+
+export async function fetchLevels(password: string): Promise<Level[]> {
+  const res = await request("/api/levels", { method: "GET", headers: bearer(password) });
   const body = (await res.json()) as LevelsResponse;
   return body.levels;
 }
 
-export async function createGame(levelNumber: number): Promise<string> {
-  const res = await request("/api/game", jsonPost({ levelNumber }));
+export async function createGame(levelNumber: number, password: string): Promise<string> {
+  const init = jsonPost({ levelNumber });
+  init.headers = { ...init.headers, ...bearer(password) };
+  const res = await request("/api/game", init);
   const body = (await res.json()) as CreateGameResponse;
   return body.joinCode;
 }

@@ -19,6 +19,10 @@ import (
 // path when the --config flag is not set.
 const envLevelsConfig = "CARD_FINDERS_LEVELS"
 
+// envAuthHash is the environment variable consulted for the Argon2id hash when
+// the --auth-hash flag is not set.
+const envAuthHash = "CARD_FINDERS_AUTH_HASH"
+
 // defaultLevelsConfig is the path used when neither the --config flag nor the
 // CARD_FINDERS_LEVELS env var supplies one. A missing file at this default path
 // is a soft outcome: the engine falls back to the built-in dummy level.
@@ -46,7 +50,10 @@ func main() {
 		listenAddr string
 		seed       int64
 		debug      bool
+		authHash   string
 	)
+	flag.StringVar(&authHash, "auth-hash", "",
+		"Argon2id PHC hash protecting game creation (overrides "+envAuthHash+"); required")
 	flag.StringVar(&configPath, "config", "",
 		"path to the level-config TOML file (overrides "+envLevelsConfig+"; "+
 			"default "+defaultLevelsConfig+")")
@@ -92,9 +99,25 @@ func main() {
 	}
 	rng := rand.New(rand.NewSource(seed))
 
+	// The auth hash is mandatory; a missing or unparsable value aborts startup.
+	if authHash == "" {
+		authHash = os.Getenv(envAuthHash)
+	}
+	if authHash == "" {
+		slog.Error("auth hash required", "flag", "--auth-hash", "env", envAuthHash)
+		os.Exit(1)
+	}
+	ph, err := server.ParsePasswordHash(authHash)
+	if err != nil {
+		slog.Error("invalid auth hash", "err", err)
+		os.Exit(1)
+	}
+	slog.Info("auth configured", "hash", ph.Describe())
+
 	eng := engine.NewEngine(levels, rng)
 	srv := server.New(eng, server.Config{
 		StaticDir: staticDir,
+		AuthHash:  &ph,
 	})
 
 	slog.Info("Card Finders listening", "addr", listenAddr)

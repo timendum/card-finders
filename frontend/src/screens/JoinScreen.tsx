@@ -1,8 +1,8 @@
 // JoinScreen — pre-game lobby with Create and Join panels. Both end by handing
 // the issued session up to the parent via onJoined.
 
-import { useCallback, useEffect, useState } from "react";
-import { ApiError, createGame, fetchLevels, joinGame } from "../api/api.ts";
+import { useCallback, useState } from "react";
+import { ApiError, FORBIDDEN_CODE, createGame, fetchLevels, joinGame } from "../api/api.ts";
 import type { JoinGameResponse, Level } from "../types.ts";
 
 export interface JoinScreenProps {
@@ -19,20 +19,36 @@ function messageOf(err: unknown): string {
 }
 
 export function JoinScreen({ onJoined }: JoinScreenProps) {
-  const [mode, setMode] = useState<Mode>("create");
+  const [mode, setMode] = useState<Mode | null>(null);
+
+  // Back is a full page reload so all in-memory state (including the auth
+  // password) is dropped.
+  const onBack = () => window.location.reload();
 
   return (
     <main>
       <h1>Card Finders</h1>
-      <nav aria-label="Lobby mode">
-        <button type="button" aria-pressed={mode === "create"} onClick={() => setMode("create")}>
-          Create game
-        </button>
-        <button type="button" aria-pressed={mode === "join"} onClick={() => setMode("join")}>
-          Join game
-        </button>
-      </nav>
-      {mode === "create" ? <CreatePanel onJoined={onJoined} /> : <JoinPanel onJoined={onJoined} />}
+      {mode === null ? (
+        <nav aria-label="Lobby mode">
+          <button type="button" onClick={() => setMode("create")}>
+            Create game
+          </button>
+          <button type="button" onClick={() => setMode("join")}>
+            Join game
+          </button>
+        </nav>
+      ) : (
+        <>
+          <button type="button" onClick={onBack}>
+            Back
+          </button>
+          {mode === "create" ? (
+            <CreatePanel onJoined={onJoined} />
+          ) : (
+            <JoinPanel onJoined={onJoined} />
+          )}
+        </>
+      )}
     </main>
   );
 }
@@ -40,42 +56,51 @@ export function JoinScreen({ onJoined }: JoinScreenProps) {
 // CreatePanel picks a level and creates the game. Creating does not seat the
 // host, so it finishes by joining the host into the freshly created game.
 function CreatePanel({ onJoined }: JoinScreenProps) {
+  const [password, setPassword] = useState("");
   const [levels, setLevels] = useState<Level[] | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [joinCode, setJoinCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetchLevels()
-      .then((loaded) => {
-        if (cancelled) return;
+  // Fetching the levels doubles as the credential check: a 403 keeps the user
+  // on the auth form, success moves on to level selection.
+  const onAuth = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (busy || password === "") return;
+      setBusy(true);
+      setError(null);
+      try {
+        const loaded = await fetchLevels(password);
         setLevels(loaded);
         setSelected(loaded.length > 0 ? loaded[0].Number : null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(messageOf(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+      } catch (err) {
+        if (err instanceof ApiError && err.code === FORBIDDEN_CODE) {
+          setError("Wrong password. Please try again.");
+        } else {
+          setError(messageOf(err));
+        }
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, password],
+  );
 
   const onCreate = useCallback(async () => {
     if (selected === null || busy) return;
     setBusy(true);
     setError(null);
     try {
-      const code = await createGame(selected);
+      const code = await createGame(selected, password);
       setJoinCode(code);
     } catch (err) {
       setError(messageOf(err));
     } finally {
       setBusy(false);
     }
-  }, [selected, busy]);
+  }, [selected, busy, password]);
 
   const onJoinCreated = useCallback(async () => {
     if (!joinCode || busy) return;
@@ -106,18 +131,25 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
     );
   }
 
-  if (error && !levels) {
-    return (
-      <section aria-label="Create game">
-        <p role="alert">{error}</p>
-      </section>
-    );
-  }
-
   if (!levels) {
     return (
-      <section aria-label="Create game">
-        <p>Loading levels…</p>
+      <section aria-label="Authentication">
+        <h2>Authentication</h2>
+        <form onSubmit={onAuth}>
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="off"
+            />
+          </label>
+          {error && <p role="alert">{error}</p>}
+          <button type="submit" disabled={busy || password === ""}>
+            {busy ? "Checking…" : "Continue"}
+          </button>
+        </form>
       </section>
     );
   }
