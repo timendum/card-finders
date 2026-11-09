@@ -33,7 +33,7 @@ export interface GameScreenProps {
 }
 
 /** The single message the current selection confirms, or null if incomplete. */
-function messageFor(selection: SelectionState, view: PlayerView): ClientMessage | null {
+export function messageFor(selection: SelectionState, view: PlayerView): ClientMessage | null {
   const { source, targets, selfValue } = selection;
   switch (inferredAction(selection, view)) {
     case "openingReveal":
