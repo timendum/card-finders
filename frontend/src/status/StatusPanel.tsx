@@ -2,7 +2,7 @@
 // summary.
 
 import { ValueSummary } from "./ValueSummary.tsx";
-import type { PlayerView } from "./types.ts";
+import type { PlayerView } from "../types.ts";
 
 export interface LifeDisplayProps {
   lifePool: number;

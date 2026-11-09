@@ -16,7 +16,7 @@ import {
   type LastAction,
   type PlayerView,
   type ViewCard,
-} from "./types.ts";
+} from "../types.ts";
 
 function card(id: number, owner: number): ViewCard {
   return {

@@ -1,6 +1,6 @@
 import { PowerIndicator } from "./CardElement.tsx";
 import { CardRow, TokenRow, type CardRowProps } from "./CardRows.tsx";
-import type { SeatID } from "./types.ts";
+import type { SeatID } from "../types.ts";
 
 export type Edge = "top" | "left" | "right" | "bottom";
 

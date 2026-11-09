@@ -1,6 +1,6 @@
 // Pure display-label helpers shared by the card components and ValueSummary.
 
-import { SpecialKind, SuitValue, type CardValue, type Rank, type Suit } from "./types.ts";
+import { SpecialKind, SuitValue, type CardValue, type Rank, type Suit } from "../types.ts";
 
 export interface ValueLike {
   Rank: Rank;

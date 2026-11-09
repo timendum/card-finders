@@ -5,14 +5,14 @@
 import { selfRevealOptions } from "./actions.ts";
 import { availableActions } from "./availableActions.ts";
 import { canConfirm, confirmLabel, type SelectionState } from "./selection.ts";
-import type { SocketError } from "./useGameSocket.ts";
+import type { SocketError } from "../api/useGameSocket.ts";
 import {
   ActionKind,
   Outcome,
   type LastAction,
   type PlayerView,
   type SelfRevealValue,
-} from "./types.ts";
+} from "../types.ts";
 
 export interface PromptPanelProps {
   view: PlayerView;

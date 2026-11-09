@@ -19,7 +19,7 @@ import {
   type PlayerView,
   type SeatID,
   type ViewCard,
-} from "./types.ts";
+} from "../types.ts";
 
 function card(id: number, owner: SeatID, facing: Face, value?: CardValue): ViewCard {
   return { ID: id, Owner: owner, Facing: facing, Value: value, Slot: id };

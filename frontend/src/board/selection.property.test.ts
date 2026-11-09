@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { sourceCards, targetCards, targetsForSeat } from "./actions.ts";
-import { messageFor } from "./GameScreen.tsx";
+import { messageFor } from "../screens/GameScreen.tsx";
 import {
   canConfirm,
   chooseOptions,
@@ -22,7 +22,7 @@ import {
   type ClientMessage,
   type PlayerView,
   type ViewCard,
-} from "./types.ts";
+} from "../types.ts";
 
 // Generators for the selection reducer properties.
 const RUNS = { numRuns: 200 };
@@ -124,7 +124,7 @@ const eventsArb = fc.array(eventArb, { minLength: 0, maxLength: 25 });
 function deepFreeze<T>(o: T): T {
   if (o && typeof o === "object" && !Object.isFrozen(o)) {
     Object.freeze(o);
-    Object.values(o).forEach(deepFreeze);
+    Object.values(o).forEach((o) => deepFreeze(o));
   }
   return o;
 }

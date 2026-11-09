@@ -7,7 +7,7 @@ import type {
   JoinGameResponse,
   Level,
   LevelsResponse,
-} from "./types.ts";
+} from "../types.ts";
 
 // `code` is the backend's machine code, or a synthetic code ("network_error",
 // "bad_response") when no well-formed envelope was received. `message` is always

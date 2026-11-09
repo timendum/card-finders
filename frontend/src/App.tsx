@@ -1,9 +1,9 @@
 // the top-level router
 
 import { useCallback, useState } from "react";
-import { GameScreen } from "./GameScreen.tsx";
-import { JoinScreen } from "./JoinScreen.tsx";
-import { clearSession, loadSession, saveSession, type StoredSession } from "./session.ts";
+import { GameScreen } from "./screens/GameScreen.tsx";
+import { JoinScreen } from "./screens/JoinScreen.tsx";
+import { clearSession, loadSession, saveSession, type StoredSession } from "./api/session.ts";
 import type { JoinGameResponse } from "./types.ts";
 
 export function App() {

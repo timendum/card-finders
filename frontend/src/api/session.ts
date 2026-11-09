@@ -1,7 +1,7 @@
 // Session_Token lives in the URL hash (#token=...&seat=2), so
 // each tab carries its own session. The hash never reaches the server.
 
-import type { SeatID, SessionToken } from "./types.ts";
+import type { SeatID, SessionToken } from "../types.ts";
 
 const TOKEN_PARAM = "token";
 const SEAT_PARAM = "seat";

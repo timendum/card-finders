@@ -1,7 +1,7 @@
 // the end-of-game result overlay shown once the game has ended
 // with a win or a loss.
 
-import { Result } from "./types.ts";
+import { Result } from "../types.ts";
 
 export interface EndBannerProps {
   result: Result;

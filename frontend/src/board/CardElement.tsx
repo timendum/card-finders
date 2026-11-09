@@ -4,7 +4,7 @@
 
 import type { KeyboardEvent } from "react";
 import { valueLabel } from "./cardLabel.ts";
-import { Face, SpecialKind, type CardValue } from "./types.ts";
+import { Face, SpecialKind, type CardValue } from "../types.ts";
 
 export function kindName(kind: SpecialKind): "suited" | "silver" | "gold" {
   switch (kind) {

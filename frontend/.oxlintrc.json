@@ -29,6 +29,14 @@
       }
     ]
   },
+  "overrides": [
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "max-lines": "allow"
+      }
+    }
+  ],
   "settings": {
     "react": {
       "formComponents": [],

@@ -3,8 +3,8 @@
 // live region so assistive tech announces reveals.
 
 import { useMemo } from "react";
-import { valueLabel } from "./cardLabel.ts";
-import type { PlayerView } from "./types.ts";
+import { valueLabel } from "../board/cardLabel.ts";
+import type { PlayerView } from "../types.ts";
 import { buildValueSummary } from "./valueSummary.ts";
 
 export interface ValueSummaryProps {

@@ -3,7 +3,7 @@
 
 import { CardElement, RevealedCardMini, TokenSquare } from "./CardElement.tsx";
 import { slotted } from "./slots.ts";
-import { Face, type CardID, type ViewCard } from "./types.ts";
+import { Face, type CardID, type ViewCard } from "../types.ts";
 
 function ordered<T>(items: T[], reversed: boolean): T[] {
   return reversed ? [...items].reverse() : items;

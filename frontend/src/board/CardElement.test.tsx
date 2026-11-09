@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { cardAccessibleName, CardElement, PowerIndicator, TokenSquare } from "./CardElement.tsx";
-import { Face, SpecialKind } from "./types.ts";
+import { Face, SpecialKind } from "../types.ts";
 
 const king = { Rank: 13, Kind: SpecialKind.None, Suit: 0 };
 const goldQueen = { Rank: 12, Kind: SpecialKind.Gold, Suit: 0 };

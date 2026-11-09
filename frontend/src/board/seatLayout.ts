@@ -1,7 +1,7 @@
 // The viewer sits at the bottom; the next three seats in clockwise turn order
 // go to left, top, then right.
 
-import type { SeatID } from "./types";
+import type { SeatID } from "../types";
 
 export interface SeatLayout {
   bottom: SeatID;

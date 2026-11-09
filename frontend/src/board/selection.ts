@@ -10,7 +10,7 @@ import {
   type SafeChooseRevealMessage,
   type SelfRevealValue,
   type ViewCard,
-} from "./types.ts";
+} from "../types.ts";
 
 export interface SelectionState {
   source: CardID | null;

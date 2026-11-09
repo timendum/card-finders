@@ -20,7 +20,7 @@ import type {
   SeatID,
   SelfRevealValue,
   ViewCard,
-} from "./types.ts";
+} from "../types.ts";
 
 // Placeholder "" yields null; "silver"/"gold" pass through; else a suited rank.
 function parseSelfRevealValue(raw: string): SelfRevealValue | null {

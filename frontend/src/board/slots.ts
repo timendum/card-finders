@@ -1,7 +1,7 @@
 // Pure slot grouping. Order comes only from the backend-assigned Slot, never
 // from card value or id.
 
-import type { SeatID, ViewCard } from "./types.ts";
+import type { SeatID, ViewCard } from "../types.ts";
 
 export function cardsBySeat(cards: readonly ViewCard[]): Map<SeatID, ViewCard[]> {
   const bySeat = new Map<SeatID, ViewCard[]>();

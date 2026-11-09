@@ -1,7 +1,7 @@
 // Value_Summary pure logic: order the values in play and count
 // found-over-total for each. See GAME.md for the rules.
 
-import { Face, SpecialKind, type CardValue, type PlayerView, type Rank } from "./types.ts";
+import { Face, SpecialKind, type CardValue, type PlayerView, type Rank } from "../types.ts";
 
 export const MIN_RANK: Rank = 2;
 export const MAX_RANK: Rank = 13;

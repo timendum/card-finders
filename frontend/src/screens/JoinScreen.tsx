@@ -2,8 +2,8 @@
 // the issued session up to the parent via onJoined.
 
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, createGame, fetchLevels, joinGame } from "./api.ts";
-import type { JoinGameResponse, Level } from "./types.ts";
+import { ApiError, createGame, fetchLevels, joinGame } from "../api/api.ts";
+import type { JoinGameResponse, Level } from "../types.ts";
 
 export interface JoinScreenProps {
   onJoined: (session: JoinGameResponse) => void;

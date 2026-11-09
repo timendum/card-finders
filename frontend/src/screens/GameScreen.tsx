@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
-import { Table } from "./Table.tsx";
-import { StatusPanel } from "./StatusPanel.tsx";
-import { PromptPanel } from "./PromptPanel.tsx";
-import { EndBanner } from "./EndBanner.tsx";
-import { useGameSocket } from "./useGameSocket.ts";
-import { buildGuess, buildSafeCall, buildSelfReveal } from "./actions.ts";
+import { Table } from "../board/Table.tsx";
+import { StatusPanel } from "../status/StatusPanel.tsx";
+import { PromptPanel } from "../board/PromptPanel.tsx";
+import { EndBanner } from "../status/EndBanner.tsx";
+import { useGameSocket } from "../api/useGameSocket.ts";
+import { buildGuess, buildSafeCall, buildSelfReveal } from "../board/actions.ts";
 import {
   buildChoice,
   emptySelection,
@@ -13,7 +13,7 @@ import {
   selectionReducer,
   type SelectionEvent,
   type SelectionState,
-} from "./selection.ts";
+} from "../board/selection.ts";
 import {
   Phase,
   Result,
@@ -23,7 +23,7 @@ import {
   type SeatID,
   type SessionToken,
   type ViewCard,
-} from "./types.ts";
+} from "../types.ts";
 
 export interface GameScreenProps {
   token: SessionToken;

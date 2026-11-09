@@ -2,7 +2,7 @@ import { useMemo, type ReactNode } from "react";
 import { PlayerSpace, type Edge } from "./PlayerSpace.tsx";
 import { seatLayout } from "./seatLayout.ts";
 import { cardsBySeat } from "./slots.ts";
-import { Phase, type CardID, type PlayerView, type SeatID, type ViewCard } from "./types.ts";
+import { Phase, type CardID, type PlayerView, type SeatID, type ViewCard } from "../types.ts";
 
 export interface TableProps {
   view: PlayerView;

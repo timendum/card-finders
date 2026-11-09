@@ -14,7 +14,7 @@ import {
   type SelfRevealMessage,
   type SelfRevealValue,
   type ViewCard,
-} from "./types.ts";
+} from "../types.ts";
 
 function isFaceDown(card: ViewCard): boolean {
   return card.Facing === Face.Down;

@@ -3,7 +3,7 @@
 // engine remains the authority and rejects anything illegal.
 
 import { selfRevealOptions, sourceCards, targetCards, targetsForSeat } from "./actions.ts";
-import { Phase, type PlayerView, type SeatID } from "./types.ts";
+import { Phase, type PlayerView, type SeatID } from "../types.ts";
 
 export type ActionId = "openingReveal" | "guess" | "safeCall" | "selfReveal" | "safeChooseReveal";
 
