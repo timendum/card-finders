@@ -7,6 +7,7 @@ type Suit uint8
 
 type Rank uint8
 
+// 0-4, ordered, the first to play is randomly choose
 type SeatID uint8
 
 type SpecialKind uint8

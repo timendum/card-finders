@@ -13,13 +13,13 @@ type CardValue struct {
 	Suit Suit
 }
 
-// ActionOutcome classifies how the last action resolved. OutcomeAwaitingChoice
+// Outcome classifies how the last action resolved. OutcomeAwaitingChoice
 // marks a double-hit safe call whose Pair_Reveal is still pending the target's
 // choice, so no cards are revealed and no life is lost yet.
-type ActionOutcome uint8
+type Outcome uint8
 
 const (
-	OutcomeNone ActionOutcome = iota
+	OutcomeNone Outcome = iota
 	OutcomeHit
 	OutcomeMiss
 	OutcomeAwaitingChoice
@@ -36,7 +36,7 @@ type LastAction struct {
 	Kind           ActionKind
 	AnnouncedValue *CardValue
 	Targets        []CardID
-	Outcome        ActionOutcome
+	Outcome        Outcome
 	Revealed       []CardID
 	LivesLost      int
 	SourceCard     *CardID
