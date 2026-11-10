@@ -40,9 +40,9 @@ export function suitGlyph(suit: Suit): string {
 export function valueLabel(value: ValueLike): string {
   switch (value.Kind) {
     case SpecialKind.Silver:
-      return `S${rankLabel(value.Rank)}`;
+      return `${rankLabel(value.Rank)}S`;
     case SpecialKind.Gold:
-      return `G${rankLabel(value.Rank)}`;
+      return `${rankLabel(value.Rank)}G`;
     default:
       return rankLabel(value.Rank);
   }

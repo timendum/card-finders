@@ -13,6 +13,8 @@
   --color-silver: #d3dbe6;
   --silver-fill: linear-gradient(135deg, #f7f9fc 0%, #c4cedb 40%, #eef2f8 58%, #aab6c6 100%);
   --silver-edge: #eef2f8;
+  --gold-fill: linear-gradient(135deg, #f5d97a 0%, #e0b43c 40%, #f3dc8e 58%, #b8902a 100%);
+  --gold-edge: #f3dc8e;
   --color-gold: #e0b43c;
   --color-on-suited: #1b1f27;
   --color-on-silver: #1b1f27;
@@ -300,7 +302,7 @@ body {
 }
 
 .token-square[data-kind="gold"] {
-  background: var(--color-gold);
+  background: var(--gold-fill);
   color: var(--color-on-gold);
 }
 
@@ -324,7 +326,7 @@ body {
 }
 
 .revealed-card-mini[data-kind="gold"] {
-  background: var(--color-gold);
+  background: var(--gold-fill);
   color: var(--color-on-gold);
 }
 
@@ -362,7 +364,8 @@ body {
 }
 
 .card-element[data-kind="gold"] {
-  background: var(--color-gold);
+  background: var(--gold-fill);
+  border-color: var(--gold-edge);
   color: var(--color-on-gold);
 }
 
@@ -381,7 +384,6 @@ body {
 .table-region[data-opening="true"]
   .card-element[data-own="true"]:is([data-kind="silver"], [data-kind="gold"]) {
   opacity: 0.4;
-  filter: grayscale(1);
   cursor: not-allowed;
 }
 
