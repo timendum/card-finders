@@ -48,11 +48,11 @@ export function buildValueSummaryOrder(view: PlayerView): ValueSummaryEntry[] {
     entries.push({ Rank: rank, Kind: SpecialKind.None, SortValue: rank });
   }
 
-  for (const silver of view.SpecialPool.Silvers ?? []) {
+  for (const silver of view.SpecialPool.Silvers) {
     const id: ValueIdentity = { Rank: silver.Rank, Kind: SpecialKind.Silver };
     entries.push({ ...id, SortValue: sortValue(id) });
   }
-  for (const gold of view.SpecialPool.Golds ?? []) {
+  for (const gold of view.SpecialPool.Golds) {
     const id: ValueIdentity = { Rank: gold.Rank, Kind: SpecialKind.Gold };
     entries.push({ ...id, SortValue: sortValue(id) });
   }

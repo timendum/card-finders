@@ -2,7 +2,7 @@ package engine
 
 import "sort"
 
-// Projection is the single chokepoint enforcing visibility: see AGENTS.md
+// Projection is the single chokepoint enforcing visibility:
 // Properties 20 and 21.
 
 // CardValue is a card's concrete public value. Suit is meaningful only for
@@ -62,7 +62,7 @@ type PlayerView struct {
 	Seat        SeatID
 	Phase       Phase
 	Level       Level
-	SpecialPool SpecialPool
+	SpecialPool ViewSpecialPool
 	LifePool    int
 	MaxLife     int // Level.StartLives
 	CurrentSeat SeatID
@@ -133,16 +133,27 @@ func projectLastAction(s *GameState, seat SeatID) *LastAction {
 	return &la
 }
 
-// normalizePool returns p with nil special slices replaced by empty slices so
+// ViewSpecialPool is the public Special_Pool as projected into a view: bare
+// values with no CardIDs, so the pool cannot be correlated with dealt cards.
+type ViewSpecialPool struct {
+	Silvers []CardValue
+	Golds   []CardValue
+}
+
+// normalizePool projects p to values only. The result slices are never nil, so
 // the view always marshals Silvers/Golds as [] rather than null.
-func normalizePool(p SpecialPool) SpecialPool {
-	if p.Silvers == nil {
-		p.Silvers = []Card{}
+func normalizePool(p SpecialPool) ViewSpecialPool {
+	out := ViewSpecialPool{
+		Silvers: make([]CardValue, 0, len(p.Silvers)),
+		Golds:   make([]CardValue, 0, len(p.Golds)),
 	}
-	if p.Golds == nil {
-		p.Golds = []Card{}
+	for _, c := range p.Silvers {
+		out.Silvers = append(out.Silvers, naturalValue(c))
 	}
-	return p
+	for _, c := range p.Golds {
+		out.Golds = append(out.Golds, naturalValue(c))
+	}
+	return out
 }
 
 // projectCards builds the ViewCard slice, ordered by (Owner, Slot). Ids are

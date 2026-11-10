@@ -342,7 +342,7 @@ export interface PlayerView {
   Seat: SeatID;
   Phase: Phase;
   Level: Level;
-  SpecialPool: SpecialPool;
+  SpecialPool: ViewSpecialPool;
   LifePool: number /* int */;
   MaxLife: number /* int */; // Level.StartLives
   CurrentSeat: SeatID;
@@ -359,4 +359,12 @@ export interface PlayerView {
    */
   ResponsePlayer: SeatID;
   HasResponsePlayer: boolean;
+}
+/**
+ * ViewSpecialPool is the public Special_Pool as projected into a view: bare
+ * values with no CardIDs, so the pool cannot be correlated with dealt cards.
+ */
+export interface ViewSpecialPool {
+  Silvers: CardValue[];
+  Golds: CardValue[];
 }

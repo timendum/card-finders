@@ -104,7 +104,7 @@ describe("selfRevealOptions", () => {
       card(7, 0, Face.Down, { Rank: 9, Kind: SpecialKind.Gold, Suit: 0 }),
     ]);
     view.SpecialPool = {
-      Silvers: [{ ID: 6, Rank: 4, Suit: 0, Kind: SpecialKind.Silver }],
+      Silvers: [{ Rank: 4, Suit: 0, Kind: SpecialKind.Silver }],
       Golds: [],
     };
     expect(selfRevealOptions(view)).toEqual([
