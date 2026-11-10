@@ -19,6 +19,10 @@ func (e *Engine) applyOpeningReveal(seat SeatID, action Action) (Result, error) 
 		return ResultNone, ErrInvalidOpeningSelection
 	}
 
+	if pc.Card.Kind != SpecialKindNone {
+		return ResultNone, ErrSpecialOpening
+	}
+
 	pc.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
 	s.OpeningDone[seat] = true
 

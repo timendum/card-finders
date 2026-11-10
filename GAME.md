@@ -48,9 +48,9 @@ Phases (engine state machine; phase gates every action):
    left over). Each hand is then laid out in a **fixed, value-sorted order**
    (ascending Sort_Value) that never changes for the rest of the game. One of
    the four is chosen first player (each 0.25).
-4. **Opening** — each player, in turn order, reveals one card of their choice;
-   it stays **face-down** but gets a token showing its true value. Each player
-   is granted one single-use Safe_Call here.
+4. **Opening** — each player, in turn order, reveals one non-special card of their
+   choice; it stays **face-down** but gets a token showing its true value.
+   Each player is granted one single-use Safe_Call here.
 5. **Playing** — normal turns until win or loss.
 6. **Ended** — win (all cards face-up) or loss (Life_Pool hit 0). All further
    actions rejected.

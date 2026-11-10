@@ -170,6 +170,7 @@ or pass absolute paths. See [README.md](README.md) for a full local run.
 - Rule changes belong in `internal/engine` with tests; update
   [GAME.md](GAME.md) when the rules themselves change, and the properties
   below when invariants change.
+
 ## Testing strategy
 
 Pure engine → **property-based tests** (Go `pgregory.net/rapid`, ≥100 runs, one
@@ -185,6 +186,7 @@ conns), the `internal/config` loader (the four startup outcomes + named-table
 round-trip), and routing/serving. Frontend pure logic (hand sort, Value_Summary
 order + counts, seat layout) uses `fast-check` (≥100 runs); components use
 Vitest + Testing Library; `useGameSocket` uses a mock WebSocket.
+
 ## Engine errors
 
 Validate-first, mutate-second: every rejected action is a no-op leaving state
@@ -195,30 +197,48 @@ REST status + envelope or a WS `error` code.
 |--------------|-----------------------|
 | `ErrLevelRequired` | 400 `level_required` |
 | `ErrLevelInvalid` | 400 `level_invalid` |
-| `ErrLevelConfig` | 400 `level_config_invalid` |
+| any other `CreateGame` error (`ValidateLevel` failure) | 400 `level_config_invalid` |
 | `ErrGameExists` | 409 `game_exists` |
 | `ErrGameFull` | 409 `game_full` |
-| `ErrCodeInvalid` | 404 `code_invalid` |
+| `ErrCodeInvalid` / `ErrNoGame` (join) | 404 `code_invalid` |
 | `ErrCodeRequired` | 400 `code_required` |
-| `ErrInsufficientCards` | 500 `deal_failed` |
-| `ErrNotYourTurn` / `ErrIneligible` | WS `not_your_turn` / `ineligible` |
+| any other `Join` error (e.g. `ErrInsufficientCards`) | 400 `bad_request` |
+| `ErrNoGame` (WS action) | WS `no_game` |
+| `ErrGameEnded` | WS `game_ended` |
+| `ErrUnknownAction` | WS `unknown_action` |
+| `ErrWrongPhase` | WS `wrong_phase` |
+| `ErrNotYourTurn` | WS `not_your_turn` |
+| `ErrSeatIneligible` | WS `seat_ineligible` |
+| `ErrInvalidOpeningSelection` | WS `invalid_opening_selection` |
+| `ErrSpecialOpening` | WS `special_opening` |
+| `ErrInvalidSource` | WS `invalid_source` |
+| `ErrGoldSource` | WS `gold_source` |
 | `ErrInvalidTarget` | WS `invalid_target` |
 | `ErrTargetRevealed` | WS `target_revealed` |
-| `ErrInvalidSource` | WS `invalid_source` |
+| `ErrTargetOwn` | WS `target_own` |
 | `ErrGoldNotTargetable` | WS `gold_not_targetable` |
-| `ErrSelfRevealInvalid` | WS `self_reveal_invalid` |
 | `ErrSafeCallSpent` | WS `safe_call_spent` |
 | `ErrSafeCallTargets` | WS `safe_call_targets` |
-| `ErrGameEnded` | WS `game_ended` |
-Notes: `ErrInvalidSource` covers every bad source on a guess/safe-call (not
-owned, face-up, missing, or gold — gold can never be a source). One
-`ErrSelfRevealInvalid` covers all ineligible self-reveal branches (gold while a
-non-gold card is still held; suited-rank/silver another player still holds).
-`ErrGoldNotTargetable` is a separate concern: another player *targeting* gold.
-WS connection/reconnection also yields `session_invalid`, `session_required`,
-and `seat_occupied` (existing connection preserved). Config failures are
-**startup-time** errors in `cmd/server` (see Level config loading), distinct
-from these runtime errors.
+| `ErrNoPendingChoice` | WS `no_pending_choice` |
+| `ErrInvalidChoice` | WS `invalid_choice` |
+| `ErrSelfRevealIncomplete` | WS `self_reveal_incomplete` |
+| `ErrGoldRevealIneligible` | WS `gold_reveal_ineligible` |
+| any other `Apply` error | WS `invalid_action` |
+
+Notes: `ErrInvalidOpeningSelection` = opening card missing, not owned, or not
+face-down; `ErrSpecialOpening` = opening card is silver/gold. On a guess/safe
+call, `ErrInvalidSource` = source missing, not owned, or not face-down;
+`ErrGoldSource` = source is gold. `ErrGoldNotTargetable` is a separate concern:
+*targeting* another player's gold. Self-reveal splits into
+`ErrSelfRevealIncomplete` (suited rank/silver another player still holds, or
+none held) and `ErrGoldRevealIneligible` (gold while a non-gold face-down card
+is still held). WS decode failures send `error` frames `unknown_type` /
+`bad_message`. WS connect: a missing token → HTTP 400 `token_required`, an
+unknown token → HTTP 401 `token_invalid` (both before upgrade); a seat already
+held by a live connection → socket closed with reason `seat_occupied`
+(existing connection preserved). Config failures are **startup-time** errors
+in `cmd/server` (see Level config loading), distinct from these runtime errors.
+
 ## Correctness properties
 
 The engine's universal invariants, one PBT each (tags above). Whole-game ones
@@ -235,8 +255,8 @@ The engine's universal invariants, one PBT each (tags above). Whole-game ones
    by ≤1.
 7. First player is a valid seat; order is the clockwise rotation from it.
 8. Every seat starts with its Safe_Call unused.
-9. An opening reveal tokens the chosen own card, flips nothing face-up; after
-   all four, phase is Playing.
+9. An opening reveal tokens the chosen own suited card (silver/gold rejected),
+   flips nothing face-up; after all four, phase is Playing.
 10. *Card conservation: the card set is constant; each card is face-down xor
     face-up.
 11. Every hit is a Pair_Reveal flipping exactly two cards (source + resolved

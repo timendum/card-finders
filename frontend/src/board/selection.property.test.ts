@@ -136,6 +136,11 @@ function ids(cards: { ID: number }[]): number[] {
 function assertInvariants(s: SelectionState, view: PlayerView) {
   if (s.source !== null) {
     expect(ids(sourceCards(view))).toContain(s.source); // own, face-down, never gold
+    if (view.Phase === Phase.Opening) {
+      // Specials (silver/gold) cannot be revealed in the opening.
+      const kind = view.Cards.find((c) => c.ID === s.source)?.Value?.Kind;
+      expect(kind === undefined || kind === SpecialKind.None).toBe(true);
+    }
   }
   expect(s.targets.length).toBeLessThanOrEqual(2);
   expect(new Set(s.targets).size).toBe(s.targets.length);

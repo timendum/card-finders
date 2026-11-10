@@ -4,6 +4,7 @@
 import { sourceCards, targetCards } from "./actions.ts";
 import {
   Phase,
+  SpecialKind,
   type CardID,
   type PlayerView,
   type SeatID,
@@ -56,12 +57,19 @@ export function chooseOptions(view: PlayerView): CardID[] {
   return isResponder(view) ? (view.LastAction?.Targets ?? []) : [];
 }
 
+/** Source candidates; in Opening, silver and gold cards are excluded. */
+function openingSourceCards(view: PlayerView): ViewCard[] {
+  const cards = sourceCards(view);
+  if (view.Phase !== Phase.Opening) return cards;
+  return cards.filter((c) => c.Value == null || c.Value.Kind === SpecialKind.None);
+}
+
 /** Whether the viewer may click this card now; drives the selectable styling. */
 export function isSelectable(view: PlayerView, card: ViewCard): boolean {
   if (view.Phase === Phase.AwaitingResponse) return chooseOptions(view).includes(card.ID);
   const acting = view.Phase === Phase.Opening || (view.Phase === Phase.Playing && view.YourTurn);
   if (!acting) return false;
-  if (sourceCards(view).some((c) => c.ID === card.ID)) return true;
+  if (openingSourceCards(view).some((c) => c.ID === card.ID)) return true;
   return view.Phase === Phase.Playing && targetCards(view).some((c) => c.ID === card.ID);
 }
 
@@ -82,7 +90,7 @@ function clickCard(state: SelectionState, view: PlayerView, cardId: CardID): Sel
   const acting = view.Phase === Phase.Opening || (view.Phase === Phase.Playing && view.YourTurn);
   if (!acting) return state;
 
-  if (sourceCards(view).some((c) => c.ID === cardId)) {
+  if (openingSourceCards(view).some((c) => c.ID === cardId)) {
     return {
       ...state,
       selfValue: null,

@@ -120,7 +120,13 @@ func pickAction(t *rapid.T, e *Engine) (SeatID, Action) {
 	s := e.state
 	switch s.Phase {
 	case PhaseOpening:
-		id := rapid.SampledFrom(ownFaceDown(e, s.CurrentSeat)).Draw(t, "openCard")
+		var suited []CardID
+		for _, id := range ownFaceDown(e, s.CurrentSeat) {
+			if e.state.Cards[id].Card.Kind == SpecialKindNone {
+				suited = append(suited, id)
+			}
+		}
+		id := rapid.SampledFrom(suited).Draw(t, "openCard")
 		return s.CurrentSeat, Action{Kind: ActionKindOpeningReveal, OpeningCard: id}
 	case PhaseAwaitingResponse:
 		p := s.PendingSafeChoice

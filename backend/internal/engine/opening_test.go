@@ -153,3 +153,26 @@ func TestOpeningAlreadyFaceUpRejected(t *testing.T) {
 		t.Errorf("CurrentSeat = %d, want %d unchanged", e.state.CurrentSeat, first)
 	}
 }
+
+func TestOpeningSpecialCardRejected(t *testing.T) {
+	for _, kind := range []SpecialKind{SpecialKindSilver, SpecialKindGold} {
+		e, first := openingGame(t)
+		card := firstCardOf(t, e, first)
+		// Turn the opener's card into a special without a full specials deal.
+		e.state.Cards[card].Card.Kind = kind
+
+		res, err := e.Apply(first, Action{Kind: ActionKindOpeningReveal, OpeningCard: card})
+		if !errors.Is(err, ErrSpecialOpening) {
+			t.Errorf("kind %d: err = %v, want ErrSpecialOpening", kind, err)
+		}
+		if res != ResultNone {
+			t.Errorf("kind %d: result = %d, want ResultNone", kind, res)
+		}
+		if e.state.Cards[card].Token != nil {
+			t.Errorf("kind %d: token placed on rejected special", kind)
+		}
+		if e.state.OpeningDone[first] || e.state.CurrentSeat != first {
+			t.Errorf("kind %d: state changed after rejected reveal", kind)
+		}
+	}
+}
