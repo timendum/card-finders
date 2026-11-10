@@ -45,6 +45,7 @@ describe("shared types scaffold", () => {
       SeatsFilled: 1,
       ResponsePlayer: 0,
       HasResponsePlayer: false,
+      Log: [],
     };
     const msg: ServerMessage = { type: "state", view };
     expect(msg.type === "state" ? msg.view.Seat : -1).toBe(0);

@@ -65,6 +65,9 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 	}
 
 	s.recordAction(la)
+	if la.Outcome == OutcomeMiss {
+		s.logAction(seat, "called "+announcedText(la.AnnouncedValue)+" and missed")
+	}
 
 	return e.finishTurn(s.CurrentSeat), nil
 }

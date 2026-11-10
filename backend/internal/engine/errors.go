@@ -38,7 +38,7 @@ var (
 	ErrInvalidOpeningSelection = errors.New("the opening selection is invalid")
 	// ErrSpecialOpening: silver and gold cards cannot be revealed in Opening.
 	ErrSpecialOpening = errors.New("a special card cannot be revealed during the opening")
-	ErrUnknownAction           = errors.New("unknown action kind")
+	ErrUnknownAction  = errors.New("unknown action kind")
 )
 
 var (

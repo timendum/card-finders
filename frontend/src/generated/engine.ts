@@ -140,6 +140,21 @@ export interface Level {
 // source: lifecycle.go
 
 //////////
+// source: log.go
+
+/**
+ * LogEntry is one line of the public game log, for events with no visual clue.
+ * Seq is the Seq of the action that produced it. HasActor is false for
+ * system-level notices (e.g. all silvers revealed). Text is display-ready.
+ */
+export interface LogEntry {
+  Seq: number /* uint64 */;
+  Actor: SeatID;
+  HasActor: boolean;
+  Text: string;
+}
+
+//////////
 // source: state.go
 
 /**
@@ -206,6 +221,10 @@ export interface GameState {
    * ActionKindSafeChooseReveal resolves the Pair_Reveal and passes it.
    */
   PendingSafeChoice?: PendingSafeChoice;
+  /**
+   * Log is the public, ordered record of events with no visual clue.
+   */
+  Log: LogEntry[];
 }
 /**
  * PendingSafeChoice holds a double-hit Safe_Call awaiting the target's choice.
@@ -333,6 +352,7 @@ export interface PlayerView {
   Result: Result;
   SeatsFilled: number /* int */;
   LastAction?: LastAction;
+  Log: LogEntry[];
   /**
    * ResponsePlayer is the seat that must choose; meaningful only when
    * HasResponsePlayer. Identical for every viewer.

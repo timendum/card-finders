@@ -87,6 +87,7 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 		s.Phase = PhaseAwaitingResponse
 		la.Outcome = OutcomeAwaitingChoice
 		s.recordAction(la)
+		s.logAction(seat, "used safe call: both hit")
 		return ResultNone, nil
 
 	case match1 || match2:
@@ -112,6 +113,11 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 	}
 
 	s.recordAction(la)
+	if la.Outcome == OutcomeHit {
+		s.logAction(seat, "used safe call: one hit")
+	} else {
+		s.logAction(seat, "used safe call: miss")
+	}
 
 	return e.finishTurn(s.CurrentSeat), nil
 }

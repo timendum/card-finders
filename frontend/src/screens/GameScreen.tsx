@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { Table } from "../board/Table.tsx";
 import { StatusPanel } from "../status/StatusPanel.tsx";
 import { PromptPanel } from "../board/PromptPanel.tsx";
+import { GameLog } from "../board/GameLog.tsx";
 import { EndBanner } from "../status/EndBanner.tsx";
 import { useGameSocket } from "../api/useGameSocket.ts";
 import { buildGuess, buildSafeCall, buildSelfReveal } from "../board/actions.ts";
@@ -141,6 +142,7 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
             />
           )
         }
+        log={<GameLog view={view} />}
         isSelectable={ended ? undefined : (card) => isSelectable(view, card)}
         isSelected={selected}
         onActivate={ended ? undefined : onActivate}

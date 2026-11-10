@@ -45,6 +45,7 @@ function viewWith(cards: ViewCard[], seat: SeatID = 0): PlayerView {
     SeatsFilled: 4,
     ResponsePlayer: 0,
     HasResponsePlayer: false,
+    Log: [],
   };
 }
 

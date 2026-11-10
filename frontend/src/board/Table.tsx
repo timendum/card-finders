@@ -9,12 +9,21 @@ export interface TableProps {
   // Center column slots, top and bottom.
   status?: ReactNode;
   prompt?: ReactNode;
+  log?: ReactNode;
   isSelectable?: (card: ViewCard) => boolean;
   isSelected?: (card: ViewCard) => boolean;
   onActivate?: (id: CardID) => void;
 }
 
-export function Table({ view, status, prompt, isSelectable, isSelected, onActivate }: TableProps) {
+export function Table({
+  view,
+  status,
+  prompt,
+  log,
+  isSelectable,
+  isSelected,
+  onActivate,
+}: TableProps) {
   const layout = useMemo(() => seatLayout(view.Seat), [view.Seat]);
   const bySeat = useMemo(() => cardsBySeat(view.Cards), [view.Cards]);
 
@@ -53,7 +62,10 @@ export function Table({ view, status, prompt, isSelectable, isSelected, onActiva
       {renderSpace(layout.left, "left")}
       <div className="table-center">
         <div className="table-center-status">{status}</div>
-        <div className="table-center-prompt">{prompt}</div>
+        <div className="table-center-bottom">
+          <div className="table-center-prompt">{prompt}</div>
+          {log}
+        </div>
       </div>
       {renderSpace(layout.right, "right")}
       {renderSpace(layout.bottom, "bottom")}

@@ -117,6 +117,32 @@ body {
   align-content: space-between;
 }
 
+.table-center-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.game-log {
+  box-sizing: border-box;
+  block-size: 100%;
+  min-block-size: 6rem;
+  max-block-size: 12rem;
+  overflow-y: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  font-size: var(--font-size-sm);
+}
+
+.game-log-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .player-space {
   display: grid;
   gap: var(--space-2);

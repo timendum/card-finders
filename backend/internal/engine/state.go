@@ -67,6 +67,10 @@ type GameState struct {
 	// choice; nil otherwise. The turn has not passed yet — the follow-up
 	// ActionKindSafeChooseReveal resolves the Pair_Reveal and passes it.
 	PendingSafeChoice *PendingSafeChoice
+
+	// Log is the public, ordered record of events with no visual clue.
+	Log          []LogEntry
+	silverLogged bool
 }
 
 // PendingSafeChoice holds a double-hit Safe_Call awaiting the target's choice.

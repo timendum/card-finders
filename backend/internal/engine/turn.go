@@ -49,6 +49,7 @@ func (e *Engine) checkTerminal() Result {
 // advanceFrom. Most handlers pass CurrentSeat; safe-choose-reveal passes the
 // caller's seat, since the turn ends relative to the caller, not the chooser.
 func (e *Engine) finishTurn(advanceFrom SeatID) Result {
+	e.state.noteSilverDone()
 	if res := e.checkTerminal(); res != ResultNone {
 		return res
 	}

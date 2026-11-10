@@ -72,6 +72,7 @@ type PlayerView struct {
 	Result      Result
 	SeatsFilled int
 	LastAction  *LastAction
+	Log         []LogEntry
 
 	// ResponsePlayer is the seat that must choose; meaningful only when
 	// HasResponsePlayer. Identical for every viewer.
@@ -110,6 +111,7 @@ func (e *Engine) View(seat SeatID) PlayerView {
 	}
 	v.Cards = projectCards(s, seat)
 	v.LastAction = projectLastAction(s, seat)
+	v.Log = append([]LogEntry{}, s.Log...)
 	return v
 }
 
