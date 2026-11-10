@@ -108,7 +108,8 @@ export function ValueSummary({ view }: ValueSummaryProps) {
       <h2 className="value-summary-title">Values in play</h2>
       <ul className="value-summary-list" aria-live="polite">
         {rows.map((row) => {
-          const dataCount = (row.Found === row.Total) ? "complete" : (row.Found > 0 ? "partial" : "none");
+          const dataCount =
+            row.Found === row.Total ? "complete" : row.Found > 0 ? "partial" : "none";
           return (
             <li
               key={`${row.Kind}-${row.Rank}`}
@@ -119,7 +120,7 @@ export function ValueSummary({ view }: ValueSummaryProps) {
               <span className="value-summary-label">{valueLabel(row)}</span>
               <span className="value-summary-count">
                 {row.Found}/{row.Total}
-                {dataCount == "complete" ? (
+                {dataCount === "complete" ? (
                   <span className="value-summary-done" role="img" aria-label="complete">
                     {" ✓"}
                   </span>

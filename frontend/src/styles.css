@@ -343,13 +343,17 @@ body {
   color: transparent;
 }
 
-.card-element[data-own="true"][data-facing="down"] {
-  border-style: dashed;
-}
-
 .card-element[data-selectable="true"] {
   cursor: pointer;
   border-color: var(--color-accent);
+}
+
+/* Specials cannot be revealed during Opening: gray out the viewer's own. */
+.table-region[data-opening="true"]
+  .card-element[data-own="true"]:is([data-kind="silver"], [data-kind="gold"]) {
+  opacity: 0.4;
+  filter: grayscale(1);
+  cursor: not-allowed;
 }
 
 .card-element[data-selected="true"] {
@@ -420,7 +424,7 @@ body {
 .value-summary-row[data-count="complete"] {
   color: var(--color-success);
 }
-.value-summary-row[data-partial="partial"] {
+.value-summary-row[data-count="partial"] {
   color: var(--color-accent);
 }
 

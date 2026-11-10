@@ -36,7 +36,8 @@ export function saveSession(session: StoredSession): void {
     params.set(TOKEN_PARAM, session.token);
     params.set(SEAT_PARAM, String(session.seat));
     // replaceState, not push: reload-resume without piling up history entries.
-    window.history.replaceState(null, "", `#${params.toString()}`);
+    // Path only: a token URL never carries a ?join= code.
+    window.history.replaceState(null, "", `${window.location.pathname}#${params.toString()}`);
   } catch {
     // URL update unavailable: caller still holds the token in React state, so
     // the game is playable this tab without reload-resume.
@@ -45,8 +46,8 @@ export function saveSession(session: StoredSession): void {
 
 export function clearSession(): void {
   try {
-    // Drop the hash, keep path/query.
-    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    // Drop the hash; the URL never carries a query alongside a token.
+    window.history.replaceState(null, "", window.location.pathname);
   } catch {
     // ignore
   }

@@ -18,8 +18,12 @@ function messageOf(err: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
+// A shared link (/?join=CODE) opens straight into the join panel.
+const JOIN_PARAM = "join";
+const linkedCode = new URLSearchParams(window.location.search).get(JOIN_PARAM) ?? "";
+
 export function JoinScreen({ onJoined }: JoinScreenProps) {
-  const [mode, setMode] = useState<Mode | null>(null);
+  const [mode, setMode] = useState<Mode | null>(linkedCode ? "join" : null);
 
   // Back is a full page reload so all in-memory state (including the auth
   // password) is dropped.
@@ -117,11 +121,15 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
   }, [joinCode, busy, onJoined]);
 
   if (joinCode) {
+    const shareUrl = `${window.location.origin}/?${JOIN_PARAM}=${encodeURIComponent(joinCode)}`;
     return (
       <section aria-label="Game created">
         <h2>Game created</h2>
         <p>
           Share this join code: <strong>{joinCode}</strong>
+        </p>
+        <p>
+          Share this URL: <a href={shareUrl}>{shareUrl}</a>
         </p>
         {error && <p role="alert">{error}</p>}
         <button type="button" onClick={onJoinCreated} disabled={busy}>
@@ -184,7 +192,7 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
 
 // JoinPanel seats the player from a join code.
 function JoinPanel({ onJoined }: JoinScreenProps) {
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(linkedCode);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
