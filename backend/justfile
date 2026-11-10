@@ -17,7 +17,7 @@ run *ARGS:
 # run the server with the dev frontend dir and debug logging. Supports extra args
 dev *ARGS:
   @echo "==> run server"
-  go run ./cmd/server --static-dir ../frontend/dist --auth-hash '$argon2id$v=19$m=128,t=1,p=1$PF93fzZFE39IcpewrTPfVA$AS830mbtUalbScDVwFiKHexGU+7f23MSaVRUxRsE1lM' --debug {{ARGS}}
+  go run ./cmd/server --static-dir ../frontend/dist --auth-hash '$argon2id$v=19$m=128,t=1,p=1$PF93fzZFE39IcpewrTPfVA$AS830mbtUalbScDVwFiKHexGU+7f23MSaVRUxRsE1lM' -v 1 --config ../levels.toml {{ARGS}}
 
 # run tests. Supports extra args, e.g. just test -run TestFoo ./internal/engine
 test *ARGS:

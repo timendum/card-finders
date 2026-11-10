@@ -49,7 +49,7 @@ func main() {
 		staticDir  string
 		listenAddr string
 		seed       int64
-		debug      bool
+		debug      int
 		authHash   string
 	)
 	flag.StringVar(&authHash, "auth-hash", "",
@@ -63,12 +63,14 @@ func main() {
 	flag.StringVar(&listenAddr, "listen", ":8080", "HTTP listen address")
 	flag.Int64Var(&seed, "seed", 0,
 		"RNG seed for deterministic dealing/pool selection (0 = time-based)")
-	flag.BoolVar(&debug, "debug", false,
-		"enable debug logging (includes per-message WebSocket traffic)")
+	flag.IntVar(&debug, "v", 0,
+		"set logging level (0 default, 1 for info, 2 for debug)")
 	flag.Parse()
 
-	level := slog.LevelInfo
-	if debug {
+	level := slog.LevelWarn
+	if debug == 1 {
+		level = slog.LevelInfo
+	} else if debug > 1 {
 		level = slog.LevelDebug
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{

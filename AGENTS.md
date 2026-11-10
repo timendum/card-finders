@@ -73,6 +73,9 @@ Three independent paths on one `http.ServeMux`:
   - `POST /api/game` `{ levelNumber }` → `201 { joinCode }`. Errors:
     `level_required` (400), `level_invalid` (400), `level_config_invalid` (400),
     `game_exists` (409).
+  - `GET /api/levels` and `POST /api/game` require `Authorization: Bearer
+    <password>`, checked against the Argon2id PHC hash from `--auth-hash` /
+    `CARD_FINDERS_AUTH_HASH`. Any failure → 403 `forbidden`.
   - `POST /api/game/join` `{ joinCode }` → `200 { sessionToken, seat }`. Errors:
     `code_required` (400), `code_invalid` (404), `game_full` (409).
 - `/ws` — WebSocket; `GET /ws?token=<SessionToken>`. On connect the token is

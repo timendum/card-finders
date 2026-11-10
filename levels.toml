@@ -13,8 +13,20 @@ silver = 0
 gold = 0
 lives = 4
 
-["Level two"]
+["Tutorial two"]
 number = 2
-silver = 4
-gold = 2
-lives = 3
+silver = 2
+gold = 0
+lives = 4
+
+["Tutorial three"]
+number = 3
+silver = 0
+gold = 1
+lives = 4
+
+["Tutorial four"]
+number = 4
+silver = 2
+gold = 1
+lives = 4
