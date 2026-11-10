@@ -1,11 +1,13 @@
 // GameLog — scrollable list of public events with no visual clue (wrong calls,
 // safe call uses, ...). Newest entry is at the bottom and kept in view.
 import { useEffect, useRef } from "react";
+import { seatPositionName } from "./seatLayout.ts";
 import type { PlayerView } from "../types.ts";
 
 // Position of the actor relative to the viewer, matching the table layout.
 function actorName(viewer: number, actor: number): string {
-  return ["You", "Left", "Top", "Right"][(actor - viewer + 4) % 4] ?? "You";
+  const name = seatPositionName(viewer, actor);
+  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 export function GameLog({ view }: { view: PlayerView }) {

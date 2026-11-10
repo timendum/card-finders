@@ -107,6 +107,7 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 			s.LifePool--
 			la.LivesLost = 1
 		}
+		// TODO: allow player to choose?
 		t1.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
 		t2.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
 		la.Outcome = OutcomeMiss

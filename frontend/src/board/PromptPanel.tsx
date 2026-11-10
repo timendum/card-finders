@@ -4,6 +4,7 @@
 
 import { selfRevealOptions } from "./actions.ts";
 import { availableActions } from "./availableActions.ts";
+import { seatPositionName } from "./seatLayout.ts";
 import { canConfirm, confirmLabel, type SelectionState } from "./selection.ts";
 import type { SocketError } from "../api/useGameSocket.ts";
 import {
@@ -46,10 +47,11 @@ function resultText(last: LastAction): string {
 }
 
 function notActingText(view: PlayerView, actingSeat: number, awaitingChoice: boolean): string {
-  const who = actingSeat === view.Seat ? "You are" : `Seat ${actingSeat} is`;
+  const pos = seatPositionName(view.Seat, actingSeat);
+  const who = pos === "you" ? "You are" : `The ${pos} player is`;
   return awaitingChoice
     ? `${who} choosing a card to reveal.`
-    : `Waiting for seat ${actingSeat} to act.`;
+    : `Waiting for the ${pos} player to act.`;
 }
 
 export function PromptPanel({

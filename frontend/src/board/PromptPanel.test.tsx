@@ -87,7 +87,7 @@ describe("PromptPanel", () => {
         onPickSelfValue={noop}
       />,
     );
-    expect(html).toContain("seat 2");
+    expect(html).toContain("the top player");
     expect(html).not.toContain("prompt-confirm");
   });
 });
@@ -130,7 +130,7 @@ describe("PromptPanel safe-choose-reveal", () => {
 
   it("tells others the responder is choosing, even the caller on their turn", () => {
     const html = render(playingView({ ...base, Seat: 0, YourTurn: true, CurrentSeat: 0 }));
-    expect(html).toContain("Seat 1 is choosing");
+    expect(html).toContain("The left player is choosing");
     expect(html).not.toContain("prompt-confirm");
   });
 });

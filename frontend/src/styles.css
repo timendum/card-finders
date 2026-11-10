@@ -10,7 +10,9 @@
   --color-success: #4caf7d;
 
   --color-suited: #f4f1ea;
-  --color-silver: #a9b4c2;
+  --color-silver: #d3dbe6;
+  --silver-fill: linear-gradient(135deg, #f7f9fc 0%, #c4cedb 40%, #eef2f8 58%, #aab6c6 100%);
+  --silver-edge: #eef2f8;
   --color-gold: #e0b43c;
   --color-on-suited: #1b1f27;
   --color-on-silver: #1b1f27;
@@ -293,7 +295,7 @@ body {
 }
 
 .token-square[data-kind="silver"] {
-  background: var(--color-silver);
+  background: var(--silver-fill);
   color: var(--color-on-silver);
 }
 
@@ -317,7 +319,7 @@ body {
 }
 
 .revealed-card-mini[data-kind="silver"] {
-  background: var(--color-silver);
+  background: var(--silver-fill);
   color: var(--color-on-silver);
 }
 
@@ -354,7 +356,8 @@ body {
 }
 
 .card-element[data-kind="silver"] {
-  background: var(--color-silver);
+  background: var(--silver-fill);
+  border-color: var(--silver-edge);
   color: var(--color-on-silver);
 }
 
@@ -438,20 +441,26 @@ body {
   font-weight: var(--font-weight-bold);
 }
 
-.value-summary-row[data-kind="silver"] .value-summary-label,
-.value-summary-row[data-kind="silver"][data-count="none"] .value-summary-count {
+/* Top line: colored by kind (suited / silver / gold). */
+.value-summary-label {
+  color: var(--color-text);
+}
+.value-summary-row[data-kind="silver"] .value-summary-label {
   color: var(--color-silver);
 }
-.value-summary-row[data-kind="gold"] .value-summary-label,
-.value-summary-row[data-kind="gold"][data-count="none"] .value-summary-count {
+.value-summary-row[data-kind="gold"] .value-summary-label {
   color: var(--color-gold);
 }
 
-.value-summary-row[data-count="complete"] {
-  color: var(--color-success);
+/* Bottom line: colored by progress (none / partial / complete). */
+.value-summary-count {
+  color: var(--color-text-muted);
 }
-.value-summary-row[data-count="partial"] {
+.value-summary-row[data-count="partial"] .value-summary-count {
   color: var(--color-accent);
+}
+.value-summary-row[data-count="complete"] .value-summary-count {
+  color: var(--color-success);
 }
 
 .prompt-error {

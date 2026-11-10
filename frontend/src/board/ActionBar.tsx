@@ -13,6 +13,7 @@ import {
   targetsForSeat,
 } from "./actions.ts";
 import { valueLabel } from "./cardLabel.ts";
+import { seatPositionName } from "./seatLayout.ts";
 import type {
   CardID,
   ClientMessage,
@@ -115,7 +116,9 @@ export function ActionBar({ view, sendAction, onLeave }: ActionBarProps) {
   return (
     <section className="action-bar" aria-label="Actions" data-your-turn={yourTurn}>
       <p className="turn-status">
-        {yourTurn ? "Your turn" : `Waiting for seat ${view.CurrentSeat}`}
+        {yourTurn
+          ? "Your turn"
+          : `Waiting for the ${seatPositionName(view.Seat, view.CurrentSeat)} player`}
       </p>
 
       <fieldset disabled={!yourTurn} className="action-controls">
