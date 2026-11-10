@@ -389,11 +389,20 @@ body {
   font-weight: var(--font-weight-bold);
 }
 
-.value-summary-row[data-complete="true"] {
+.value-summary-row[data-kind="silver"] .value-summary-label,
+.value-summary-row[data-kind="silver"][data-count="none"] .value-summary-count {
+  color: var(--color-silver);
+}
+.value-summary-row[data-kind="gold"] .value-summary-label,
+.value-summary-row[data-kind="gold"][data-count="none"] .value-summary-count {
+  color: var(--color-gold);
+}
+
+.value-summary-row[data-count="complete"] {
   color: var(--color-success);
 }
-.value-summary-row[data-partial="true"] {
-  color: #f2c94c;
+.value-summary-row[data-partial="partial"] {
+  color: var(--color-accent);
 }
 
 .prompt-error {
