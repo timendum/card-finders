@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, type CSSProperties, type ReactNode } from "react";
 import { PlayerSpace, type Edge } from "./PlayerSpace.tsx";
 import { seatLayout } from "./seatLayout.ts";
 import { cardsBySeat } from "./slots.ts";
@@ -17,6 +17,11 @@ export interface TableProps {
 export function Table({ view, status, prompt, isSelectable, isSelected, onActivate }: TableProps) {
   const layout = useMemo(() => seatLayout(view.Seat), [view.Seat]);
   const bySeat = useMemo(() => cardsBySeat(view.Cards), [view.Cards]);
+
+  const maxHand = useMemo(
+    () => Math.max(0, ...Array.from(bySeat.values(), (h) => h.length)),
+    [bySeat],
+  );
 
   const awaiting = view.Phase === Phase.AwaitingResponse && view.HasResponsePlayer;
   const highlightedSeat = awaiting ? view.ResponsePlayer : view.CurrentSeat;
@@ -38,7 +43,12 @@ export function Table({ view, status, prompt, isSelectable, isSelected, onActiva
   );
 
   return (
-    <div className="table-region" aria-label="Table">
+    <div
+      className="table-region"
+      aria-label="Table"
+      data-opening={view.Phase === Phase.Opening}
+      style={{ "--slots": Math.max(11, maxHand) } as CSSProperties}
+    >
       {renderSpace(layout.top, "top")}
       {renderSpace(layout.left, "left")}
       <div className="table-center">
