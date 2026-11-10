@@ -4,9 +4,14 @@ package server
 
 import (
 	"cardfinders/internal/engine"
+	"context"
 	"log/slog"
 	"net/http"
+	"time"
 )
+
+// broadcastTimeout bounds the post-join state push to connected seats.
+const broadcastTimeout = 5 * time.Second
 
 type levelsResponse struct {
 	Levels []engine.Level `json:"levels"`
@@ -87,6 +92,12 @@ func (s *Server) handleJoin(w http.ResponseWriter, r *http.Request) {
 		SessionToken: string(token),
 		Seat:         int(seat),
 	})
+
+	// Push the new state to seats already connected (the joiner has no socket
+	// yet). Detached from r.Context(), which is cancelled once we return.
+	ctx, cancel := context.WithTimeout(context.Background(), broadcastTimeout)
+	defer cancel()
+	s.broadcast(ctx)
 }
 
 // tokenTag abbreviates a session token so full tokens never reach the logs.
