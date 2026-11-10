@@ -14,9 +14,6 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 	if seat != s.CurrentSeat {
 		return ResultNone, ErrNotYourTurn
 	}
-	if e.rejectIfIneligible(seat) {
-		return ResultNone, ErrSeatIneligible
-	}
 
 	// Players[seat] is non-nil during play.
 	if p := s.Players[seat]; p == nil || p.PowerUsed {

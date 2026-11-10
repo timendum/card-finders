@@ -1,6 +1,9 @@
 package engine
 
-import "sort"
+import (
+	"log/slog"
+	"sort"
+)
 
 const seatCount = 4
 
@@ -54,38 +57,30 @@ func (e *Engine) applyIDPermutation(deck []Card) {
 // reach PhaseOpening. On any failure it reverts fully to PhaseWaiting with no
 // dealt hands, so the triggering Join surfaces the error cleanly.
 func (e *Engine) startGame() error {
-	e.state.Phase = PhaseSpecialPool
+
+	// Step one: Build Special Pool
+
 	// Level was validated at CreateGame, so a well-formed level does not error.
 	pool, err := BuildSpecialPool(e.rng, e.state.Level)
 	if err != nil {
-		e.state.Phase = PhaseWaiting
+		slog.Error("Invalid Special Pool config", "err", err)
 		return err
 	}
 	e.state.SpecialPool = pool
 
 	deck := e.combinedDeck()
+
+	// Step: shuffle IDs, then Cards
+
 	e.applyIDPermutation(deck)
 	e.shuffle(deck)
-	if err := e.dealIfSufficient(deck); err != nil {
-		e.state.SpecialPool = SpecialPool{}
-		e.state.Phase = PhaseWaiting
-		return err
-	}
-	e.state.Phase = PhaseDealing
+	e.dealCombinedDeck(deck)
+
+	// Step: randomly pick first player
 
 	e.state.CurrentSeat = SeatID(e.rng.Intn(seatCount))
 
 	e.state.Phase = PhaseOpening
-	return nil
-}
-
-// dealIfSufficient deals deck across the four seats, or returns
-// ErrInsufficientCards without dealing any card when len(deck) < seatCount.
-func (e *Engine) dealIfSufficient(deck []Card) error {
-	if len(deck) < seatCount {
-		return ErrInsufficientCards
-	}
-	e.dealCombinedDeck(deck)
 	return nil
 }
 

@@ -5,15 +5,13 @@ package engine
 type SessionToken string
 
 // Phase gates which actions are legal and advances in a fixed order:
-// Waiting -> SpecialPool -> Dealing -> Opening -> Playing -> Ended, with
+// Waiting -> Opening -> Playing -> Ended, with
 // Playing <-> AwaitingResponse while another seat's response is pending.
 // Gating is by equality only; never compare phases by ordinal.
 type Phase uint8
 
 const (
 	PhaseWaiting Phase = iota
-	PhaseSpecialPool
-	PhaseDealing
 	PhaseOpening
 	PhasePlaying
 	PhaseAwaitingResponse

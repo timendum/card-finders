@@ -4,7 +4,6 @@ package engine
 // the undersized-deck abort.
 
 import (
-	"errors"
 	"math/rand"
 	"testing"
 )
@@ -131,34 +130,5 @@ func TestDealCombinedDeckSmallDecks(t *testing.T) {
 		if len(e.state.Cards) != tc.size {
 			t.Errorf("size %d: Cards count = %d, want %d", tc.size, len(e.state.Cards), tc.size)
 		}
-	}
-}
-
-// TestStartGameInsufficientCardsAborts drives the abort branch directly: a
-// sub-seatCount deck returns ErrInsufficientCards and deals no hands. The real
-// Base_Deck is always 48 cards, so this guard is unreachable through a normal
-// level.
-func TestStartGameInsufficientCardsAborts(t *testing.T) {
-	e := NewEngine(nil, rand.New(rand.NewSource(1)))
-	e.state = &GameState{Phase: PhaseWaiting}
-
-	if err := e.dealIfSufficient([]Card{{ID: 0}, {ID: 1}, {ID: 2}}); !errors.Is(err, ErrInsufficientCards) {
-		t.Fatalf("dealIfSufficient(3 cards): err = %v, want ErrInsufficientCards", err)
-	}
-	for seat := 0; seat < 4; seat++ {
-		if len(e.state.HandOrder[seat]) != 0 {
-			t.Errorf("seat %d has a dealt hand after abort, want none", seat)
-		}
-	}
-	if len(e.state.Cards) != 0 {
-		t.Errorf("Cards non-empty (%d) after abort, want 0", len(e.state.Cards))
-	}
-
-	// Exactly four cards is sufficient.
-	if err := e.dealIfSufficient([]Card{{ID: 0}, {ID: 1}, {ID: 2}, {ID: 3}}); err != nil {
-		t.Fatalf("dealIfSufficient(4 cards): unexpected error %v", err)
-	}
-	if len(e.state.Cards) != 4 {
-		t.Errorf("Cards count = %d, want 4 after a sufficient deal", len(e.state.Cards))
 	}
 }

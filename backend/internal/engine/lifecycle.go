@@ -80,8 +80,8 @@ func (e *Engine) CreateGame(levelNumber int) (joinCode string, err error) {
 
 // Join seats a player into the lowest-numbered free seat with a token unique
 // across active seats. The fourth join triggers startGame (Special_Pool +
-// deal); a deal that cannot complete surfaces ErrInsufficientCards here with no
-// hands dealt. Seat occupancy is derived from Players, not tracked separately.
+// deal).
+// Seat occupancy is derived from Players, not tracked separately.
 func (e *Engine) Join(joinCode string) (seat SeatID, token SessionToken, err error) {
 	if e.state == nil {
 		return 0, "", ErrNoGame

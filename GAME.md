@@ -41,21 +41,29 @@ costs the shared team a life. The team **wins** by revealing every card and
 Phases (engine state machine; phase gates every action):
 
 1. **Waiting** — game created at a level; <4 seats filled. No dealing.
-2. **SpecialPool** — on the 4th join: silvers/golds get random ranks, forming
-   the Special_Pool, revealed to all before any deal.
-3. **Dealing** — Base_Deck + the level's specials are combined, uniformly
-   shuffled, and dealt across the 4 players (hand sizes differ by ≤1, no cards
-   left over). Each hand is then laid out in a **fixed, value-sorted order**
-   (ascending Sort_Value) that never changes for the rest of the game. One of
-   the four is chosen first player (each 0.25).
-4. **Opening** — each player, in turn order, reveals one non-special card of their
+2. **Opening** — entered atomically when the 4th player joins (see Game start
+   below). Each player, in turn order, reveals one non-special card of their
    choice; it stays **face-down** but gets a token showing its true value.
    Each player is granted one single-use Safe_Call here.
-5. **Playing** — normal turns until win or loss.
-6. **Ended** — win (all cards face-up) or loss (Life_Pool hit 0). All further
+3. **Playing** — normal turns until win or loss.
+4. **AwaitingResponse** — entered from Playing when a Safe_Call hits both
+   targets; the targeted player chooses which card is revealed, then play
+   resumes (or the game ends).
+5. **Ended** — win (all cards face-up) or loss (Life_Pool hit 0). All further
    actions rejected.
 
-SpecialPool + Dealing happen atomically when the 4th player joins.
+### Game start
+
+The 4th join runs these steps in one atomic transition (they are not separate
+phases; nothing can observe the intermediate states):
+
+1. **Special_Pool** — silvers/golds get random ranks, forming the Special_Pool,
+   revealed to all before any deal.
+2. **Deal** — Base_Deck + the level's specials are combined, uniformly shuffled,
+   and dealt across the 4 players (hand sizes differ by ≤1, no cards left
+   over). Each hand is then laid out in a **fixed, value-sorted order**
+   (ascending Sort_Value) that never changes for the rest of the game.
+3. **First player** — one of the four is chosen (each 0.25) and opens.
 
 ## Hand order and reveal in place
 

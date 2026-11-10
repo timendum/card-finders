@@ -127,22 +127,6 @@ func TestSelfRevealOutOfTurnRejected(t *testing.T) {
 	assertSelfRevealUnchanged(t, e, 1, 2, 4)
 }
 
-// TestSelfRevealEmptyHandedActorRejectedAndAdvances: an empty-handed current
-// seat cannot self-reveal; rejected with ErrSeatIneligible and the turn
-// advances to the next eligible seat.
-func TestSelfRevealEmptyHandedActorRejectedAndAdvances(t *testing.T) {
-	e := playingState(4)
-	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone}) // seat 0 holds nothing; seat 1 does
-
-	_, err := e.Apply(0, selfReveal(SpecialKindNone, 9))
-	if !errors.Is(err, ErrSeatIneligible) {
-		t.Errorf("err = %v, want ErrSeatIneligible", err)
-	}
-	if e.state.CurrentSeat != 1 {
-		t.Errorf("CurrentSeat = %d, want 1 (advanced past ineligible actor)", e.state.CurrentSeat)
-	}
-}
-
 // TestSelfRevealOtherHoldsValueRejected: a suited self-reveal is rejected with
 // ErrSelfRevealIncomplete when another player still holds that value face-down.
 func TestSelfRevealOtherHoldsValueRejected(t *testing.T) {

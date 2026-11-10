@@ -174,7 +174,6 @@ var wsActionErrorMap = map[error]string{
 	engine.ErrUnknownAction:           "unknown_action",
 	engine.ErrWrongPhase:              "wrong_phase",
 	engine.ErrNotYourTurn:             "not_your_turn",
-	engine.ErrSeatIneligible:          "seat_ineligible",
 	engine.ErrInvalidOpeningSelection: "invalid_opening_selection",
 	engine.ErrSpecialOpening:          "special_opening",
 	engine.ErrInvalidSource:           "invalid_source",

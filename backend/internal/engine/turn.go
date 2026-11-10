@@ -57,14 +57,3 @@ func (e *Engine) finishTurn(advanceFrom SeatID) Result {
 	e.advanceTurn()
 	return ResultNone
 }
-
-// rejectIfIneligible guards a desynchronized turn landing on an empty-handed
-// seat: it advances the turn and returns true (caller returns ErrSeatIneligible)
-// when the seat holds no face-down card, else false.
-func (e *Engine) rejectIfIneligible(seat SeatID) bool {
-	if faceDownCount(e.state, seat) == 0 {
-		e.advanceTurn()
-		return true
-	}
-	return false
-}

@@ -170,8 +170,6 @@ export type SessionToken = string;
  */
 export enum Phase {
   Waiting = 0,
-  SpecialPool,
-  Dealing,
   Opening,
   Playing,
   AwaitingResponse,

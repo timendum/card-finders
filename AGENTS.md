@@ -59,7 +59,8 @@ the lock:
   all gameplay actions (`Action` is a tagged union).
 - `View(seat SeatID) PlayerView` — per-player projection (hides others' hidden
   values; see GAME.md visibility rules).
-- `Phase() Phase`.
+- `Levels() []Level` — defensive copy of the configured levels (served by
+  `GET /api/levels`).
 
 Phases are the first gate in every action handler. See GAME.md for phase and
 action meaning.
@@ -202,13 +203,12 @@ REST status + envelope or a WS `error` code.
 | `ErrGameFull` | 409 `game_full` |
 | `ErrCodeInvalid` / `ErrNoGame` (join) | 404 `code_invalid` |
 | `ErrCodeRequired` | 400 `code_required` |
-| any other `Join` error (e.g. `ErrInsufficientCards`) | 400 `bad_request` |
+| any other `Join` error | 400 `bad_request` |
 | `ErrNoGame` (WS action) | WS `no_game` |
 | `ErrGameEnded` | WS `game_ended` |
 | `ErrUnknownAction` | WS `unknown_action` |
 | `ErrWrongPhase` | WS `wrong_phase` |
 | `ErrNotYourTurn` | WS `not_your_turn` |
-| `ErrSeatIneligible` | WS `seat_ineligible` |
 | `ErrInvalidOpeningSelection` | WS `invalid_opening_selection` |
 | `ErrSpecialOpening` | WS `special_opening` |
 | `ErrInvalidSource` | WS `invalid_source` |

@@ -10,9 +10,6 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 	if seat != s.CurrentSeat {
 		return ResultNone, ErrNotYourTurn
 	}
-	if e.rejectIfIneligible(seat) {
-		return ResultNone, ErrSeatIneligible
-	}
 
 	// Source: owned, face-down, non-gold.
 	source, ok := s.Cards[action.SourceCard]

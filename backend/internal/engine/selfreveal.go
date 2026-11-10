@@ -9,9 +9,6 @@ func (e *Engine) applySelfReveal(seat SeatID, action Action) (Result, error) {
 	if seat != s.CurrentSeat {
 		return ResultNone, ErrNotYourTurn
 	}
-	if e.rejectIfIneligible(seat) {
-		return ResultNone, ErrSeatIneligible
-	}
 
 	target := action.SelfRevealValue
 

@@ -133,30 +133,3 @@ func TestActionAfterEndedRejected(t *testing.T) {
 		t.Errorf("cards mutated after game ended")
 	}
 }
-
-// Empty-handed actor guard: when the current seat holds no face-down card, a
-// guess is rejected with ErrSeatIneligible, state is unchanged, and the turn
-// advances to the next eligible seat.
-func TestGuessEmptyHandedActorRejectedAndAdvances(t *testing.T) {
-	e := playingState(4)
-	// Seat 0 (current) has no cards; seat 1 does.
-	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
-	place(e, 3, 1, Card{Rank: 5, Kind: SpecialKindNone})
-
-	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 99, TargetCard: 2})
-	if !errors.Is(err, ErrSeatIneligible) {
-		t.Errorf("err = %v, want ErrSeatIneligible", err)
-	}
-	if res != ResultNone {
-		t.Errorf("result = %d, want ResultNone", res)
-	}
-	if e.state.Cards[2].Facing != FaceDown || e.state.Cards[2].Token != nil {
-		t.Errorf("state mutated by ineligible actor")
-	}
-	if e.state.LifePool != 4 {
-		t.Errorf("LifePool = %d, want 4 unchanged", e.state.LifePool)
-	}
-	if e.state.CurrentSeat != 1 {
-		t.Errorf("CurrentSeat = %d, want 1 (advanced past ineligible actor)", e.state.CurrentSeat)
-	}
-}

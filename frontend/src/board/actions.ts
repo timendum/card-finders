@@ -1,4 +1,4 @@
-// Pure action-selection logic for the ActionBar: which cards/values the viewer
+// Pure action-selection logic: which cards/values the viewer
 // may pick, and the ClientMessage each choice produces. These helpers offer
 // only plausibly-legal choices; the engine is the sole authority and rejects
 // anything illegal with an `error` frame.
