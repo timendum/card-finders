@@ -145,7 +145,7 @@ func (s *Server) pushView(ctx context.Context, c *wsConn) error {
 	view := s.engine.View(c.seat)
 	s.mu.Unlock()
 	msg := outboundState{Type: "state", View: view}
-	slog.Debug("ws send", "seat", c.seat, "type", msg.Type, "msg", msg)
+	// slog.Debug("ws send", "seat", c.seat, "type", msg.Type, "msg", msg)
 	return wsjson.Write(ctx, c.conn, msg)
 }
 

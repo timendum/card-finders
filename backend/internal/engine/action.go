@@ -1,5 +1,10 @@
 package engine
 
+import (
+	"context"
+	"log/slog"
+)
+
 // ActionKind is the discriminant of the Action tagged union; it selects which
 // of Action's fields are meaningful.
 type ActionKind uint8
@@ -48,6 +53,45 @@ type Action struct {
 // terminal Result (ResultNone while the game continues) or a typed sentinel
 // error. Per-kind handlers run their own phase/turn validation.
 func (e *Engine) Apply(seat SeatID, action Action) (Result, error) {
+	res, err := e.apply(seat, action)
+	e.logAppliedState(seat, action, res, err)
+	return res, err
+}
+
+// logAppliedState emits a debug record of the state after an action. It reads
+// only public-safe summary fields (no hidden card values).
+func (e *Engine) logAppliedState(seat SeatID, action Action, res Result, err error) {
+	if !slog.Default().Enabled(context.Background(), slog.LevelDebug) {
+		return
+	}
+	attrs := []any{
+		"seat", seat,
+		"actionKind", action.Kind,
+		"result", res,
+		"err", err,
+	}
+	if s := e.state; s != nil {
+		faceDown := 0
+		for _, pc := range s.Cards {
+			if pc.Facing == FaceDown {
+				faceDown++
+			}
+		}
+		attrs = append(attrs,
+			"phase", s.Phase,
+			"seq", s.Seq,
+			"currentSeat", s.CurrentSeat,
+			"lifePool", s.LifePool,
+			"faceDown", faceDown,
+			"openingDone", s.OpeningDone,
+			"pendingSafeChoice", s.PendingSafeChoice != nil,
+			"gameResult", s.GameResult,
+		)
+	}
+	slog.Debug("action applied", attrs...)
+}
+
+func (e *Engine) apply(seat SeatID, action Action) (Result, error) {
 	if e.state == nil {
 		return ResultNone, ErrNoGame
 	}
