@@ -48,7 +48,7 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 		la.Outcome = OutcomeGoldHit
 		la.Revealed = []CardID{action.TargetCard}
 		s.recordAction(la)
-		s.logAction(seat, "called "+announcedText(la.AnnouncedValue)+" and hit a gold card")
+		s.logActionOn(seat, target.Owner, "called "+announcedText(la.AnnouncedValue)+" and hit a gold card")
 		return e.endGoldHit(), nil
 	}
 
@@ -70,7 +70,7 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 
 	s.recordAction(la)
 	if la.Outcome == OutcomeMiss {
-		s.logAction(seat, "called "+announcedText(la.AnnouncedValue)+" and missed")
+		s.logActionOn(seat, target.Owner, "called "+announcedText(la.AnnouncedValue)+" and missed")
 	}
 
 	return e.finishTurn(s.CurrentSeat), nil

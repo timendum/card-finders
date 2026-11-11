@@ -1,5 +1,9 @@
 package engine
 
+import (
+	"strconv"
+)
+
 // applySafeCall resolves a Safe_Call: a one-time power used in place of a guess,
 // targeting two distinct face-down cards of a single other player. The power is
 // spent on every valid call. On a double hit resolution defers to
@@ -73,7 +77,7 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 		la.Outcome = OutcomeGoldHit
 		la.Revealed = []CardID{action.TargetCard, action.TargetCard2}
 		s.recordAction(la)
-		s.logAction(seat, "used safe call: both gold, game over")
+		s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "hit two gold cards"))
 		return e.endGoldHit(), nil
 	}
 
@@ -93,7 +97,7 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 		s.Phase = PhaseAwaitingResponse
 		la.Outcome = OutcomeAwaitingChoice
 		s.recordAction(la)
-		s.logAction(seat, "used safe call: both hit")
+		s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "hit both"))
 		return ResultNone, nil
 
 	case match1 || match2:
@@ -135,7 +139,7 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 			s.Phase = PhaseAwaitingResponse
 			la.Outcome = OutcomeAwaitingToken
 			s.recordAction(la)
-			s.logAction(seat, "used safe call: miss")
+			s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "missed"))
 			return ResultNone, nil
 		}
 		// Otherwise the last life is gone and the game ends below.
@@ -143,12 +147,23 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 
 	s.recordAction(la)
 	if la.Outcome == OutcomeHit {
-		s.logAction(seat, "used safe call: one hit")
+		s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "hit one"))
 	} else {
-		s.logAction(seat, "used safe call: miss")
+		s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "missed"))
 	}
 
 	return e.finishTurn(s.CurrentSeat), nil
+}
+
+// safeCallText renders a safe call log line: the targeted slots (ascending),
+// the announced value, and the outcome phrase (e.g. "hit one").
+func (s *GameState) safeCallText(action Action, announced *CardValue, outcome string) string {
+	a, b := s.Slot[action.TargetCard], s.Slot[action.TargetCard2]
+	if a > b {
+		a, b = b, a
+	}
+	return "asked for a " + announcedText(announced) + " at cards " +
+		strconv.Itoa(a) + " and " + strconv.Itoa(b) + " and " + outcome
 }
 
 // faceDownCount returns how many of a seat's cards are still face-down.
@@ -205,6 +220,7 @@ func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, erro
 		})
 		s.PendingSafeChoice = nil
 		s.Phase = PhasePlaying
+		s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[action.ChosenTarget])+" to receive the token")
 		return e.finishTurn(caller), nil
 	}
 
@@ -232,5 +248,6 @@ func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, erro
 	s.PendingSafeChoice = nil
 	// Leave the response phase first; finishTurn may then move on to Ended.
 	s.Phase = PhasePlaying
+	s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[action.ChosenTarget])+" to reveal")
 	return e.finishTurn(caller), nil
 }

@@ -10,6 +10,11 @@ function actorName(viewer: number, actor: number): string {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
+// Go serializes an absent seat as null, which the generated optional type misses.
+function hasSeat(seat: number | null | undefined): seat is number {
+  return seat != null;
+}
+
 export function GameLog({ view }: { view: PlayerView }) {
   const endRef = useRef<HTMLLIElement>(null);
   const log = view.Log ?? [];
@@ -23,8 +28,9 @@ export function GameLog({ view }: { view: PlayerView }) {
       <ol className="game-log-list">
         {log.map((entry, i) => (
           <li key={`${entry.Seq}-${i}`} className="game-log-entry">
-            {entry.HasActor && <strong>{actorName(view.Seat, entry.Actor)} </strong>}
+            {hasSeat(entry.Actor) && <strong>{actorName(view.Seat, entry.Actor)} </strong>}
             {entry.Text}
+            {hasSeat(entry.Target) && ` on ${seatPositionName(view.Seat, entry.Target)}`}
           </li>
         ))}
         <li ref={endRef} aria-hidden="true" />

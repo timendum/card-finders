@@ -3,6 +3,7 @@
 // only plausibly-legal choices; the engine is the sole authority and rejects
 // anything illegal with an `error` frame.
 
+import { rankLabel } from "./cardLabel.ts";
 import {
   Face,
   SpecialKind,
@@ -130,7 +131,7 @@ export function selfRevealOptions(view: PlayerView): SelfRevealOption[] {
 
   const options: SelfRevealOption[] = [...ranks]
     .sort((a, b) => a - b)
-    .map((rank) => ({ label: `Rank ${rank}`, value: rank }));
+    .map((rank) => ({ label: `Rank ${rankLabel(rank)}`, value: rank }));
   if (hasSilver) options.push({ label: "All silver", value: "silver" });
   if (hasGold) options.push({ label: "All gold", value: "gold" });
   return options;

@@ -148,13 +148,15 @@ export interface Level {
 
 /**
  * LogEntry is one line of the public game log, for events with no visual clue.
- * Seq is the Seq of the action that produced it. HasActor is false for
- * system-level notices (e.g. all silvers revealed). Text is display-ready.
+ * Seq is the Seq of the action that produced it. Actor is nil for system-level
+ * notices (e.g. all silvers revealed); Target is nil unless the event was aimed
+ * at another seat. The client renders both relative to the viewer. Text is
+ * display-ready and excludes the actor and target.
  */
 export interface LogEntry {
   Seq: number /* uint64 */;
-  Actor: SeatID;
-  HasActor: boolean;
+  Actor?: SeatID;
+  Target?: SeatID;
   Text: string;
 }
 
