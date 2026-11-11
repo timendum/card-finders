@@ -131,14 +131,14 @@ the frame shape changed.
 
 `cmd/server` resolves the config path `--config` flag > `CARD_FINDERS_LEVELS`
 env > default `levels.toml`; (flag/env = *explicit*). `internal/config` parses +
-validates (via `engine.ValidateLevel`, unique `number`). Outcomes:
+validates (via `engine.ValidateLevel`, level number = file order). Outcomes:
 
 - Loaded-valid → those levels replace the dummy.
 - Default-missing (not explicit) → warn, use built-in `dummyLevel`, continue.
 - Explicit-missing → hard error, exit non-zero.
-- Malformed / invalid / duplicate number → hard error, exit non-zero.
+- Malformed / invalid → hard error, exit non-zero.
 
-TOML schema: one named table per level (key = name); inner keys `number`,
+TOML schema: one named table per level (key = name); inner keys
 `silver`, `gold`, `lives`, plus optional `extraSilver`, `extraGold` (decoy
 specials, default 0; negative or `silver+extraSilver` / `gold+extraGold` above
 11 is a hard error). The engine's only hardcoded level is `dummyLevel`.

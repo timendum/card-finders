@@ -125,26 +125,31 @@ lives = 4
 	}
 }
 
-// TestLoadLevels_DuplicateNumber verifies two levels sharing a Number is a hard
-// error.
-func TestLoadLevels_DuplicateNumber(t *testing.T) {
-	const dup = `
-["Level A"]
-number = 1
-silver = 2
-gold = 1
+// TestLoadLevels_NumberFromOrder verifies a level's Number is its 1-based
+// position in the file, regardless of name ordering.
+func TestLoadLevels_NumberFromOrder(t *testing.T) {
+	const body = `
+["Zeta"]
 lives = 4
 
-["Level B"]
-number = 1
-silver = 4
-gold = 2
+["Alpha"]
 lives = 3
-`
-	path := writeTemp(t, dup)
 
-	if _, _, err := LoadLevels(path, true); err == nil {
-		t.Fatalf("expected duplicate-number error, got nil")
+["Mid"]
+lives = 2
+`
+	levels, _, err := LoadLevels(writeTemp(t, body), true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []string{"Zeta", "Alpha", "Mid"}
+	if len(levels) != len(want) {
+		t.Fatalf("got %d levels, want %d", len(levels), len(want))
+	}
+	for i, l := range levels {
+		if l.Number != i+1 || l.Name != want[i] {
+			t.Fatalf("level %d = %+v, want number %d name %q", i, l, i+1, want[i])
+		}
 	}
 }
 

@@ -2,7 +2,7 @@
 #
 # Each level is a named TOML table. The table key is the level name and the
 # inner keys are:
-#   number - the level's sequence number
+#   (the level number is its position in this file, starting at 1)
 #   silver - count of silver special cards (even, 0..10)
 #   gold   - count of gold special cards (0..11)
 #   lives  - starting lives (1..100)
@@ -10,31 +10,33 @@
 #   extraGold   - optional decoy golds, default 0 (gold + extraGold <= 11)
 
 ["Basic games"]
-number = 1
 silver = 0
 gold = 0
 lives = 4
 
 ["Two silvers"]
-number = 2
 silver = 2
 gold = 0
 lives = 4
 
 ["One gold"]
-number = 3
 silver = 0
 gold = 1
 lives = 4
 
 ["Two silver plus one"]
-number = 4
 silver = 2
 extraSilver = 1
 lives = 4
 
 ["Silvers and gold"]
-number = 5
 silver = 2
 gold = 1
+lives = 4
+
+["Full"]
+silver = 2
+extraSilver = 1
+gold = 1
+extraGold = 1
 lives = 4

@@ -130,7 +130,6 @@ level is a named table whose key is the level name; the inner keys are:
 
 | Key      | Type    | Description                              |
 | -------- | ------- | ---------------------------------------- |
-| `number` | integer | The level's sequence number.             |
 | `silver` | integer | Count of silver special cards (even, 0–10). |
 | `gold`   | integer | Count of gold special cards (0–11).      |
 | `lives`  | integer | Starting lives (1–100).                  |
@@ -142,19 +141,17 @@ level is a named table whose key is the level name; the inner keys are:
 #
 # Each level is a named TOML table. The table key is the level name and the
 # inner keys are:
-#   number - the level's sequence number
+#   (level number = position in this file, starting at 1)
 #   silver - count of silver special cards (even, 0..10)
 #   gold   - count of gold special cards (0..11)
 #   lives  - starting lives (1..100)
 
 ["Tutorial One"]
-number = 1
 silver = 0
 gold = 0
 lives = 4
 
 ["Level two"]
-number = 2
 silver = 4
 gold = 2
 lives = 3
