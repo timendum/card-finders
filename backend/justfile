@@ -31,7 +31,7 @@ checks: lint staticcheck test fmt-check
 lint:
   @echo "==> vet + fix"
   go vet ./... 
-  test -z "$(go fix -diff ./... 2>&1)" && echo "OK: modernize" || { echo "KO: modernize"; exit 1; }
+  @test -z "$(go fix -diff ./... 2>&1)" && echo "modernize: OK" || { echo "modernize: KO"; exit 1; }
 
 fix:
   @echo "==> fix"

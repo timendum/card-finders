@@ -36,17 +36,17 @@ typecheck:
 # lint with oxlint. Supports extra args, e.g. just lint --fix
 lint *ARGS:
   @echo "==> lint"
-  bunx oxlint {{ARGS}}
+  bun run oxlint {{ARGS}}
 
 # format with oxfmt
 fmt *ARGS:
   @echo "==> format"
-  bunx oxfmt . {{ARGS}}
+  bun run oxfmt . {{ARGS}}
 
 # verify formatting (fails if any file needs formatting)
 fmt-check:
   @echo "==> format check"
-  bunx oxfmt --check .
+  bun run oxfmt --check .
 
 format: fmt
 
