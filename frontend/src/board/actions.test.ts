@@ -33,7 +33,15 @@ function viewWith(cards: ViewCard[], seat: SeatID = 0): PlayerView {
   return {
     Seat: seat,
     Phase: Phase.Playing,
-    Level: { Number: 1, Name: "L", SilverCount: 2, GoldCount: 1, ExtraSilver: 0, ExtraGold: 0, StartLives: 4 },
+    Level: {
+      Number: 1,
+      Name: "L",
+      SilverCount: 2,
+      GoldCount: 1,
+      ExtraSilver: 0,
+      ExtraGold: 0,
+      StartLives: 4,
+    },
     SpecialPool: { Silvers: [], Golds: [], SilverInPlay: 0, GoldInPlay: 0 },
     LifePool: 4,
     MaxLife: 4,

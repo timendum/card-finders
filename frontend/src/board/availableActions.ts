@@ -3,7 +3,7 @@
 // engine remains the authority and rejects anything illegal.
 
 import { selfRevealOptions, sourceCards, targetCards, targetsForSeat } from "./actions.ts";
-import { Phase, type PlayerView, type SeatID } from "../types.ts";
+import { Outcome, Phase, type PlayerView, type SeatID } from "../types.ts";
 
 export type ActionId = "openingReveal" | "guess" | "safeCall" | "selfReveal" | "safeChooseReveal";
 
@@ -100,14 +100,21 @@ function standardTurnActions(view: PlayerView): AvailableAction[] {
 export function availableActions(view: PlayerView): AvailableActions {
   if (view.Phase === Phase.AwaitingResponse) {
     if (view.HasResponsePlayer && view.ResponsePlayer === view.Seat) {
+      const miss = view.LastAction?.Outcome === Outcome.AwaitingToken;
       return {
         variant: "safeChooseReveal",
         actions: [
-          enabledAction(
-            "safeChooseReveal",
-            "Choose a card to reveal",
-            "Both called cards were hit. Pick one of the two highlighted cards to flip.",
-          ),
+          miss
+            ? enabledAction(
+                "safeChooseReveal",
+                "Choose a card to token",
+                "Both called cards missed. Pick one of the two highlighted cards to receive the token.",
+              )
+            : enabledAction(
+                "safeChooseReveal",
+                "Choose a card to reveal",
+                "Both called cards were hit. Pick one of the two highlighted cards to flip.",
+              ),
         ],
       };
     }

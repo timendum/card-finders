@@ -276,30 +276,48 @@ func TestGuessOutOfTurnRejected(t *testing.T) {
 	assertUnchanged(t, e, 1, 2, 4)
 }
 
-// TestGuessGoldTargetRejected: a normal guess targeting another player's gold
-// card is rejected with ErrGoldNotTargetable.
-func TestGuessGoldTargetRejected(t *testing.T) {
+// assertGoldHit checks the game ended as a loss from a targeted gold card: the
+// gold flipped face-up, Life_Pool is untouched and the source stayed face-down.
+func assertGoldHit(t *testing.T, e *Engine, res Result, err error, lives int) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("Apply: unexpected error %v", err)
+	}
+	if res != ResultLoss || e.state.Phase != PhaseEnded || e.state.GameResult != ResultLoss {
+		t.Errorf("res=%d phase=%d result=%d, want loss/Ended", res, e.state.Phase, e.state.GameResult)
+	}
+	if e.state.Cards[2].Facing != FaceUp {
+		t.Errorf("gold target facing = %d, want FaceUp", e.state.Cards[2].Facing)
+	}
+	if e.state.Cards[1].Facing != FaceDown {
+		t.Errorf("source facing = %d, want FaceDown", e.state.Cards[1].Facing)
+	}
+	if e.state.LifePool != lives {
+		t.Errorf("LifePool = %d, want %d unchanged", e.state.LifePool, lives)
+	}
+	if la := e.state.LastAction; la == nil || la.Outcome != OutcomeGoldHit {
+		t.Errorf("LastAction = %+v, want OutcomeGoldHit", la)
+	}
+}
+
+// TestGuessGoldTargetEndsGame: a normal guess on another player's gold is an
+// immediate loss with no life deducted.
+func TestGuessGoldTargetEndsGame(t *testing.T) {
 	e := playingState(4)
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindGold})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
-	if !errors.Is(err, ErrGoldNotTargetable) {
-		t.Errorf("err = %v, want ErrGoldNotTargetable", err)
-	}
-	assertUnchanged(t, e, 1, 2, 4)
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	assertGoldHit(t, e, res, err, 4)
 }
 
-// TestGuessSilverFeatGoldTargetRejected: the silver feat targeting another
-// player's gold card is likewise rejected with ErrGoldNotTargetable.
-func TestGuessSilverFeatGoldTargetRejected(t *testing.T) {
+// TestGuessSilverFeatGoldTargetEndsGame: the silver feat on gold is likewise a
+// loss.
+func TestGuessSilverFeatGoldTargetEndsGame(t *testing.T) {
 	e := playingState(4)
 	place(e, 1, 0, Card{Rank: 5, Kind: SpecialKindSilver})
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindGold})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
-	if !errors.Is(err, ErrGoldNotTargetable) {
-		t.Errorf("err = %v, want ErrGoldNotTargetable (silver feat)", err)
-	}
-	assertUnchanged(t, e, 1, 2, 4)
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	assertGoldHit(t, e, res, err, 4)
 }

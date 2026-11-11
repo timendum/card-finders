@@ -123,7 +123,8 @@ export function selfRevealOptions(view: PlayerView): SelfRevealOption[] {
   const ranks = [...heldRanks.entries()]
     .filter(([rank, held]) => held + (faceUpRanks.get(rank) ?? 0) === 4)
     .map(([rank]) => rank);
-  const hasSilver = heldSilver > 0 && heldSilver + faceUpSilver === inPlayTotal(view, SpecialKind.Silver);
+  const hasSilver =
+    heldSilver > 0 && heldSilver + faceUpSilver === inPlayTotal(view, SpecialKind.Silver);
   // Gold: only once every other face-down card the viewer holds is gone.
   const hasGold = heldGold > 0 && heldOther === 0;
 

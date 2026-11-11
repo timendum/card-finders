@@ -9,8 +9,21 @@ function viewWith(silvers: number[], inPlay: number, cards: ViewCard[] = []): Pl
   return {
     Seat: 0,
     Phase: Phase.Playing,
-    Level: { Number: 1, Name: "L", SilverCount: 1, GoldCount: 0, ExtraSilver: 1, ExtraGold: 0, StartLives: 4 },
-    SpecialPool: { Silvers: silvers.map(silver), Golds: [], SilverInPlay: inPlay, GoldInPlay: 0 },
+    Level: {
+      Number: 1,
+      Name: "L",
+      SilverCount: 1,
+      GoldCount: 0,
+      ExtraSilver: 1,
+      ExtraGold: 0,
+      StartLives: 4,
+    },
+    SpecialPool: {
+      Silvers: silvers.map((c) => silver(c)),
+      Golds: [],
+      SilverInPlay: inPlay,
+      GoldInPlay: 0,
+    },
     LifePool: 4,
     MaxLife: 4,
     CurrentSeat: 0,
@@ -49,14 +62,14 @@ describe("ValueSummary", () => {
     ]);
     const row = silverRow(renderToStaticMarkup(<ValueSummary view={view} />), 4);
     expect(row).toContain('data-uncertain="true"');
-    expect(row).toMatch(/0\/1(<!-- -->)?<strong[^>]*>\?<\/strong>/);
+    expect(row).toMatch(/0\/1(<!-- -->)?<strong[^>]*>\?<\/strong>/u);
   });
 
   it("shows 1/1 for a found special, without ?", () => {
     const view = viewWith([4, 6], 1, [faceUpSilver4]);
     const row = silverRow(renderToStaticMarkup(<ValueSummary view={view} />), 4);
     expect(row).toContain("1");
-    expect(row).toMatch(/1\/<!-- -->1|1\/1/);
+    expect(row).toMatch(/1\/<!-- -->1|1\/1/u);
     expect(row).not.toContain("<strong");
     expect(row).toContain('data-count="complete"');
   });
@@ -66,7 +79,7 @@ describe("ValueSummary", () => {
     const [, other] = buildValueSummary(view).filter((r) => r.Kind === SpecialKind.Silver);
     expect([other.Found, other.Total, other.Uncertain]).toEqual([0, 0, false]);
     const row = silverRow(renderToStaticMarkup(<ValueSummary view={view} />), 6);
-    expect(row).toMatch(/0\/<!-- -->0|0\/0/);
+    expect(row).toMatch(/0\/<!-- -->0|0\/0/u);
     expect(row).not.toContain("<strong");
     expect(row).toContain('data-count="complete"');
   });

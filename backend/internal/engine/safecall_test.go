@@ -108,20 +108,18 @@ func TestSafeCallNoMatchMiss(t *testing.T) {
 	if e.state.LifePool != 3 {
 		t.Errorf("LifePool = %d, want 3 (-1 on a miss)", e.state.LifePool)
 	}
-	for _, id := range []CardID{2, 3} {
-		c := e.state.Cards[id]
-		if c.Facing != FaceDown || c.Token == nil || c.Token.Displayed != TokenKindNaturalIdentity {
-			t.Errorf("target %d = facing:%d token:%+v, want face-down with natural-identity token", id, c.Facing, c.Token)
+	// The token and turn pass wait for the target's choice (see
+	// TestSafeCallDoubleMissTargetChoosesToken).
+	for _, id := range []CardID{1, 2, 3} {
+		if c := e.state.Cards[id]; c.Facing != FaceDown || c.Token != nil {
+			t.Errorf("card %d = facing:%d token:%+v, want untouched until the choice", id, c.Facing, c.Token)
 		}
-	}
-	if src := e.state.Cards[1]; src.Facing != FaceDown || src.Token != nil {
-		t.Errorf("source = facing:%d token:%+v, want untouched on a miss", src.Facing, src.Token)
 	}
 	if !e.state.Players[0].PowerUsed {
 		t.Errorf("PowerUsed = false, want true after a safe call")
 	}
-	if e.state.CurrentSeat != nextSeat(0) {
-		t.Errorf("CurrentSeat = %d, want %d (turn passed)", e.state.CurrentSeat, nextSeat(0))
+	if e.state.PendingSafeChoice == nil || !e.state.PendingSafeChoice.Miss {
+		t.Errorf("PendingSafeChoice = %+v, want a Miss choice", e.state.PendingSafeChoice)
 	}
 }
 
@@ -319,18 +317,23 @@ func TestSafeCallOutOfTurnRejected(t *testing.T) {
 	}
 }
 
-// A gold target is rejected with ErrGoldNotTargetable, leaving the power unspent.
-func TestSafeCallGoldTargetRejected(t *testing.T) {
+// Two gold targets end the game as a loss; both flip, no life is lost.
+func TestSafeCallBothGoldEndsGame(t *testing.T) {
 	e := safeCallState(4)
-	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone}) // seat 0 source: suited 7
-	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone}) // seat 1 target A: suited 7
-	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindGold}) // seat 1 target B: gold (non-targetable)
+	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindGold})
+	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindGold})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
-	if !errors.Is(err, ErrGoldNotTargetable) {
-		t.Errorf("err = %v, want ErrGoldNotTargetable", err)
+	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	if err != nil || res != ResultLoss || e.state.Phase != PhaseEnded {
+		t.Fatalf("res=%d err=%v phase=%d, want loss/Ended", res, err, e.state.Phase)
 	}
-	assertSafeUnchanged(t, e, 1, 2, 3, 4)
+	if e.state.Cards[2].Facing != FaceUp || e.state.Cards[3].Facing != FaceUp {
+		t.Errorf("gold targets must flip face-up")
+	}
+	if e.state.LifePool != 4 || e.state.Cards[1].Facing != FaceDown {
+		t.Errorf("life=%d source=%d, want 4 / FaceDown", e.state.LifePool, e.state.Cards[1].Facing)
+	}
 }
 
 // --- Safe_Call choose-reveal (double-hit second step) ---
@@ -442,5 +445,97 @@ func TestSafeChooseRevealNoPendingRejected(t *testing.T) {
 	}
 	if c := e.state.Cards[2]; c.Facing != FaceDown || c.Token != nil {
 		t.Errorf("card 2 mutated by rejected choose-reveal: facing=%d token=%+v", c.Facing, c.Token)
+	}
+}
+
+// One gold + one match: the match reveals as a pair, gold is untouched, no
+// game over, no life lost.
+func TestSafeCallGoldAndMatchReveals(t *testing.T) {
+	e := safeCallState(4)
+	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindGold})
+
+	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	if err != nil || res != ResultNone {
+		t.Fatalf("res=%d err=%v, want ResultNone", res, err)
+	}
+	if e.state.Cards[1].Facing != FaceUp || e.state.Cards[2].Facing != FaceUp {
+		t.Errorf("source and match must flip")
+	}
+	if g := e.state.Cards[3]; g.Facing != FaceDown || g.Token != nil {
+		t.Errorf("gold mutated: %+v", g)
+	}
+	if e.state.LifePool != 4 || e.state.Phase == PhaseEnded {
+		t.Errorf("life=%d phase=%d, want 4 / not ended", e.state.LifePool, e.state.Phase)
+	}
+}
+
+// One gold + one wrong non-gold: lose a life, only the non-gold is tokened, no
+// choice is asked and the turn passes.
+func TestSafeCallGoldAndMissTokensNonGold(t *testing.T) {
+	e := safeCallState(4)
+	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindGold})
+	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
+
+	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	if err != nil || res != ResultNone {
+		t.Fatalf("res=%d err=%v, want ResultNone", res, err)
+	}
+	if e.state.Cards[2].Token != nil || e.state.Cards[3].Token == nil {
+		t.Errorf("tokens gold=%v nonGold=%v, want only the non-gold tokened",
+			e.state.Cards[2].Token, e.state.Cards[3].Token)
+	}
+	if e.state.LifePool != 3 || e.state.PendingSafeChoice != nil || e.state.CurrentSeat != nextSeat(0) {
+		t.Errorf("life=%d pending=%v seat=%d", e.state.LifePool, e.state.PendingSafeChoice, e.state.CurrentSeat)
+	}
+}
+
+// Double non-gold miss: the life is lost at call time, the target picks the one
+// card that gets a token, nothing flips, then the turn passes.
+func TestSafeCallDoubleMissTargetChoosesToken(t *testing.T) {
+	e := safeCallState(4)
+	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
+	place(e, 3, 1, Card{Rank: 11, Kind: SpecialKindNone})
+
+	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3}); err != nil {
+		t.Fatalf("safe call: %v", err)
+	}
+	p := e.state.PendingSafeChoice
+	if p == nil || !p.Miss || e.state.Phase != PhaseAwaitingResponse {
+		t.Fatalf("pending=%+v phase=%d, want a Miss choice awaiting response", p, e.state.Phase)
+	}
+	if e.state.LifePool != 3 || e.state.Cards[2].Token != nil || e.state.Cards[3].Token != nil {
+		t.Errorf("life=%d, tokens must wait for the choice", e.state.LifePool)
+	}
+	if _, err := e.Apply(0, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 2}); !errors.Is(err, ErrNotYourTurn) {
+		t.Errorf("caller choosing: err=%v, want ErrNotYourTurn", err)
+	}
+	if _, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 3}); err != nil {
+		t.Fatalf("choose: %v", err)
+	}
+	if e.state.Cards[3].Token == nil || e.state.Cards[2].Token != nil {
+		t.Errorf("only the chosen card must be tokened")
+	}
+	if e.state.Cards[1].Facing != FaceDown || e.state.Cards[3].Facing != FaceDown {
+		t.Errorf("nothing may flip on a double miss")
+	}
+	if e.state.PendingSafeChoice != nil || e.state.Phase != PhasePlaying || e.state.CurrentSeat != nextSeat(0) {
+		t.Errorf("pending=%v phase=%d seat=%d", e.state.PendingSafeChoice, e.state.Phase, e.state.CurrentSeat)
+	}
+}
+
+// A double miss on the last life ends the game at once; no choice is asked.
+func TestSafeCallDoubleMissLastLifeEnds(t *testing.T) {
+	e := safeCallState(1)
+	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
+	place(e, 3, 1, Card{Rank: 11, Kind: SpecialKindNone})
+
+	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	if err != nil || res != ResultLoss || e.state.PendingSafeChoice != nil {
+		t.Errorf("res=%d err=%v pending=%v, want loss and no pending choice", res, err, e.state.PendingSafeChoice)
 	}
 }

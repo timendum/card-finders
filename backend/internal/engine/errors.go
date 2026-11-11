@@ -29,12 +29,11 @@ var (
 )
 
 var (
-	ErrInvalidSource     = errors.New("a valid owned face-down source card is required")
-	ErrGoldSource        = errors.New("a gold card cannot be used as a source card")
-	ErrInvalidTarget     = errors.New("a valid target must be selected")
-	ErrTargetRevealed    = errors.New("the target is already revealed")
-	ErrTargetOwn         = errors.New("only other players' cards may be targeted")
-	ErrGoldNotTargetable = errors.New("a gold card can only be revealed by its owner's gold self-reveal")
+	ErrInvalidSource  = errors.New("a valid owned face-down source card is required")
+	ErrGoldSource     = errors.New("a gold card cannot be used as a source card")
+	ErrInvalidTarget  = errors.New("a valid target must be selected")
+	ErrTargetRevealed = errors.New("the target is already revealed")
+	ErrTargetOwn      = errors.New("only other players' cards may be targeted")
 )
 
 var (

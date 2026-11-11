@@ -98,7 +98,10 @@ export function buildValueSummary(view: PlayerView): ValueSummaryCount[] {
     Total: totalInPlay(entry),
   }));
 
-  const foundSum = { [SpecialKind.Silver]: 0, [SpecialKind.Gold]: 0 } as Record<SpecialKind, number>;
+  const foundSum = { [SpecialKind.Silver]: 0, [SpecialKind.Gold]: 0 } as Record<
+    SpecialKind,
+    number
+  >;
   for (const e of entries) {
     if (e.Kind === SpecialKind.Silver || e.Kind === SpecialKind.Gold) foundSum[e.Kind] += e.Found;
   }

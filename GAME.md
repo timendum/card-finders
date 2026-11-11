@@ -120,8 +120,11 @@ and untokened.
 ### Guess (normal action)
 
 Play one owned face-down source card; target one face-down card of **another**
-player. Targets must be another player's face-down, non-gold card.
+player. Targets must be another player's face-down card. Gold looks like any
+other hidden card to the caller.
 
+- **Gold target**: immediate **loss**. The gold card flips face-up, Life_Pool is
+  unchanged.
 - **Hit** (target matches derived value): Pair_Reveal — source + target flip
   face-up, no tokens. Turn passes.
 - **Miss**: Life_Pool −1 (never below 0); target stays face-down and gets a
@@ -139,14 +142,20 @@ In place of a Guess: play one owned face-down source card and target **two
 distinct** face-down cards of a **single** other player (that player must have
 ≥2 face-down cards).
 
-- **Exactly one** target matches: Hit, Pair_Reveal (source + that target).
+- **Both** targets gold: immediate **loss**; both gold cards flip face-up,
+  Life_Pool unchanged.
+- **Exactly one** target matches: Hit, Pair_Reveal (source + that target). The
+  other target is untouched, even if it is gold.
 - **Both** match: Hit; the targeted player chooses which one is revealed
   (Pair_Reveal with source).
-- **Neither** matches: Miss; Life_Pool −1; **each** un-revealed target gets a
-  token; source untokened.
+- **No match** (Miss): Life_Pool −1, source untokened, and **exactly one**
+  target gets a token:
+  - one target gold, the other non-gold: the non-gold card gets the token;
+  - both non-gold: the targeted player chooses which of the two gets the
+    token. If the −1 empties Life_Pool the game ends and no choice is asked.
 
-Resolving either way marks the power used and passes the turn. Reusing a spent
-Safe_Call is rejected.
+Resolving marks the power used and passes the turn (after the target's choice,
+when one is pending). Reusing a spent Safe_Call is rejected.
 
 ### Self-reveal of a fully-held value
 
@@ -163,12 +172,14 @@ No life change, no tokens; revealed cards flip face-up; turn passes.
 
 A gold card can only be revealed by its owner, and only when **all** of that
 owner's face-down cards are gold. Then the player reveals all their gold at once
-(no tokens, no life change) and the turn passes. Gold can never be targeted by a
-Guess, silver feat, or Safe_Call.
+(no tokens, no life change) and the turn passes. Targeting another player's gold
+with a Guess or silver feat, or with both Safe_Call targets, ends the game as a
+loss (see above); this is not a gold reveal.
 
 ## Win / loss
 
-- **Loss**: Life_Pool reaches 0 (from a Miss). Game ends immediately.
+- **Loss**: Life_Pool reaches 0 (from a Miss), or a gold card is targeted by a
+  Guess/silver feat or by both Safe_Call targets. Game ends immediately.
 - **Win**: every card across all four players is face-up.
 - In **Ended**, all gameplay actions are rejected and state is frozen.
 

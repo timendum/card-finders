@@ -181,7 +181,6 @@ var wsActionErrorMap = map[error]string{
 	engine.ErrInvalidTarget:           "invalid_target",
 	engine.ErrTargetRevealed:          "target_revealed",
 	engine.ErrTargetOwn:               "target_own",
-	engine.ErrGoldNotTargetable:       "gold_not_targetable",
 	engine.ErrSafeCallSpent:           "safe_call_spent",
 	engine.ErrSafeCallTargets:         "safe_call_targets",
 	engine.ErrNoPendingChoice:         "no_pending_choice",

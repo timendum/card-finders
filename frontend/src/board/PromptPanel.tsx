@@ -35,13 +35,20 @@ export function visibleResult(view: PlayerView, lastShownSeq: number | null): La
   const last = view.LastAction;
   if (!last || last.Actor !== view.Seat) return null;
   if (last.Kind !== ActionKind.Guess && last.Kind !== ActionKind.SafeCall) return null;
-  if (last.Outcome !== Outcome.Hit && last.Outcome !== Outcome.Miss) return null;
+  if (
+    last.Outcome !== Outcome.Hit &&
+    last.Outcome !== Outcome.Miss &&
+    last.Outcome !== Outcome.GoldHit
+  ) {
+    return null;
+  }
   if (lastShownSeq !== null && last.Seq <= lastShownSeq) return null;
   return last;
 }
 
 function resultText(last: LastAction): string {
   if (last.Outcome === Outcome.Hit) return "Hit! No life lost.";
+  if (last.Outcome === Outcome.GoldHit) return "You hit a gold card. Game over.";
   const n = last.LivesLost;
   return `Miss. You lost ${n} ${n === 1 ? "life" : "lives"}.`;
 }
@@ -49,8 +56,9 @@ function resultText(last: LastAction): string {
 function notActingText(view: PlayerView, actingSeat: number, awaitingChoice: boolean): string {
   const pos = seatPositionName(view.Seat, actingSeat);
   const who = pos === "you" ? "You are" : `The ${pos} player is`;
+  const verb = view.LastAction?.Outcome === Outcome.AwaitingToken ? "token" : "reveal";
   return awaitingChoice
-    ? `${who} choosing a card to reveal.`
+    ? `${who} choosing a card to ${verb}.`
     : `Waiting for the ${pos} player to act.`;
 }
 

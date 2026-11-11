@@ -17,8 +17,8 @@ const (
 // the combined deck, so the pool is the public announcement of which specials
 // exist rather than a parallel type.
 type SpecialPool struct {
-	Silvers []Card
-	Golds   []Card
+	Silvers      []Card
+	Golds        []Card
 	DecoySilvers []Rank
 	DecoyGolds   []Rank
 }

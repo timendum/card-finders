@@ -103,7 +103,7 @@ Inbound `{ "type", ...payload }`, decoded (`internal/server/wsmsg.go`) into an
 | `openingReveal` | `{ cardId }` | opening reveal |
 | `guess` | `{ sourceCardId, targetCardId }` | guess / silver feat |
 | `safeCall` | `{ sourceCardId, targetCardId, targetCardId2 }` | safe call |
-| `safeChooseReveal` | `{ chosenTargetCardId }` | both-hit choice |
+| `safeChooseReveal` | `{ chosenTargetCardId }` | both-hit reveal choice, or double-miss token choice |
 | `selfReveal` | `{ value }` (rank number, `"silver"`, or `"gold"`) | self-reveal |
 
 The announced value is derived from the source card (see GAME.md), never sent
@@ -222,7 +222,6 @@ REST status + envelope or a WS `error` code.
 | `ErrInvalidTarget` | WS `invalid_target` |
 | `ErrTargetRevealed` | WS `target_revealed` |
 | `ErrTargetOwn` | WS `target_own` |
-| `ErrGoldNotTargetable` | WS `gold_not_targetable` |
 | `ErrSafeCallSpent` | WS `safe_call_spent` |
 | `ErrSafeCallTargets` | WS `safe_call_targets` |
 | `ErrNoPendingChoice` | WS `no_pending_choice` |
@@ -234,8 +233,8 @@ REST status + envelope or a WS `error` code.
 Notes: `ErrInvalidOpeningSelection` = opening card missing, not owned, or not
 face-down; `ErrSpecialOpening` = opening card is silver/gold. On a guess/safe
 call, `ErrInvalidSource` = source missing, not owned, or not face-down;
-`ErrGoldSource` = source is gold. `ErrGoldNotTargetable` is a separate concern:
-*targeting* another player's gold. Self-reveal splits into
+`ErrGoldSource` = source is gold. Targeting another player's gold is not an
+error: it ends the game (see GAME.md). Self-reveal splits into
 `ErrSelfRevealIncomplete` (suited rank/silver another player still holds, or
 none held) and `ErrGoldRevealIneligible` (gold while a non-gold face-down card
 is still held). WS decode failures send `error` frames `unknown_type` /
@@ -270,20 +269,22 @@ The engine's universal invariants, one PBT each (tags above). Whole-game ones
     face-up.
 11. Every hit is a Pair_Reveal flipping exactly two cards (source + resolved
     target), no life change.
-12. Every miss costs exactly one life (floored at 0), tokens each un-revealed
-    target, leaves the source untokened/face-down.
+12. Every miss costs exactly one life (floored at 0), tokens exactly one
+    un-revealed non-gold target (a safe-call double miss lets the target player
+    choose which), leaves the source untokened/face-down.
 13. *Pairing invariant: every non-gold value's face-down count stays even.
 14. *Life_Pool is monotonic non-increasing, bounded [0, start], changes only on
     a miss.
 15. Safe_Call is consumed exactly once; a second use is rejected.
 16. *Gold becomes face-up only via its owner's gold self-reveal (all remaining
-    face-down cards gold), never targeted; no life change.
+    face-down cards gold) or when targeted by a guess / both safe-call targets
+    (the game-ending gold hit); neither changes life.
 17. Suited-rank/silver self-reveal flips exactly the owner's cards of that
     value, nothing else, no life change.
 18. *Turn advance lands on the nearest clockwise seat with a face-down card, or
     reports none (terminal) rather than selecting a seat.
 19. *Ended=win exactly when all cards face-up; Ended=loss exactly when life
-    hits 0; these are the only transitions into Ended.
+    hits 0 or a gold hit occurs; these are the only transitions into Ended.
 20. *A seat's view attaches a value only to face-up or own cards; others'
     face-down cards carry no value.
 21. *Every view includes all token display values and the full Special_Pool

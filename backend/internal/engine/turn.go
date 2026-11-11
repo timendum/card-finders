@@ -44,6 +44,16 @@ func (e *Engine) checkTerminal() Result {
 	return ResultNone
 }
 
+// endGoldHit ends the game as a loss after a gold card was targeted. Life_Pool
+// is left as-is; the caller has already flipped the gold card(s) face-up.
+func (e *Engine) endGoldHit() Result {
+	s := e.state
+	s.PendingSafeChoice = nil
+	s.Phase = PhaseEnded
+	s.GameResult = ResultLoss
+	return ResultLoss
+}
+
 // finishTurn ends the action: if the game ended it returns that Result without
 // advancing (leaving the final board intact), else advances clockwise from
 // advanceFrom. Most handlers pass CurrentSeat; safe-choose-reveal passes the

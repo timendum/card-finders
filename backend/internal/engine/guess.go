@@ -31,10 +31,6 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 	if target.Owner == seat {
 		return ResultNone, ErrTargetOwn
 	}
-	// Another player's gold is non-targetable (own-target already rejected above).
-	if target.Card.Kind == SpecialKindGold {
-		return ResultNone, ErrGoldNotTargetable
-	}
 
 	sourceID := source.Card.ID
 	la := &LastAction{
@@ -43,6 +39,17 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 		AnnouncedValue: announcedValueOf(source.Card),
 		Targets:        []CardID{action.TargetCard},
 		SourceCard:     &sourceID,
+	}
+
+	// Targeting another player's gold ends the game immediately: the gold card
+	// flips face-up and Life_Pool is untouched.
+	if target.Card.Kind == SpecialKindGold {
+		target.Facing = FaceUp
+		la.Outcome = OutcomeGoldHit
+		la.Revealed = []CardID{action.TargetCard}
+		s.recordAction(la)
+		s.logAction(seat, "called "+announcedText(la.AnnouncedValue)+" and hit a gold card")
+		return e.endGoldHit(), nil
 	}
 
 	if matchesAnnouncedValue(source.Card, target.Card) {

@@ -77,9 +77,12 @@ type GameState struct {
 type PendingSafeChoice struct {
 	Caller       SeatID
 	TargetPlayer SeatID
-	SourceCard   CardID // flipped on resolution
-	Option1      CardID // the two matching targets TargetPlayer chooses between
+	SourceCard   CardID // flipped on resolution (hit only)
+	Option1      CardID // the two targets TargetPlayer chooses between
 	Option2      CardID
+	// Miss marks a double-miss: the life is already lost and the choice picks
+	// which single option gets the token; nothing is revealed.
+	Miss bool
 }
 
 // recordAction bumps Seq once and stores la as the authoritative LastAction,

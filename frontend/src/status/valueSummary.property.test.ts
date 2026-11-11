@@ -55,7 +55,15 @@ function makeView(
   return {
     Seat: SEAT,
     Phase: Phase.Playing,
-    Level: { Number: 1, Name: "L", SilverCount: 0, GoldCount: 0, ExtraSilver: 0, ExtraGold: 0, StartLives: 4 },
+    Level: {
+      Number: 1,
+      Name: "L",
+      SilverCount: 0,
+      GoldCount: 0,
+      ExtraSilver: 0,
+      ExtraGold: 0,
+      StartLives: 4,
+    },
     SpecialPool: {
       // Unsorted on purpose: the summary must order by Sort_Value itself.
       Silvers: silvers.map((r) => val(r, SpecialKind.Silver)),
@@ -87,7 +95,9 @@ function viewFromSpec(s: Spec): PlayerView {
   s.suitedUp.forEach((n, i) => {
     for (let k = 0; k < n; k++) cards.push(faceUp(id++, val(i + 2, SpecialKind.None)));
   });
-  s.silvers.forEach((r, i) => s.silverUp[i] && cards.push(faceUp(id++, val(r, SpecialKind.Silver))));
+  s.silvers.forEach(
+    (r, i) => s.silverUp[i] && cards.push(faceUp(id++, val(r, SpecialKind.Silver))),
+  );
   s.golds.forEach((r, i) => s.goldUp[i] && cards.push(faceUp(id++, val(r, SpecialKind.Gold))));
   return makeView(s.silvers, s.golds, s.silverInPlay, s.goldInPlay, cards);
 }
@@ -132,7 +142,11 @@ describe("Property 9: Value_Summary counts and uncertainty", () => {
 
         for (const row of rows) {
           if (row.Kind === SpecialKind.None) {
-            expect([row.Found, row.Total, row.Uncertain]).toEqual([s.suitedUp[row.Rank - 2], 4, false]);
+            expect([row.Found, row.Total, row.Uncertain]).toEqual([
+              s.suitedUp[row.Rank - 2],
+              4,
+              false,
+            ]);
             continue;
           }
           const silverKind = row.Kind === SpecialKind.Silver;
@@ -183,10 +197,28 @@ const handsArb: fc.Arbitrary<Hands> = fc.record({
   up: fc.array(handValueArb, { maxLength: 8 }),
 });
 
-function viewFromHands(h: Hands, silvers: number[], golds: number[], silverInPlay: number, goldInPlay: number) {
+function viewFromHands(
+  h: Hands,
+  silvers: number[],
+  golds: number[],
+  silverInPlay: number,
+  goldInPlay: number,
+) {
   const cards: ViewCard[] = [
-    ...h.own.map((v, i): ViewCard => ({ ID: i, Owner: SEAT, Slot: i, Facing: Face.Down, Value: v })),
-    ...h.up.map((v, i): ViewCard => ({ ID: 100 + i, Owner: 1, Slot: i, Facing: Face.Up, Value: v })),
+    ...h.own.map((v, i): ViewCard => ({
+      ID: i,
+      Owner: SEAT,
+      Slot: i,
+      Facing: Face.Down,
+      Value: v,
+    })),
+    ...h.up.map((v, i): ViewCard => ({
+      ID: 100 + i,
+      Owner: 1,
+      Slot: i,
+      Facing: Face.Up,
+      Value: v,
+    })),
   ];
   return makeView(silvers, golds, silverInPlay, goldInPlay, cards);
 }

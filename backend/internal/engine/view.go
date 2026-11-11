@@ -23,6 +23,11 @@ const (
 	OutcomeHit
 	OutcomeMiss
 	OutcomeAwaitingChoice
+	// OutcomeAwaitingToken marks a double-miss safe call (life already lost)
+	// whose token placement is pending the target's choice.
+	OutcomeAwaitingToken
+	// OutcomeGoldHit marks a targeted gold card: the game ended as a loss.
+	OutcomeGoldHit
 )
 
 // LastAction records the most recently applied action for display. Seq is a

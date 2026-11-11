@@ -236,9 +236,14 @@ export interface GameState {
 export interface PendingSafeChoice {
   Caller: SeatID;
   TargetPlayer: SeatID;
-  SourceCard: CardID; // flipped on resolution
-  Option1: CardID; // the two matching targets TargetPlayer chooses between
+  SourceCard: CardID; // flipped on resolution (hit only)
+  Option1: CardID; // the two targets TargetPlayer chooses between
   Option2: CardID;
+  /**
+   * Miss marks a double-miss: the life is already lost and the choice picks
+   * which single option gets the token; nothing is revealed.
+   */
+  Miss: boolean;
 }
 
 //////////
@@ -302,6 +307,15 @@ export enum Outcome {
   Hit,
   Miss,
   AwaitingChoice,
+  /**
+   * OutcomeAwaitingToken marks a double-miss safe call (life already lost)
+   * whose token placement is pending the target's choice.
+   */
+  AwaitingToken,
+  /**
+   * OutcomeGoldHit marks a targeted gold card: the game ended as a loss.
+   */
+  GoldHit,
 }
 /**
  * LastAction records the most recently applied action for display. Seq is a
