@@ -136,23 +136,40 @@ func projectLastAction(s *GameState, seat SeatID) *LastAction {
 // ViewSpecialPool is the public Special_Pool as projected into a view: bare
 // values with no CardIDs, so the pool cannot be correlated with dealt cards.
 type ViewSpecialPool struct {
-	Silvers []CardValue
-	Golds   []CardValue
+	Silvers      []CardValue // real and decoy entries, ascending rank
+	Golds        []CardValue // real and decoy entries, ascending rank
+	SilverInPlay int         // number of real silvers dealt
+	GoldInPlay   int         // number of real golds dealt
 }
 
-// normalizePool projects p to values only. The result slices are never nil, so
-// the view always marshals Silvers/Golds as [] rather than null.
+// normalizePool projects p to values only. Real and decoy entries are merged
+// and sorted ascending by rank per kind, so list order never reveals which are
+// decoys. The result slices are never nil, so the view always marshals
+// Silvers/Golds as [] rather than null.
 func normalizePool(p SpecialPool) ViewSpecialPool {
 	out := ViewSpecialPool{
-		Silvers: make([]CardValue, 0, len(p.Silvers)),
-		Golds:   make([]CardValue, 0, len(p.Golds)),
+		Silvers:      make([]CardValue, 0, len(p.Silvers)+len(p.DecoySilvers)),
+		Golds:        make([]CardValue, 0, len(p.Golds)+len(p.DecoyGolds)),
+		SilverInPlay: len(p.Silvers),
+		GoldInPlay:   len(p.Golds),
 	}
 	for _, c := range p.Silvers {
 		out.Silvers = append(out.Silvers, naturalValue(c))
 	}
+	for _, r := range p.DecoySilvers {
+		out.Silvers = append(out.Silvers, CardValue{Rank: r, Kind: SpecialKindSilver})
+	}
 	for _, c := range p.Golds {
 		out.Golds = append(out.Golds, naturalValue(c))
 	}
+	for _, r := range p.DecoyGolds {
+		out.Golds = append(out.Golds, CardValue{Rank: r, Kind: SpecialKindGold})
+	}
+	byRank := func(s []CardValue) {
+		sort.Slice(s, func(i, j int) bool { return s[i].Rank < s[j].Rank })
+	}
+	byRank(out.Silvers)
+	byRank(out.Golds)
 	return out
 }
 

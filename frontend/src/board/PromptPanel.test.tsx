@@ -28,8 +28,8 @@ function playingView(overrides: Partial<PlayerView> = {}): PlayerView {
   return {
     Seat: 0,
     Phase: Phase.Playing,
-    Level: { Number: 1, Name: "L", SilverCount: 0, GoldCount: 0, StartLives: 4 },
-    SpecialPool: { Silvers: [], Golds: [] },
+    Level: { Number: 1, Name: "L", SilverCount: 0, GoldCount: 0, ExtraSilver: 0, ExtraGold: 0, StartLives: 4 },
+    SpecialPool: { Silvers: [], Golds: [], SilverInPlay: 0, GoldInPlay: 0 },
     LifePool: 4,
     MaxLife: 4,
     CurrentSeat: 0,

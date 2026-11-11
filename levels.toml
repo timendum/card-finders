@@ -6,27 +6,35 @@
 #   silver - count of silver special cards (even, 0..10)
 #   gold   - count of gold special cards (0..11)
 #   lives  - starting lives (1..100)
+#   extraSilver - optional decoy silvers, default 0 (silver + extraSilver <= 11)
+#   extraGold   - optional decoy golds, default 0 (gold + extraGold <= 11)
 
-["Tutorial One"]
+["Basic games"]
 number = 1
 silver = 0
 gold = 0
 lives = 4
 
-["Tutorial two"]
+["Two silvers"]
 number = 2
 silver = 2
 gold = 0
 lives = 4
 
-["Tutorial three"]
+["One gold"]
 number = 3
 silver = 0
 gold = 1
 lives = 4
 
-["Tutorial four"]
+["Two silver plus one"]
 number = 4
+silver = 2
+extraSilver = 1
+lives = 4
+
+["Silvers and gold"]
+number = 5
 silver = 2
 gold = 1
 lives = 4

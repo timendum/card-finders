@@ -19,6 +19,8 @@ const (
 type SpecialPool struct {
 	Silvers []Card
 	Golds   []Card
+	DecoySilvers []Rank
+	DecoyGolds   []Rank
 }
 
 // BuildBaseDeck returns the 48-card Base_Deck. IDs are assigned in rank-major,
@@ -49,11 +51,33 @@ func eligibleSpecialRankList() []Rank {
 	return ranks
 }
 
+// remainingRanks returns eligibleSpecialRankList() minus used, ascending.
+func remainingRanks(used []Rank) []Rank {
+	taken := make(map[Rank]bool, len(used))
+	for _, r := range used {
+		taken[r] = true
+	}
+	out := make([]Rank, 0, eligibleSpecialRanks)
+	for _, r := range eligibleSpecialRankList() {
+		if !taken[r] {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
 // drawDistinctRanks returns n distinct eligible special ranks chosen uniformly
 // at random. It errors on out-of-range n rather than silently producing
 // duplicates.
 func drawDistinctRanks(rng *rand.Rand, n int) ([]Rank, error) {
-	ranks := eligibleSpecialRankList()
+	return drawDistinctFrom(rng, eligibleSpecialRankList(), n)
+}
+
+// drawDistinctFrom returns n distinct ranks chosen uniformly from candidates
+// by partial Fisher-Yates. It consumes exactly n rng values (none when n == 0)
+// and does not modify the caller's slice.
+func drawDistinctFrom(rng *rand.Rand, candidates []Rank, n int) ([]Rank, error) {
+	ranks := append([]Rank(nil), candidates...)
 	if n < 0 || n > len(ranks) {
 		return nil, fmt.Errorf("cannot draw %d distinct ranks from %d eligible ranks", n, len(ranks))
 	}
@@ -84,10 +108,23 @@ func BuildSpecialPool(rng *rand.Rand, l Level) (SpecialPool, error) {
 		return SpecialPool{}, fmt.Errorf("gold: %w", err)
 	}
 
+	// Decoys are drawn after all real draws so zero extras consume no RNG and
+	// real draws stay identical. Each kind's decoys avoid that kind's real ranks.
+	decoySilvers, err := drawDistinctFrom(rng, remainingRanks(silverRanks), l.ExtraSilver)
+	if err != nil {
+		return SpecialPool{}, fmt.Errorf("decoy silver: %w", err)
+	}
+	decoyGolds, err := drawDistinctFrom(rng, remainingRanks(goldRanks), l.ExtraGold)
+	if err != nil {
+		return SpecialPool{}, fmt.Errorf("decoy gold: %w", err)
+	}
+
 	nextID := CardID(baseDeckSize)
 	pool := SpecialPool{
-		Silvers: make([]Card, 0, l.SilverCount),
-		Golds:   make([]Card, 0, l.GoldCount),
+		Silvers:      make([]Card, 0, l.SilverCount),
+		Golds:        make([]Card, 0, l.GoldCount),
+		DecoySilvers: decoySilvers,
+		DecoyGolds:   decoyGolds,
 	}
 	for _, r := range silverRanks {
 		pool.Silvers = append(pool.Silvers, Card{ID: nextID, Rank: r, Kind: SpecialKindSilver})

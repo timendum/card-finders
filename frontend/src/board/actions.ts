@@ -61,6 +61,17 @@ export function targetableSeats(view: PlayerView): SeatID[] {
   return [...seats].sort((a, b) => a - b);
 }
 
+/**
+ * inPlayTotal returns how many cards of a special kind are actually in play.
+ * The pool may list decoy entries, so never derive this from the entry count.
+ */
+export function inPlayTotal(
+  view: PlayerView,
+  kind: typeof SpecialKind.Silver | typeof SpecialKind.Gold,
+): number {
+  return kind === SpecialKind.Silver ? view.SpecialPool.SilverInPlay : view.SpecialPool.GoldInPlay;
+}
+
 /** A self-reveal option: a picker `label` and the wire `value` it sends. */
 export interface SelfRevealOption {
   label: string;
@@ -112,7 +123,7 @@ export function selfRevealOptions(view: PlayerView): SelfRevealOption[] {
   const ranks = [...heldRanks.entries()]
     .filter(([rank, held]) => held + (faceUpRanks.get(rank) ?? 0) === 4)
     .map(([rank]) => rank);
-  const hasSilver = heldSilver > 0 && heldSilver + faceUpSilver === view.SpecialPool.Silvers.length;
+  const hasSilver = heldSilver > 0 && heldSilver + faceUpSilver === inPlayTotal(view, SpecialKind.Silver);
   // Gold: only once every other face-down card the viewer holds is gone.
   const hasGold = heldGold > 0 && heldOther === 0;
 

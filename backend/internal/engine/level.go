@@ -9,6 +9,8 @@ type Level struct {
 	Name        string // 1..60 chars
 	SilverCount int    // even, 0..10
 	GoldCount   int    // 0..11
+	ExtraSilver int    // >= 0, decoy silvers; SilverCount+ExtraSilver <= 11
+	ExtraGold   int    // >= 0, decoy golds; GoldCount+ExtraGold <= 11
 	StartLives  int    // 1..100
 }
 
@@ -41,6 +43,20 @@ func ValidateLevel(l Level) error {
 	}
 	if l.GoldCount > eligibleSpecialRanks {
 		return fmt.Errorf("gold count %d exceeds the %d eligible ranks (2..queen)", l.GoldCount, eligibleSpecialRanks)
+	}
+	if l.ExtraSilver < 0 {
+		return fmt.Errorf("extra silver must be at least 0, got %d", l.ExtraSilver)
+	}
+	if l.ExtraGold < 0 {
+		return fmt.Errorf("extra gold must be at least 0, got %d", l.ExtraGold)
+	}
+	if l.SilverCount+l.ExtraSilver > eligibleSpecialRanks {
+		return fmt.Errorf("silver count %d plus extra silver %d exceeds the %d eligible ranks (2..queen)",
+			l.SilverCount, l.ExtraSilver, eligibleSpecialRanks)
+	}
+	if l.GoldCount+l.ExtraGold > eligibleSpecialRanks {
+		return fmt.Errorf("gold count %d plus extra gold %d exceeds the %d eligible ranks (2..queen)",
+			l.GoldCount, l.ExtraGold, eligibleSpecialRanks)
 	}
 	return nil
 }

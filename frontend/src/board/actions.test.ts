@@ -33,8 +33,8 @@ function viewWith(cards: ViewCard[], seat: SeatID = 0): PlayerView {
   return {
     Seat: seat,
     Phase: Phase.Playing,
-    Level: { Number: 1, Name: "L", SilverCount: 2, GoldCount: 1, StartLives: 4 },
-    SpecialPool: { Silvers: [], Golds: [] },
+    Level: { Number: 1, Name: "L", SilverCount: 2, GoldCount: 1, ExtraSilver: 0, ExtraGold: 0, StartLives: 4 },
+    SpecialPool: { Silvers: [], Golds: [], SilverInPlay: 0, GoldInPlay: 0 },
     LifePool: 4,
     MaxLife: 4,
     CurrentSeat: seat,
@@ -106,6 +106,8 @@ describe("selfRevealOptions", () => {
     view.SpecialPool = {
       Silvers: [{ Rank: 4, Suit: 0, Kind: SpecialKind.Silver }],
       Golds: [],
+      SilverInPlay: 1,
+      GoldInPlay: 0,
     };
     expect(selfRevealOptions(view)).toEqual([
       { label: "Rank 5", value: 5 },

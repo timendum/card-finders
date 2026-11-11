@@ -14,10 +14,12 @@ import (
 
 // rawLevel decodes one TOML level table; the table key supplies the level name.
 type rawLevel struct {
-	Number int  `toml:"number"`
-	Silver *int `toml:"silver"`
-	Gold   *int `toml:"gold"`
-	Lives  *int `toml:"lives"`
+	Number      int  `toml:"number"`
+	Silver      *int `toml:"silver"`
+	Gold        *int `toml:"gold"`
+	Lives       *int `toml:"lives"`
+	ExtraSilver *int `toml:"extraSilver"`
+	ExtraGold   *int `toml:"extraGold"`
 }
 
 // Defaults applied when silver/gold/lives are omitted from a level table.
@@ -73,6 +75,8 @@ func convertAndValidate(path string, raw map[string]rawLevel) (levels []engine.L
 			SilverCount: orDefault(r.Silver, defaultSilver),
 			GoldCount:   orDefault(r.Gold, defaultGold),
 			StartLives:  orDefault(r.Lives, defaultLives),
+			ExtraSilver: orDefault(r.ExtraSilver, 0),
+			ExtraGold:   orDefault(r.ExtraGold, 0),
 		}
 		if vErr := engine.ValidateLevel(lvl); vErr != nil {
 			return nil, false, fmt.Errorf("level %q in %q: %w", name, path, vErr)

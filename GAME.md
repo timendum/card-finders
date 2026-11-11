@@ -25,9 +25,21 @@ costs the shared team a life. The team **wins** by revealing every card and
   and golds, chosen randomly at game start and revealed to everyone before
   dealing. A silver and a gold may share a rank; two silvers (or two golds) may
   not.
+- **Extra_Silver / Extra_Gold** — optional per-level counts (TOML keys
+  `extraSilver` / `extraGold`, default 0, each ≥ 0). They add decoys to the
+  Special_Pool. `silver + extraSilver` and `gold + extraGold` must each be ≤ 11
+  (the eligible ranks 2..queen). `extraSilver` may be odd: decoys are never
+  dealt, so they do not affect pairing.
+- **Decoy_Special** — a silver or gold rank identity listed in the Special_Pool
+  but never dealt to anyone. Players cannot assume every listed special exists
+  in a hand. A decoy's rank differs from every real special of the same kind.
+- **Real_Special** — a special that is actually dealt (the level's `silver` /
+  `gold` counts).
 - **Sort_Value** — display-ordering number only (rank, +0.3 silver, +0.6 gold).
 - **Level** — config: number, name, silver count (even, 0–10), gold count
-  (0–11), starting lives (1–100).
+  (0–11), extra silver / extra gold (optional, ≥ 0), starting lives (1–100).
+  The level label shows extras only when present, e.g. `silver 2 + 1 decoy,
+  gold 1`; a level with no extras is labelled `silver 2, gold 1`.
 - **Life_Pool** — shared team life counter. Reaches 0 → loss.
 - **Token** — a public marker in front of a **face-down** card showing its true
   value to everyone. Placed by an opening reveal or a miss. A face-up card never
@@ -58,7 +70,11 @@ The 4th join runs these steps in one atomic transition (they are not separate
 phases; nothing can observe the intermediate states):
 
 1. **Special_Pool** — silvers/golds get random ranks, forming the Special_Pool,
-   revealed to all before any deal.
+   revealed to all before any deal. Ranks are drawn in this order: real
+   silvers, real golds, then `extraSilver` decoy silvers (from ranks not used by
+   a real silver), then `extraGold` decoy golds (from ranks not used by a real
+   gold). With no extras, no extra random draws happen, so existing seeds give
+   the same pool, deal, and first player. Only real specials enter the deal.
 2. **Deal** — Base_Deck + the level's specials are combined, uniformly shuffled,
    and dealt across the 4 players (hand sizes differ by ≤1, no cards left
    over). Each hand is then laid out in a **fixed, value-sorted order**
@@ -169,6 +185,27 @@ The server computes a per-player view:
 - Every face-up card's value is visible to everyone.
 - The full Special_Pool is visible to everyone (which identities exist), without
   revealing who holds any particular special.
+- Real and decoy specials are indistinguishable in the view, even after the game
+  ends. Each kind's pool entries are **sorted ascending by rank**, so draw order
+  (real first, decoys after) does not leak. The view also carries
+  `SilverInPlay` / `GoldInPlay`: the number of real silvers / golds dealt. No
+  per-entry decoy flag is sent.
+
+### Value_Summary display of specials
+
+The client derives each special's count from the pool entries, `SilverInPlay` /
+`GoldInPlay`, and the found (face-up) count. Suited ranks always show
+`found/4`.
+
+- `0/1?` — nothing found and the entry may be a decoy (pool entries of that kind
+  outnumber the in-play count). The `?` is bold.
+- `1/1` — found; no `?`. Also shown as `0/1` (no `?`) when pool entries of that
+  kind equal the in-play count, so every entry is real.
+- `0/0` (marked completed) — all in-play specials of that kind are already
+  found, so any entry still at 0 found was a decoy.
+
+Self-reveal eligibility for silver and gold uses `SilverInPlay` / `GoldInPlay`,
+not the pool length.
 
 ## Card-count invariant
 

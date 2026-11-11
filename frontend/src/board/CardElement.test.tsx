@@ -26,7 +26,7 @@ describe("CardElement", () => {
   it("marks specials by kind and shows the suit-free label", () => {
     const html = renderToStaticMarkup(<CardElement facing={Face.Up} value={goldQueen} />);
     expect(html).toContain('data-kind="gold"');
-    expect(html).toContain(">GQ<");
+    expect(html).toContain(">QG<");
   });
 });
 

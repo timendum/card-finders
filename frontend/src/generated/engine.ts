@@ -71,7 +71,7 @@ export interface Action {
 export type Suit = number; /* uint8 */
 export type Rank = number; /* uint8 */
 /**
- * 0-4, ordered, the first to play is randomly choose
+ * 0-3, ordered, the first to play is randomly choose
  */
 export type SeatID = number; /* uint8 */
 export enum SpecialKind {
@@ -107,6 +107,8 @@ export interface Card {
 export interface SpecialPool {
   Silvers: Card[];
   Golds: Card[];
+  DecoySilvers: Rank[];
+  DecoyGolds: Rank[];
 }
 
 //////////
@@ -133,6 +135,8 @@ export interface Level {
   Name: string; // 1..60 chars
   SilverCount: number /* int */; // even, 0..10
   GoldCount: number /* int */; // 0..11
+  ExtraSilver: number /* int */; // >= 0, decoy silvers; SilverCount+ExtraSilver <= 11
+  ExtraGold: number /* int */; // >= 0, decoy golds; GoldCount+ExtraGold <= 11
   StartLives: number /* int */; // 1..100
 }
 
@@ -164,7 +168,7 @@ export interface LogEntry {
 export type SessionToken = string;
 /**
  * Phase gates which actions are legal and advances in a fixed order:
- * Waiting -> SpecialPool -> Dealing -> Opening -> Playing -> Ended, with
+ * Waiting -> Opening -> Playing -> Ended, with
  * Playing <-> AwaitingResponse while another seat's response is pending.
  * Gating is by equality only; never compare phases by ordinal.
  */
@@ -363,6 +367,8 @@ export interface PlayerView {
  * values with no CardIDs, so the pool cannot be correlated with dealt cards.
  */
 export interface ViewSpecialPool {
-  Silvers: CardValue[];
-  Golds: CardValue[];
+  Silvers: CardValue[]; // real and decoy entries, ascending rank
+  Golds: CardValue[]; // real and decoy entries, ascending rank
+  SilverInPlay: number /* int */; // number of real silvers dealt
+  GoldInPlay: number /* int */; // number of real golds dealt
 }

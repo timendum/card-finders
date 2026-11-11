@@ -91,7 +91,11 @@ type gameObs struct {
 // runRandomGame seeds a game, then streams random legal actions until it ends.
 // A legal action that Apply rejects fails the test.
 func runRandomGame(t *rapid.T, obs gameObs) *Engine {
-	lvl := drawLevel(t)
+	return runRandomGameAt(t, drawLevel(t), obs)
+}
+
+// runRandomGameAt is runRandomGame on a caller-supplied level.
+func runRandomGameAt(t *rapid.T, lvl Level, obs gameObs) *Engine {
 	seed := rapid.Int64().Draw(t, "seed")
 	e := newDealtEngine(t, seed, lvl)
 	if obs.onState != nil {

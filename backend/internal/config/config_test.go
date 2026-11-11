@@ -156,3 +156,67 @@ func TestLoadLevels_EmptyConfig(t *testing.T) {
 		t.Fatalf("expected error for empty config, got nil")
 	}
 }
+
+// TestLoadLevels_ExtrasDefaultZero verifies omitted extras default to 0.
+func TestLoadLevels_ExtrasDefaultZero(t *testing.T) {
+	levels, _, err := LoadLevels(writeTemp(t, validTwoLevels), true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, l := range levels {
+		if l.ExtraSilver != 0 || l.ExtraGold != 0 {
+			t.Fatalf("extras should default to 0: %+v", l)
+		}
+	}
+}
+
+// TestLoadLevels_ExtrasValid verifies valid extras round trip.
+func TestLoadLevels_ExtrasValid(t *testing.T) {
+	const withExtras = `
+["Decoys"]
+number = 1
+silver = 2
+gold = 1
+lives = 4
+extraSilver = 3
+extraGold = 2
+`
+	levels, _, err := LoadLevels(writeTemp(t, withExtras), true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(levels) != 1 || levels[0].ExtraSilver != 3 || levels[0].ExtraGold != 2 {
+		t.Fatalf("extras not round-tripped: %+v", levels)
+	}
+}
+
+// TestLoadLevels_ExtrasInvalid verifies negative extras and sums above 11 are
+// hard errors.
+func TestLoadLevels_ExtrasInvalid(t *testing.T) {
+	cases := map[string]string{
+		"negative extraSilver": "silver = 2\ngold = 1\nextraSilver = -1",
+		"negative extraGold":   "silver = 2\ngold = 1\nextraGold = -1",
+		"silver sum above 11":  "silver = 4\ngold = 1\nextraSilver = 8",
+		"gold sum above 11":    "silver = 2\ngold = 3\nextraGold = 9",
+	}
+	for name, body := range cases {
+		t.Run(name, func(t *testing.T) {
+			path := writeTemp(t, "[\"Bad\"]\nnumber = 1\nlives = 4\n"+body+"\n")
+			if _, _, err := LoadLevels(path, true); err == nil {
+				t.Fatalf("expected validation error, got nil")
+			}
+		})
+	}
+}
+
+// TestLoadLevels_RepoLevelsToml verifies the repo-root levels.toml loads.
+func TestLoadLevels_RepoLevelsToml(t *testing.T) {
+	path := filepath.Join("..", "..", "..", "levels.toml")
+	levels, usedDummy, err := LoadLevels(path, true)
+	if err != nil {
+		t.Fatalf("repo levels.toml failed to load: %v", err)
+	}
+	if usedDummy || len(levels) == 0 {
+		t.Fatalf("expected real levels, got usedDummy=%v levels=%+v", usedDummy, levels)
+	}
+}

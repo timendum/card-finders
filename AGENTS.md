@@ -58,7 +58,9 @@ the lock:
 - `Apply(seat SeatID, action Action) (Result, error)` — single entry point for
   all gameplay actions (`Action` is a tagged union).
 - `View(seat SeatID) PlayerView` — per-player projection (hides others' hidden
-  values; see GAME.md visibility rules).
+  values; see GAME.md visibility rules). `ViewSpecialPool` lists real and
+  decoy entries merged and sorted, plus `SilverInPlay`/`GoldInPlay` (real
+  counts); decoys live only in the internal `SpecialPool.DecoySilvers/Golds`.
 - `Levels() []Level` — defensive copy of the configured levels (served by
   `GET /api/levels`).
 
@@ -70,7 +72,9 @@ action meaning.
 Three independent paths on one `http.ServeMux`:
 
 - `/api/...` — REST (JSON). Errors use `{ "error": { "code", "message" } }`.
-  - `GET  /api/levels` → `{ levels: [Level...] }`.
+  - `GET  /api/levels` → `{ levels: [Level...] }`. Each `Level` carries
+    `Number`, `Name`, `SilverCount`, `GoldCount`, `ExtraSilver`, `ExtraGold`,
+    `StartLives` (extras = decoy specials, see GAME.md).
   - `POST /api/game` `{ levelNumber }` → `201 { joinCode }`. Errors:
     `level_required` (400), `level_invalid` (400), `level_config_invalid` (400),
     `game_exists` (409).
@@ -135,7 +139,9 @@ validates (via `engine.ValidateLevel`, unique `number`). Outcomes:
 - Malformed / invalid / duplicate number → hard error, exit non-zero.
 
 TOML schema: one named table per level (key = name); inner keys `number`,
-`silver`, `gold`, `lives`. The engine's only hardcoded level is `dummyLevel`.
+`silver`, `gold`, `lives`, plus optional `extraSilver`, `extraGold` (decoy
+specials, default 0; negative or `silver+extraSilver` / `gold+extraGold` above
+11 is a hard error). The engine's only hardcoded level is `dummyLevel`.
 
 ## Commands
 
@@ -245,12 +251,15 @@ The engine's universal invariants, one PBT each (tags above). Whole-game ones
 (*) are checked at every reachable state.
 
 1. `ValidateLevel` accepts a level iff number 1..50, name 1..60, silver even
-   0..10, gold 0..11, lives 1..100, and both counts fit the 11 ranks (2..Q).
+   0..10, gold 0..11, lives 1..100, extraSilver/extraGold ≥ 0, and
+   silver+extraSilver and gold+extraGold each fit the 11 ranks (2..Q).
 2. Creating a game sets Life_Pool and MaxLife to the level's starting lives.
 3. Sort_Value = rank (suited), rank+0.3 (silver), rank+0.6 (gold).
 4. Hand display order is ascending Sort_Value, ties by suit, stable.
-5. Special_Pool has exactly the level's silver/gold counts, distinct ranks per
-   kind, each in 2..Q, formed before any deal; a shared rank is two entries.
+5. Special_Pool has exactly silver+extraSilver / gold+extraGold entries (real
+   plus decoy), distinct ranks per kind, each in 2..Q, formed before any deal;
+   a shared rank is two entries. Only the real specials are dealt; decoys
+   never collide with real ranks of their kind and are never dealt.
 6. Dealing: hands union = combined deck exactly, is a permutation, sizes differ
    by ≤1.
 7. First player is a valid seat; order is the clockwise rotation from it.
@@ -277,13 +286,18 @@ The engine's universal invariants, one PBT each (tags above). Whole-game ones
     hits 0; these are the only transitions into Ended.
 20. *A seat's view attaches a value only to face-up or own cards; others'
     face-down cards carry no value.
-21. *Every view includes all token display values and the full Special_Pool,
-    with no special's owner revealed.
+21. *Every view includes all token display values and the full Special_Pool
+    (real and decoy entries merged, ascending rank per kind, with
+    `SilverInPlay`/`GoldInPlay` = the level's silver/gold counts), with no
+    special's owner and no real-vs-decoy marker revealed, in any phase.
 22. Session_Tokens are pairwise distinct across occupied seats.
 23. Phase stays Waiting through joins 0..3; the 4th join advances past it.
-24. Value_Summary orders suited ranks 2..K with specials by Sort_Value (each
-    special right after its base rank).
-25. Value_Summary found = face-up count of that value, total = count in play (4
-    per suited rank, 1 per special); recomputes on reveal.
+24. Value_Summary orders suited ranks 2..K with every Special_Pool entry (real
+    and decoy) by Sort_Value (each special right after its base rank).
+25. Value_Summary found = face-up count of that value; total = 4 per suited
+    rank. A special shows `1/1` when found; else `0/0` (complete) when the
+    kind's found sum equals its in-play count, else `0/1` when the kind's
+    entry count equals its in-play count, else `0/1?` (possibly not in
+    play). Recomputes on reveal.
 26. Seat layout puts the viewer bottom and the next three clockwise seats at
     left, top, right.

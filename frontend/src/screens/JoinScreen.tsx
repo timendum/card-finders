@@ -57,6 +57,18 @@ export function JoinScreen({ onJoined }: JoinScreenProps) {
   );
 }
 
+function formatLevelPart(kind: string, count: number, extra: number): string {
+  return extra > 0 ? `${kind} ${count} + ${extra} decoy` : `${kind} ${count}`;
+}
+
+/** Describes a level's specials, e.g. "silver 2 + 1 decoy, gold 1". */
+function formatLevelSpecials(
+  level: Level,
+): string {
+  return `${formatLevelPart("silver", level.SilverCount, level.ExtraSilver)}, ${formatLevelPart("gold", level.GoldCount, level.ExtraGold)}`;
+}
+
+
 // CreatePanel picks a level and creates the game. Creating does not seat the
 // host, so it finishes by joining the host into the freshly created game.
 function CreatePanel({ onJoined }: JoinScreenProps) {
@@ -176,7 +188,7 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
                 checked={selected === level.Number}
                 onChange={() => setSelected(level.Number)}
               />
-              {level.Name} — silver {level.SilverCount}, gold {level.GoldCount}, lives{" "}
+              {level.Name} — {formatLevelSpecials(level)}, lives{" "}
               {level.StartLives}
             </label>
           </li>

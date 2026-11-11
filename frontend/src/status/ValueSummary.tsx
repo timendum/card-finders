@@ -24,6 +24,8 @@ export interface ValueSummaryEntry extends ValueIdentity {
 export interface ValueSummaryCount extends ValueSummaryEntry {
   Found: number;
   Total: number;
+  /** Special that may be a decoy: nothing found and more entries than in play. */
+  Uncertain: boolean;
 }
 
 export function sortValue(value: ValueIdentity): number {
@@ -81,13 +83,42 @@ export function countFound(view: PlayerView, value: ValueIdentity): number {
   return found;
 }
 
-/** Ordered Value_Summary with a found-over-total count for each value. */
+/**
+ * Ordered Value_Summary with a found-over-total count for each value.
+ *
+ * Specials, per kind (rules checked in order): found => 1/1; all in-play
+ * specials of the kind found => 0/0 (completed); pool entries equal in-play
+ * count => 0/1; otherwise 0/1 and uncertain (may be a decoy).
+ */
 export function buildValueSummary(view: PlayerView): ValueSummaryCount[] {
-  return buildValueSummaryOrder(view).map((entry) => ({
+  const pool = view.SpecialPool;
+  const entries = buildValueSummaryOrder(view).map((entry) => ({
     ...entry,
     Found: countFound(view, entry),
     Total: totalInPlay(entry),
   }));
+
+  const foundSum = { [SpecialKind.Silver]: 0, [SpecialKind.Gold]: 0 } as Record<SpecialKind, number>;
+  for (const e of entries) {
+    if (e.Kind === SpecialKind.Silver || e.Kind === SpecialKind.Gold) foundSum[e.Kind] += e.Found;
+  }
+  const inPlay = {
+    [SpecialKind.Silver]: pool.SilverInPlay,
+    [SpecialKind.Gold]: pool.GoldInPlay,
+  } as Record<SpecialKind, number>;
+  const entryCount = {
+    [SpecialKind.Silver]: pool.Silvers.length,
+    [SpecialKind.Gold]: pool.Golds.length,
+  } as Record<SpecialKind, number>;
+
+  return entries.map((e) => {
+    if (e.Kind !== SpecialKind.Silver && e.Kind !== SpecialKind.Gold) {
+      return { ...e, Uncertain: false };
+    }
+    if (e.Found >= 1) return { ...e, Uncertain: false };
+    if (foundSum[e.Kind] === inPlay[e.Kind]) return { ...e, Total: 0, Uncertain: false };
+    return { ...e, Uncertain: entryCount[e.Kind] !== inPlay[e.Kind] };
+  });
 }
 
 function kindName(kind: SpecialKind): "silver" | "gold" | "suited" {
@@ -116,10 +147,16 @@ export function ValueSummary({ view }: ValueSummaryProps) {
               className="value-summary-row"
               data-count={dataCount}
               data-kind={kindName(row.Kind)}
+              data-uncertain={row.Uncertain ? "true" : undefined}
             >
               <span className="value-summary-label">{valueLabel(row)}</span>
               <span className="value-summary-count">
                 {row.Found}/{row.Total}
+                {row.Uncertain ? (
+                  <strong role="img" aria-label="possibly not in play">
+                    ?
+                  </strong>
+                ) : null}
                 {dataCount === "complete" ? (
                   <span className="value-summary-done" role="img" aria-label="complete">
                     {" ✓"}
