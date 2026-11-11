@@ -68,7 +68,6 @@ func BuildSpecialPool(rng *rand.Rand, l Level) (SpecialPool, error) {
 	silverRanks, decoySilvers := drawKind(rng, l.SilverCount, l.ExtraSilver)
 	goldRanks, decoyGolds := drawKind(rng, l.GoldCount, l.ExtraGold)
 
-
 	nextID := CardID(baseDeckSize)
 	pool := SpecialPool{
 		Silvers:      make([]Card, 0, l.SilverCount),

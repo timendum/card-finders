@@ -60,7 +60,7 @@ func TestOpeningAllFourTransitionToPlaying(t *testing.T) {
 	e, first := openingGame(t)
 
 	seat := first
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		card := firstCardOf(t, e, seat)
 		if _, err := e.Apply(seat, Action{Kind: ActionKindOpeningReveal, OpeningCard: card}); err != nil {
 			t.Fatalf("Apply reveal #%d (seat %d): %v", i+1, seat, err)
@@ -68,7 +68,7 @@ func TestOpeningAllFourTransitionToPlaying(t *testing.T) {
 		seat = nextSeat(seat)
 	}
 
-	for s := 0; s < 4; s++ {
+	for s := range 4 {
 		if !e.state.OpeningDone[s] {
 			t.Errorf("OpeningDone[%d] = false, want true after all reveals", s)
 		}

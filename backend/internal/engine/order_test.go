@@ -24,9 +24,9 @@ func TestNextSeatWrapsClockwise(t *testing.T) {
 	}
 
 	// Four advances from any seat return to the start: a single 4-cycle.
-	for start := SeatID(0); start < seatCount; start++ {
+	for start := range SeatID(seatCount) {
 		s := start
-		for i := 0; i < seatCount; i++ {
+		for range seatCount {
 			s = nextSeat(s)
 		}
 		if s != start {
@@ -40,13 +40,13 @@ func TestNextSeatWrapsClockwise(t *testing.T) {
 // against depending on one particular draw.
 func TestStartGameSelectsFirstPlayerAndOpens(t *testing.T) {
 	level := Level{Number: 1, Name: "Basic", SilverCount: 0, GoldCount: 0, StartLives: 4}
-	for seed := int64(0); seed < 8; seed++ {
+	for seed := range int64(8) {
 		e := NewEngine([]Level{level}, rand.New(rand.NewSource(seed)))
 		code, err := e.CreateGame(level.Number)
 		if err != nil {
 			t.Fatalf("seed %d: CreateGame: %v", seed, err)
 		}
-		for i := 0; i < 4; i++ {
+		for i := range 4 {
 			if _, _, err := e.Join(code); err != nil {
 				t.Fatalf("seed %d: Join #%d: %v", seed, i+1, err)
 			}

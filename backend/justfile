@@ -27,10 +27,15 @@ test *ARGS:
 # sanity checks
 checks: lint staticcheck test fmt-check
 
-# vet all packages
-lint *ARGS:
-  @echo "==> vet"
-  go vet ./... {{ARGS}}
+# vet and fix check all packages
+lint:
+  @echo "==> vet + fix"
+  go vet ./... 
+  test -z "$(go fix -diff ./... 2>&1)" && echo "OK: modernize" || { echo "KO: modernize"; exit 1; }
+
+fix:
+  @echo "==> fix"
+  go fix ./...
 
 # staticcheck
 staticcheck *ARGS:

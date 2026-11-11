@@ -6,6 +6,8 @@ package engine
 import (
 	"errors"
 	"testing"
+
+	"pgregory.net/rapid"
 )
 
 func TestApplyNoGame(t *testing.T) {
@@ -74,4 +76,39 @@ func TestApplyUnknownActionKind(t *testing.T) {
 	if e.state.Phase != PhasePlaying {
 		t.Errorf("phase = %d, want PhasePlaying unchanged", e.state.Phase)
 	}
+}
+
+// Feature: frontend-rework, Property 6: Seq is monotonic.
+func TestPropSeqMonotonic(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		var lastSeq [seatCount]uint64
+		var prev uint64
+		runRandomGame(t, gameObs{
+			onApply: func(t *rapid.T, e *Engine, seat SeatID, a Action, err error) {
+				want := prev + 1
+				if err != nil {
+					want = prev
+				}
+				if e.state.Seq != want {
+					t.Fatalf("Seq = %d after apply (err=%v), want %d", e.state.Seq, err, want)
+				}
+				prev = e.state.Seq
+			},
+			onState: func(t *rapid.T, e *Engine) {
+				for v := range SeatID(seatCount) {
+					la := e.View(v).LastAction
+					if la == nil {
+						continue
+					}
+					if la.Seq < lastSeq[v] {
+						t.Fatalf("viewer %d Seq went backwards: %d -> %d", v, lastSeq[v], la.Seq)
+					}
+					if la.Seq != e.state.Seq {
+						t.Fatalf("viewer %d LastAction.Seq %d != state Seq %d", v, la.Seq, e.state.Seq)
+					}
+					lastSeq[v] = la.Seq
+				}
+			},
+		})
+	})
 }

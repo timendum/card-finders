@@ -6,8 +6,8 @@ import (
 	"pgregory.net/rapid"
 )
 
-// Shared harness for the frontend-rework property tests: a seeded, dealt game
-// plus a random stream of legal actions (see fr_pick_test.go / fr_run_test.go).
+// Shared test helpers: a seeded, dealt game plus a random stream of legal
+// actions, used by the property tests across this package.
 
 // fataler is satisfied by *rapid.T and *testing.T.
 type fataler interface {
@@ -33,7 +33,7 @@ func newDealtEngine(t fataler, seed int64, lvl Level) *Engine {
 	if err != nil {
 		t.Fatalf("CreateGame: %v", err)
 	}
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if _, _, err := e.Join(code); err != nil {
 			t.Fatalf("Join %d: %v", i, err)
 		}
@@ -170,7 +170,7 @@ func pickAction(t *rapid.T, e *Engine) (SeatID, Action) {
 // targetsOf lists other seats' face-down non-gold cards, in seat/HandOrder order.
 func targetsOf(e *Engine, seat SeatID) []CardID {
 	var out []CardID
-	for o := SeatID(0); o < seatCount; o++ {
+	for o := range SeatID(seatCount) {
 		if o != seat {
 			out = append(out, hiddenNonGold(e, o)...)
 		}
@@ -217,7 +217,7 @@ func doubleHitSafeCall(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 	}
 	var found []Action
 	for _, src := range hiddenNonGold(e, seat) {
-		for o := SeatID(0); o < seatCount; o++ {
+		for o := range SeatID(seatCount) {
 			if o == seat {
 				continue
 			}
@@ -244,7 +244,7 @@ func randomSafeCall(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 		return Action{}, false
 	}
 	var seats []SeatID
-	for o := SeatID(0); o < seatCount; o++ {
+	for o := range SeatID(seatCount) {
 		if o != seat && len(hiddenNonGold(e, o)) >= 2 {
 			seats = append(seats, o)
 		}

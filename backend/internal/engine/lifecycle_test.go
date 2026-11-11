@@ -83,7 +83,7 @@ func TestJoinSeatsAndTokens(t *testing.T) {
 	}
 
 	seenTokens := map[SessionToken]bool{}
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		seat, token, err := e.Join(code)
 		if err != nil {
 			t.Fatalf("Join #%d: unexpected error %v", i+1, err)
@@ -141,7 +141,7 @@ func TestJoinRejections(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CreateGame: %v", err)
 		}
-		for i := 0; i < 4; i++ {
+		for i := range 4 {
 			if _, _, err := e.Join(code); err != nil {
 				t.Fatalf("Join #%d: %v", i+1, err)
 			}
@@ -160,7 +160,7 @@ func TestResolveSeat(t *testing.T) {
 	}
 
 	tokens := map[SeatID]SessionToken{}
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		seat, token, err := e.Join(code)
 		if err != nil {
 			t.Fatalf("Join #%d: %v", i+1, err)

@@ -115,7 +115,7 @@ func (e *Engine) Join(joinCode string) (seat SeatID, token SessionToken, err err
 // firstFreeSeat returns the lowest-numbered empty seat; only valid when a seat
 // is free.
 func (e *Engine) firstFreeSeat() SeatID {
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		if e.state.Players[i] == nil {
 			return SeatID(i)
 		}

@@ -2,14 +2,17 @@ package engine
 
 import (
 	"errors"
+	"reflect"
 	"testing"
+
+	"pgregory.net/rapid"
 )
 
 // safeCallState builds a PhasePlaying engine with seat 0 acting and all four
 // seats holding an unused Safe_Call power.
 func safeCallState(lives int) *Engine {
 	e := playingState(lives)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		e.state.Players[i] = &Player{Seat: SeatID(i)}
 	}
 	return e
@@ -538,4 +541,73 @@ func TestSafeCallDoubleMissLastLifeEnds(t *testing.T) {
 	if err != nil || res != ResultLoss || e.state.PendingSafeChoice != nil {
 		t.Errorf("res=%d err=%v pending=%v, want loss and no pending choice", res, err, e.state.PendingSafeChoice)
 	}
+}
+
+func allViews(e *Engine) [seatCount]PlayerView {
+	var vs [seatCount]PlayerView
+	for i := range vs {
+		vs[i] = e.View(SeatID(i))
+	}
+	return vs
+}
+
+// Feature: frontend-rework, Property 7: AwaitingResponse gates all but the awaited response.
+func TestPropAwaitingResponseGating(t *testing.T) {
+	visits := 0
+	rapid.Check(t, func(t *rapid.T) {
+		runRandomGame(t, gameObs{onState: func(t *rapid.T, e *Engine) {
+			s := e.state
+			vs := allViews(e)
+			if s.Phase != PhaseAwaitingResponse {
+				for i, v := range vs {
+					if v.HasResponsePlayer {
+						t.Fatalf("seat %d HasResponsePlayer outside AwaitingResponse (phase %d)", i, s.Phase)
+					}
+				}
+				return
+			}
+			visits++
+			p := s.PendingSafeChoice
+			if p == nil || s.CurrentSeat != p.Caller {
+				t.Fatalf("AwaitingResponse needs a pending choice with CurrentSeat the caller")
+			}
+			for i, v := range vs {
+				if v.YourTurn || !v.HasResponsePlayer || v.ResponsePlayer != p.TargetPlayer || v.CurrentSeat != p.Caller {
+					t.Fatalf("seat %d view wrong in AwaitingResponse: %+v", i, v)
+				}
+			}
+			probeGated(t, e, p)
+		}})
+	})
+	if visits == 0 {
+		t.Fatal("no run reached AwaitingResponse")
+	}
+}
+
+// probeGated applies every non-awaited action from every seat and asserts each
+// is rejected as a no-op, then checks the chooser's invalid choices too.
+func probeGated(t *rapid.T, e *Engine, p *PendingSafeChoice) {
+	own := hiddenNonGold(e, p.Caller)
+	other := hiddenNonGold(e, p.TargetPlayer)
+	bad := CardID(65535) // never a real id
+	reject := func(seat SeatID, a Action, want error) {
+		before := allViews(e)
+		_, err := e.Apply(seat, a)
+		if !errors.Is(err, want) {
+			t.Fatalf("seat %d action %+v: err = %v, want %v", seat, a, err, want)
+		}
+		if !reflect.DeepEqual(before, allViews(e)) || e.state.Phase != PhaseAwaitingResponse {
+			t.Fatalf("seat %d rejected action %+v changed state", seat, a)
+		}
+	}
+	for seat := range SeatID(seatCount) {
+		reject(seat, Action{Kind: ActionKindOpeningReveal, OpeningCard: own[0]}, ErrWrongPhase)
+		reject(seat, Action{Kind: ActionKindGuess, SourceCard: own[0], TargetCard: other[0]}, ErrWrongPhase)
+		reject(seat, Action{Kind: ActionKindSafeCall, SourceCard: own[0], TargetCard: other[0], TargetCard2: other[1]}, ErrWrongPhase)
+		reject(seat, Action{Kind: ActionKindSelfReveal, SelfRevealValue: SelfRevealTarget{Kind: SpecialKindGold}}, ErrWrongPhase)
+		if seat != p.TargetPlayer {
+			reject(seat, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: p.Option1}, ErrNotYourTurn)
+		}
+	}
+	reject(p.TargetPlayer, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: bad}, ErrInvalidChoice)
 }
