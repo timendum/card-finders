@@ -142,8 +142,12 @@ func TestJoinRejections(t *testing.T) {
 			t.Fatalf("CreateGame: %v", err)
 		}
 		for i := range 4 {
-			if _, _, err := e.Join(code); err != nil {
+			_, tok, err := e.Join(code)
+			if err != nil {
 				t.Fatalf("Join #%d: %v", i+1, err)
+			}
+			if _, err := e.Connect(tok); err != nil {
+				t.Fatalf("Connect #%d: %v", i+1, err)
 			}
 		}
 		if _, _, err := e.Join(code); !errors.Is(err, ErrGameFull) {

@@ -29,6 +29,7 @@ function viewWith(silvers: number[], inPlay: number, cards: ViewCard[] = []): Pl
     CurrentSeat: 0,
     YourTurn: true,
     PowerUsed: [false, false, false, false],
+    Connected: [true, true, true, true],
     Cards: cards,
     Result: Result.None,
     SeatsFilled: 4,

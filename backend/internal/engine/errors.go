@@ -17,6 +17,7 @@ var (
 	ErrCodeInvalid  = errors.New("the join code is invalid")
 	ErrGameFull     = errors.New("the game is full")
 	ErrTokenInvalid = errors.New("the session token is invalid")
+	ErrSeatOccupied = errors.New("the seat already has a live connection")
 )
 
 var (

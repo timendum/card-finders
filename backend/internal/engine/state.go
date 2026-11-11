@@ -22,6 +22,7 @@ type Player struct {
 	Seat      SeatID
 	Token     SessionToken
 	PowerUsed bool // one-time Safe_Call spent
+	Connected bool
 }
 
 type Result uint8

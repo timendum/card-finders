@@ -335,6 +335,11 @@ body {
   color: var(--color-text-muted);
 }
 
+.away-indicator {
+  color: var(--color-gold);
+  font-weight: 600;
+}
+
 .power-indicator[data-power="consumed"] {
   opacity: 0.5;
 }

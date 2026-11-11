@@ -53,7 +53,15 @@ the lock:
   dealing/pool selection; holds the level slice it is handed.
 - `CreateGame(levelNumber int) (joinCode string, err error)`
 - `Join(joinCode string) (seat SeatID, token SessionToken, err error)` — the 4th
-  join internally runs special-pool + deal + opening setup.
+  join internally runs special-pool + deal + opening setup. Once the game has
+  started, a join takes the lowest seat with no live connection and rotates its
+  token (the previous holder is locked out); `ErrGameFull` only when all four
+  seats are connected.
+- `Connect(token SessionToken) (SeatID, error)` / `Disconnect(seat SeatID)` —
+  transport marks a seat's `Player.Connected` as sockets open and close
+  (`ErrSeatOccupied` if already connected). Before the game starts a disconnect
+  empties the seat; afterwards the player and token are kept. The flags reach
+  clients as `PlayerView.Connected`.
 - `ResolveSeat(token SessionToken) (SeatID, error)` — reconnection.
 - `Apply(seat SeatID, action Action) (Result, error)` — single entry point for
   all gameplay actions (`Action` is a tagged union).
@@ -84,9 +92,11 @@ Three independent paths on one `http.ServeMux`:
   - `POST /api/game/join` `{ joinCode }` → `200 { sessionToken, seat }`. Errors:
     `code_required` (400), `code_invalid` (404), `game_full` (409).
 - `/ws` — WebSocket; `GET /ws?token=<SessionToken>`. On connect the token is
-  resolved to a seat; the current `PlayerView` is pushed. A token already held
-  by a live connection is rejected `seat_occupied`. Disconnect releases the
-  seat↔conn association but preserves game state; reconnect resumes.
+  resolved to a seat (`engine.Connect`); the current `PlayerView` is pushed and
+  the other seats get a fresh snapshot. A token already held by a live
+  connection is rejected `seat_occupied`. Disconnect releases the seat↔conn
+  association (`engine.Disconnect`) and notifies the other seats, but preserves
+  game state; reconnect resumes until another player joins that seat.
 - `/...` — `http.FileServer` over `--static-dir`, serving the built frontend
   from root (read from disk at request time, not embedded). The Vite bundle
   references its assets with absolute `/assets/...` URLs, so it can only be

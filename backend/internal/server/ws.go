@@ -39,8 +39,18 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.mu.Lock()
-	seat, err := s.engine.ResolveSeat(engine.SessionToken(token))
+	seat, err := s.engine.Connect(engine.SessionToken(token))
 	s.mu.Unlock()
+	if errors.Is(err, engine.ErrSeatOccupied) {
+		// A seat already held by a live connection is rejected; the existing
+		// connection is left untouched.
+		slog.Info("ws connect rejected: seat occupied", "token", tokenTag(token))
+		conn, aerr := websocket.Accept(w, r, nil)
+		if aerr == nil {
+			_ = conn.Close(websocket.StatusPolicyViolation, "seat_occupied")
+		}
+		return
+	}
 	if err != nil {
 		slog.Info("ws connect rejected: token invalid", "token", tokenTag(token))
 		writeJSON(w, http.StatusUnauthorized, errorBody{Error: errorDetail{
@@ -54,20 +64,24 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		slog.Error("ws accept failed", "seat", seat, "token", tokenTag(token), "err", err)
+		s.markDisconnected(seat)
 		return
 	}
 	c := &wsConn{conn: conn, seat: seat}
 
-	// A seat already held by a live connection is rejected; the existing
-	// connection is left untouched.
+	// Connect already guaranteed the seat is free, so register only fails on an
+	// inconsistency; the existing connection is left untouched.
 	if !s.hub.register(c) {
-		slog.Info("ws connect rejected: seat occupied", "seat", seat, "token", tokenTag(token))
+		slog.Error("ws hub out of sync with engine", "seat", seat, "token", tokenTag(token))
 		_ = conn.Close(websocket.StatusPolicyViolation, "seat_occupied")
 		return
 	}
-	// release frees only the seat→conn mapping; game state survives for reconnect.
+	// Release the hub entry before clearing the engine flag, so a reconnect
+	// can never register while the stale entry is still present. Game state
+	// survives for reconnect.
 	defer func() {
 		s.hub.release(c)
+		s.markDisconnected(seat)
 		slog.Info("ws disconnect", "seat", seat, "token", tokenTag(token))
 	}()
 
@@ -77,6 +91,7 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 		_ = conn.Close(websocket.StatusInternalError, "initial push failed")
 		return
 	}
+	s.broadcastOthers(ctx, c)
 
 	pingCtx, stopPing := context.WithCancel(ctx)
 	defer stopPing()
@@ -154,6 +169,28 @@ func (s *Server) broadcast(ctx context.Context) {
 	for _, c := range s.hub.snapshot() {
 		_ = s.pushView(ctx, c)
 	}
+}
+
+// broadcastOthers pushes a fresh snapshot to every connected seat but c, whose
+// own snapshot was just sent.
+func (s *Server) broadcastOthers(ctx context.Context, c *wsConn) {
+	for _, o := range s.hub.snapshot() {
+		if o != c {
+			_ = s.pushView(ctx, o)
+		}
+	}
+}
+
+// markDisconnected clears the seat's connected flag and tells the remaining
+// seats. The request context is already cancelled by now, so it uses its own.
+func (s *Server) markDisconnected(seat engine.SeatID) {
+	s.mu.Lock()
+	s.engine.Disconnect(seat)
+	s.mu.Unlock()
+
+	ctx, cancel := context.WithTimeout(context.Background(), broadcastTimeout)
+	defer cancel()
+	s.broadcast(ctx)
 }
 
 // sendError sends an `error` frame; a write failure is left to the read loop.

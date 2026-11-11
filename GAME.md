@@ -52,7 +52,8 @@ costs the shared team a life. The team **wins** by revealing every card and
 
 Phases (engine state machine; phase gates every action):
 
-1. **Waiting** — game created at a level; <4 seats filled. No dealing.
+1. **Waiting** — game created at a level; <4 seats filled. No dealing. A player
+   who disconnects here gives up their seat.
 2. **Opening** — entered atomically when the 4th player joins (see Game start
    below). Each player, in turn order, reveals one non-special card of their
    choice; it stays **face-down** but gets a token showing its true value.
@@ -80,6 +81,15 @@ phases; nothing can observe the intermediate states):
    over). Each hand is then laid out in a **fixed, value-sorted order**
    (ascending Sort_Value) that never changes for the rest of the game.
 3. **First player** — one of the four is chosen (each 0.25) and opens.
+
+### Dropping out and rejoining
+
+A seat is **away** while it has no live connection, and every player sees an
+"Away" label on it. The game never pauses: the other players wait on that seat
+when it is its turn. The away player can return with their old session until
+someone else takes the seat. Anyone with the join code takes the lowest away
+seat once the game has started, inherits its hand and Safe_Call, and locks the
+previous holder out. The game is full only while all four seats are connected.
 
 ## Hand order and reveal in place
 

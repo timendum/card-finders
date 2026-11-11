@@ -44,6 +44,7 @@ export function Table({
       highlighted={seat === highlightedSeat}
       responder={awaiting}
       powerUsed={view.PowerUsed[seat] ?? false}
+      connected={view.Connected[seat] ?? true}
       cards={bySeat.get(seat) ?? []}
       isSelectable={isSelectable}
       isSelected={isSelected}

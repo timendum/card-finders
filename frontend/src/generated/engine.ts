@@ -68,12 +68,12 @@ export interface Action {
  * for suited (SpecialKindNone) cards and used for sort tie-breaking. SeatID is
  * 0..3 clockwise. See GAME.md for terms.
  */
-export type Suit = number; /* uint8 */
-export type Rank = number; /* uint8 */
+export type Suit = number /* uint8 */;
+export type Rank = number /* uint8 */;
 /**
  * 0-3, ordered, the first to play is randomly choose
  */
-export type SeatID = number; /* uint8 */
+export type SeatID = number /* uint8 */;
 export enum SpecialKind {
   None = 0, // suited card
   Silver, // no suit, ranks 2..Q
@@ -82,7 +82,7 @@ export enum SpecialKind {
 /**
  * CardID is a stable identity assigned at deck build time.
  */
-export type CardID = number; /* uint16 */
+export type CardID = number /* uint16 */;
 /**
  * Card is an immutable card identity.
  */
@@ -95,6 +95,7 @@ export interface Card {
 
 //////////
 // source: deal.go
+
 
 //////////
 // source: deck.go
@@ -121,7 +122,8 @@ Package engine is the pure, deterministic Card Finders game engine.
  * Engine is the game state machine. rng seeds pool formation, dealing, and
  * first-player selection; state is nil until a game is created.
  */
-export interface Engine {}
+export interface Engine {
+}
 
 //////////
 // source: level.go
@@ -142,6 +144,7 @@ export interface Level {
 
 //////////
 // source: lifecycle.go
+
 
 //////////
 // source: log.go
@@ -185,6 +188,11 @@ export interface Player {
   Seat: SeatID;
   Token: SessionToken;
   PowerUsed: boolean; // one-time Safe_Call spent
+  /**
+   * Connected is true while the seat has a live connection. A seat that is
+   * not connected can be taken over by a new Join.
+   */
+  Connected: boolean;
 }
 export enum Result {
   None = 0,
@@ -201,13 +209,13 @@ export interface GameState {
   SpecialPool: SpecialPool;
   JoinCode: string;
   Players: (Player | undefined)[]; // nil until that seat is filled
-  Cards: { [key: CardID]: PlacedCard | undefined };
+  Cards: { [key: CardID]: PlacedCard | undefined};
   HandOrder: CardID[][]; // each seat's card ids, for stable positions
   /**
    * Slot is each card's 1-based value-sorted position within its owning
    * seat's hand, fixed at deal and never mutated for the rest of the game.
    */
-  Slot: { [key: CardID]: number /* int */ };
+  Slot: { [key: CardID]: number /* int */};
   LifePool: number /* int */; // clamped to [0, Level.StartLives]
   CurrentSeat: SeatID; // meaningful in Opening/Playing
   OpeningDone: boolean[];
@@ -263,7 +271,7 @@ export enum Face {
  * never copies the card's value, so the shown value is always resolved from the
  * card and can never drift.
  */
-export type TokenKind = number; /* uint8 */
+export type TokenKind = number /* uint8 */;
 /**
  * TokenKindNaturalIdentity shows the card's Rank (SpecialKindNone) or its
  * special kind (silver/gold). Other values are reserved for future modes.
@@ -366,6 +374,7 @@ export interface PlayerView {
   CurrentSeat: SeatID;
   YourTurn: boolean;
   PowerUsed: boolean[];
+  Connected: boolean[]; // seats with a live connection
   Cards: ViewCard[];
   Result: Result;
   SeatsFilled: number /* int */;

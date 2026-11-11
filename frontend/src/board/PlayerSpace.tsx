@@ -12,6 +12,8 @@ export interface PlayerSpaceProps extends Omit<CardRowProps, "own"> {
   // Marks the highlight as the pending responder rather than the acting seat.
   responder: boolean;
   powerUsed: boolean;
+  // False = "Away" label.
+  connected: boolean;
 }
 
 export function PlayerSpace({
@@ -21,6 +23,7 @@ export function PlayerSpace({
   highlighted,
   responder,
   powerUsed,
+  connected,
   cards,
   isSelectable,
   isSelected,
@@ -46,6 +49,11 @@ export function PlayerSpace({
         onActivate={onActivate}
       />
       <PowerIndicator used={powerUsed} />
+      {!connected && (
+        <div className="power-indicator away-indicator" role="status">
+          Away
+        </div>
+      )}
     </section>
   );
 }

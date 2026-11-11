@@ -92,35 +92,74 @@ func (e *Engine) Join(joinCode string) (seat SeatID, token SessionToken, err err
 	if joinCode != e.state.JoinCode {
 		return 0, "", ErrCodeInvalid
 	}
-	if e.state.seatsFilled() >= 4 {
+	seat, ok := e.joinableSeat()
+	if !ok {
 		return 0, "", ErrGameFull
 	}
 
-	free := e.firstFreeSeat()
 	tok := e.newSessionToken()
-	e.state.Players[free] = &Player{
-		Seat:  free,
+	if p := e.state.Players[seat]; p != nil {
+		p.Token = tok
+		return seat, tok, nil
+	}
+	e.state.Players[seat] = &Player{
+		Seat:  seat,
 		Token: tok,
 	}
 
-	if e.state.seatsFilled() == 4 {
+	if e.state.Phase == PhaseWaiting && e.state.seatsFilled() == 4 {
 		if err := e.startGame(); err != nil {
-			return free, tok, err
+			return seat, tok, err
 		}
 	}
 
-	return free, tok, nil
+	return seat, tok, nil
 }
 
-// firstFreeSeat returns the lowest-numbered empty seat; only valid when a seat
-// is free.
-func (e *Engine) firstFreeSeat() SeatID {
+// joinableSeat returns the lowest empty seat, else the lowest seat without a
+// live connection. Empty seats are preferred so a player who just joined and
+// has not opened their socket yet is not displaced.
+func (e *Engine) joinableSeat() (SeatID, bool) {
 	for i := range 4 {
 		if e.state.Players[i] == nil {
-			return SeatID(i)
+			return SeatID(i), true
 		}
 	}
-	return 0 // unreachable: callers guard on a free seat existing
+	for i := range 4 {
+		if !e.state.Players[i].Connected {
+			return SeatID(i), true
+		}
+	}
+	return 0, false
+}
+
+// Connect marks the seat bound to token as having a live connection, for the
+// transport to call when a socket opens. It rejects a seat that is already
+// connected, leaving the existing connection in place.
+func (e *Engine) Connect(token SessionToken) (SeatID, error) {
+	seat, err := e.ResolveSeat(token)
+	if err != nil {
+		return 0, err
+	}
+	p := e.state.Players[seat]
+	if p.Connected {
+		return 0, ErrSeatOccupied
+	}
+	p.Connected = true
+	return seat, nil
+}
+
+// Disconnect marks the seat as no longer connected, for the transport to call
+// when a socket closes. Before the game starts the seat is released outright so
+// the lobby count stays accurate; afterwards the player and token are kept.
+func (e *Engine) Disconnect(seat SeatID) {
+	if e.state == nil || seat > 3 || e.state.Players[seat] == nil {
+		return
+	}
+	e.state.Players[seat].Connected = false
+	if e.state.Phase == PhaseWaiting {
+		e.state.Players[seat] = nil
+	}
 }
 
 // ResolveSeat returns the seat bound to token, for reconnection.

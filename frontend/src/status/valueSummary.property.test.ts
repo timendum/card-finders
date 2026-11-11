@@ -76,6 +76,7 @@ function makeView(
     CurrentSeat: SEAT,
     YourTurn: true,
     PowerUsed: [false, false, false, false],
+    Connected: [true, true, true, true],
     Cards: cards,
     Result: Result.None,
     SeatsFilled: 4,

@@ -73,6 +73,7 @@ type PlayerView struct {
 	CurrentSeat SeatID
 	YourTurn    bool
 	PowerUsed   [4]bool
+	Connected   [4]bool  // At next Player related field, create a substructure.
 	Cards       []ViewCard
 	Result      Result
 	SeatsFilled int
@@ -108,6 +109,7 @@ func (e *Engine) View(seat SeatID) PlayerView {
 	for i := range 4 {
 		if p := s.Players[i]; p != nil {
 			v.PowerUsed[i] = p.PowerUsed
+			v.Connected[i] = p.Connected
 		}
 	}
 	if s.Phase == PhaseAwaitingResponse && s.PendingSafeChoice != nil {

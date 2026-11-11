@@ -45,6 +45,7 @@ describe("shared types scaffold", () => {
       CurrentSeat: 0,
       YourTurn: false,
       PowerUsed: [false, false, false, false],
+      Connected: [true, true, true, true],
       Cards: [],
       Result: Result.None,
       SeatsFilled: 1,

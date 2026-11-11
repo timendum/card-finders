@@ -48,6 +48,7 @@ function viewWith(cards: ViewCard[], seat: SeatID = 0): PlayerView {
     CurrentSeat: seat,
     YourTurn: true,
     PowerUsed: [false, false, false, false],
+    Connected: [true, true, true, true],
     Cards: cards,
     Result: Result.None,
     SeatsFilled: 4,

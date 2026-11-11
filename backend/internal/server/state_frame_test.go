@@ -139,6 +139,10 @@ func TestOpeningRevealBroadcastsLastActionToAllSeats(t *testing.T) {
 		if err := json.Unmarshal(raw, &env); err != nil {
 			t.Fatal(err)
 		}
+		// Each later seat connecting pushes this seat a presence snapshot.
+		for range len(conns) - 1 - i {
+			readFrame(t, conns[i].conn)
+		}
 		if !env.View.YourTurn {
 			continue
 		}
