@@ -8,6 +8,21 @@ import (
 	"pgregory.net/rapid"
 )
 
+// remainingRanks returns the eligible special ranks not in used, ascending.
+func remainingRanks(used []Rank) []Rank {
+	taken := make(map[Rank]bool, len(used))
+	for _, r := range used {
+		taken[r] = true
+	}
+	var out []Rank
+	for _, r := range eligibleSpecialRankList() {
+		if !taken[r] {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
 // overwriteDecoys replaces e's decoy ranks directly with a random subset of the
 // ranks not used by a real special of the same kind. It does not touch RNG or
 // hands, so two engines with equal hands can differ only in their decoys.

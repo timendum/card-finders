@@ -51,73 +51,23 @@ func eligibleSpecialRankList() []Rank {
 	return ranks
 }
 
-// remainingRanks returns eligibleSpecialRankList() minus used, ascending.
-func remainingRanks(used []Rank) []Rank {
-	taken := make(map[Rank]bool, len(used))
-	for _, r := range used {
-		taken[r] = true
-	}
-	out := make([]Rank, 0, eligibleSpecialRanks)
-	for _, r := range eligibleSpecialRankList() {
-		if !taken[r] {
-			out = append(out, r)
-		}
-	}
-	return out
+// drawKind shuffles the eligible ranks and splits off real then decoy ranks,
+// so decoys never collide with real ones. Counts must be pre-validated.
+func drawKind(rng *rand.Rand, real, decoy int) (realRanks, decoyRanks []Rank) {
+	ranks := eligibleSpecialRankList()
+	rng.Shuffle(len(ranks), func(i, j int) { ranks[i], ranks[j] = ranks[j], ranks[i] })
+	return ranks[:real:real], ranks[real : real+decoy : real+decoy]
 }
 
-// drawDistinctRanks returns n distinct eligible special ranks chosen uniformly
-// at random. It errors on out-of-range n rather than silently producing
-// duplicates.
-func drawDistinctRanks(rng *rand.Rand, n int) ([]Rank, error) {
-	return drawDistinctFrom(rng, eligibleSpecialRankList(), n)
-}
-
-// drawDistinctFrom returns n distinct ranks chosen uniformly from candidates
-// by partial Fisher-Yates. It consumes exactly n rng values (none when n == 0)
-// and does not modify the caller's slice.
-func drawDistinctFrom(rng *rand.Rand, candidates []Rank, n int) ([]Rank, error) {
-	ranks := append([]Rank(nil), candidates...)
-	if n < 0 || n > len(ranks) {
-		return nil, fmt.Errorf("cannot draw %d distinct ranks from %d eligible ranks", n, len(ranks))
-	}
-	// Partial Fisher-Yates: shuffle the first n positions, then take them.
-	for i := range n {
-		j := i + rng.Intn(len(ranks)-i)
-		ranks[i], ranks[j] = ranks[j], ranks[i]
-	}
-	return ranks[:n], nil
-}
-
-// BuildSpecialPool forms the Special_Pool for l using the seeded rng. Ranks are
-// distinct within a kind; a silver and a gold may share a rank across kinds.
-// Special CardIDs continue sequentially from the Base_Deck, silvers then golds,
-// so pool entries carry the identities the combined deck later uses.
-// BuildSpecialPool re-validates l rather than trusting the caller.
+// BuildSpecialPool forms the Special_Pool for l using the seeded rng. Special
+// CardIDs continue from the Base_Deck, silvers then golds.
 func BuildSpecialPool(rng *rand.Rand, l Level) (SpecialPool, error) {
 	if err := ValidateLevel(l); err != nil {
 		return SpecialPool{}, fmt.Errorf("invalid level for special pool: %w", err)
 	}
+	silverRanks, decoySilvers := drawKind(rng, l.SilverCount, l.ExtraSilver)
+	goldRanks, decoyGolds := drawKind(rng, l.GoldCount, l.ExtraGold)
 
-	silverRanks, err := drawDistinctRanks(rng, l.SilverCount)
-	if err != nil {
-		return SpecialPool{}, fmt.Errorf("silver: %w", err)
-	}
-	goldRanks, err := drawDistinctRanks(rng, l.GoldCount)
-	if err != nil {
-		return SpecialPool{}, fmt.Errorf("gold: %w", err)
-	}
-
-	// Decoys are drawn after all real draws so zero extras consume no RNG and
-	// real draws stay identical. Each kind's decoys avoid that kind's real ranks.
-	decoySilvers, err := drawDistinctFrom(rng, remainingRanks(silverRanks), l.ExtraSilver)
-	if err != nil {
-		return SpecialPool{}, fmt.Errorf("decoy silver: %w", err)
-	}
-	decoyGolds, err := drawDistinctFrom(rng, remainingRanks(goldRanks), l.ExtraGold)
-	if err != nil {
-		return SpecialPool{}, fmt.Errorf("decoy gold: %w", err)
-	}
 
 	nextID := CardID(baseDeckSize)
 	pool := SpecialPool{

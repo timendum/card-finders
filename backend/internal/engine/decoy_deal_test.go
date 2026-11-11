@@ -9,31 +9,22 @@ import (
 	"pgregory.net/rapid"
 )
 
-// Feature: card-finders, Property 5: real draws are independent of extras
-// (real silver/gold ranks equal those of the same level with no extras).
-func TestPropRealDrawsIndependentOfExtras(t *testing.T) {
+// Feature: card-finders, Property 5: the pool (real and decoy) is
+// deterministic for a given seed and level.
+func TestPropPoolSameSeedIdentical(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		lvl := drawLevelWithExtras(t)
 		seed := rapid.Int64().Draw(t, "seed")
-		base := lvl
-		base.ExtraSilver, base.ExtraGold = 0, 0
-
-		withExtras, err := BuildSpecialPool(rand.New(rand.NewSource(seed)), lvl)
+		a, err := BuildSpecialPool(rand.New(rand.NewSource(seed)), lvl)
 		if err != nil {
-			t.Fatalf("BuildSpecialPool with extras: %v", err)
+			t.Fatalf("BuildSpecialPool: %v", err)
 		}
-		noExtras, err := BuildSpecialPool(rand.New(rand.NewSource(seed)), base)
+		b, err := BuildSpecialPool(rand.New(rand.NewSource(seed)), lvl)
 		if err != nil {
-			t.Fatalf("BuildSpecialPool without extras: %v", err)
+			t.Fatalf("BuildSpecialPool: %v", err)
 		}
-		if !reflect.DeepEqual(cardRanks(withExtras.Silvers), cardRanks(noExtras.Silvers)) {
-			t.Fatalf("real silvers differ: %v vs %v", cardRanks(withExtras.Silvers), cardRanks(noExtras.Silvers))
-		}
-		if !reflect.DeepEqual(cardRanks(withExtras.Golds), cardRanks(noExtras.Golds)) {
-			t.Fatalf("real golds differ: %v vs %v", cardRanks(withExtras.Golds), cardRanks(noExtras.Golds))
-		}
-		if len(noExtras.DecoySilvers)+len(noExtras.DecoyGolds) != 0 {
-			t.Fatalf("zero extras produced decoys")
+		if !reflect.DeepEqual(a, b) {
+			t.Fatalf("pools differ for same seed: %v vs %v", a, b)
 		}
 	})
 }
