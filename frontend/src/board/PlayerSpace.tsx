@@ -1,4 +1,4 @@
-import { PowerIndicator } from "./CardElement.tsx";
+import { Indicators } from "./CardElement.tsx";
 import { CardRow, TokenRow, type CardRowProps } from "./CardRows.tsx";
 import type { SeatID } from "../types.ts";
 
@@ -27,6 +27,7 @@ export function PlayerSpace({
   cards,
   isSelectable,
   isSelected,
+  matchHint,
   onActivate,
 }: PlayerSpaceProps) {
   const reversed = edge === "top" || edge === "right";
@@ -46,14 +47,10 @@ export function PlayerSpace({
         reversed={reversed}
         isSelectable={isSelectable}
         isSelected={isSelected}
+        matchHint={matchHint}
         onActivate={onActivate}
       />
-      <PowerIndicator used={powerUsed} />
-      {!connected && (
-        <div className="power-indicator away-indicator" role="status">
-          Away
-        </div>
-      )}
+      <Indicators used={powerUsed} away={!connected} />
     </section>
   );
 }

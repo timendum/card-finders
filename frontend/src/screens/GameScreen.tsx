@@ -6,6 +6,7 @@ import { GameLog } from "../board/GameLog.tsx";
 import { EndBanner } from "../status/EndBanner.tsx";
 import { useGameSocket } from "../api/useGameSocket.ts";
 import { buildGuess, buildSafeCall, buildSelfReveal } from "../board/actions.ts";
+import { matchHints } from "../board/matchHints.ts";
 import {
   buildChoice,
   emptySelection,
@@ -123,6 +124,8 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
     card.ID === selection.chosen ||
     selection.targets.includes(card.ID);
 
+  const hints = ended ? null : matchHints(view, selection.source);
+
   return (
     <main className="game-screen">
       <Table
@@ -145,6 +148,7 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
         log={<GameLog view={view} />}
         isSelectable={ended ? undefined : (card) => isSelectable(view, card)}
         isSelected={selected}
+        matchHint={hints ? (card) => hints.get(card.ID) : undefined}
         onActivate={ended ? undefined : onActivate}
       />
     </main>

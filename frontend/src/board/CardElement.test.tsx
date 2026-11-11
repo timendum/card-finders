@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { cardAccessibleName, CardElement, PowerIndicator, TokenSquare } from "./CardElement.tsx";
+import { cardAccessibleName, CardElement, Indicators, TokenSquare } from "./CardElement.tsx";
 import { Face, SpecialKind } from "../types.ts";
 
 const king = { Rank: 13, Kind: SpecialKind.None, Suit: 0 };
@@ -30,15 +30,13 @@ describe("CardElement", () => {
   });
 });
 
-describe("TokenSquare / PowerIndicator", () => {
+describe("TokenSquare / Indicators", () => {
   it("shows the token value label", () => {
     expect(renderToStaticMarkup(<TokenSquare value={king} />)).toContain(">K<");
   });
 
   it("reflects available vs consumed", () => {
-    expect(renderToStaticMarkup(<PowerIndicator used={false} />)).toContain(
-      'data-power="available"',
-    );
-    expect(renderToStaticMarkup(<PowerIndicator used />)).toContain('data-power="consumed"');
+    expect(renderToStaticMarkup(<Indicators used={false} />)).toContain('data-power="available"');
+    expect(renderToStaticMarkup(<Indicators used />)).toContain('data-power="consumed"');
   });
 });

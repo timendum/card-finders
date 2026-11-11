@@ -2,6 +2,7 @@
 // card and its token or revealed mini line up column for column.
 
 import { CardElement, RevealedCardMini, TokenSquare } from "./CardElement.tsx";
+import type { MatchHint } from "./matchHints.ts";
 import { slotted } from "./slots.ts";
 import { Face, type CardID, type ViewCard } from "../types.ts";
 
@@ -15,6 +16,7 @@ export interface CardRowProps {
   own?: boolean;
   isSelectable?: (card: ViewCard) => boolean;
   isSelected?: (card: ViewCard) => boolean;
+  matchHint?: (card: ViewCard) => MatchHint | undefined;
   onActivate?: (id: CardID) => void;
   // Lay slots out in descending order (top and right seats read ascending counterclockwise).
   reversed?: boolean;
@@ -25,6 +27,7 @@ export function CardRow({
   own = false,
   isSelectable,
   isSelected,
+  matchHint,
   onActivate,
   reversed = false,
 }: CardRowProps) {
@@ -40,6 +43,7 @@ export function CardRow({
             own={own}
             selectable={isSelectable?.(card) ?? false}
             selected={isSelected?.(card) ?? false}
+            match={matchHint?.(card)}
             onActivate={() => onActivate?.(card.ID)}
           />
         ) : (

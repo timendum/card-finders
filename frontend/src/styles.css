@@ -220,10 +220,10 @@ body {
   block-size: var(--ch);
 }
 
-.player-space[data-edge="left"] .power-indicator {
+.player-space[data-edge="left"] .indicators {
   writing-mode: vertical-rl;
 }
-.player-space[data-edge="right"] .power-indicator {
+.player-space[data-edge="right"] .indicators {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
 }
@@ -250,10 +250,10 @@ body {
 .player-space[data-edge="right"] .token-row {
   order: 0;
 }
-.player-space[data-edge="right"] .power-indicator {
+.player-space[data-edge="right"] .indicators {
   order: -1;
 }
-.player-space[data-edge="left"] .power-indicator {
+.player-space[data-edge="left"] .indicators {
   order: 2;
 }
 
@@ -330,12 +330,18 @@ body {
   color: var(--color-on-gold);
 }
 
+.indicators {
+  display: flex;
+  gap: 1em;
+}
+
 .power-indicator {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 .away-indicator {
+  font-size: var(--font-size-sm);
   color: var(--color-gold);
   font-weight: 600;
 }
@@ -383,6 +389,15 @@ body {
 .card-element[data-selectable="true"] {
   cursor: pointer;
   border-color: var(--color-accent);
+}
+
+.card-element[data-match="excluded"] {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.card-element[data-match="sure"] {
+  cursor: crosshair;
 }
 
 /* Specials cannot be revealed during Opening: gray out the viewer's own. */

@@ -1,6 +1,7 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import { PlayerSpace, type Edge } from "./PlayerSpace.tsx";
 import { seatLayout } from "./seatLayout.ts";
+import type { MatchHint } from "./matchHints.ts";
 import { cardsBySeat } from "./slots.ts";
 import { Phase, type CardID, type PlayerView, type SeatID, type ViewCard } from "../types.ts";
 
@@ -12,6 +13,7 @@ export interface TableProps {
   log?: ReactNode;
   isSelectable?: (card: ViewCard) => boolean;
   isSelected?: (card: ViewCard) => boolean;
+  matchHint?: (card: ViewCard) => MatchHint | undefined;
   onActivate?: (id: CardID) => void;
 }
 
@@ -22,6 +24,7 @@ export function Table({
   log,
   isSelectable,
   isSelected,
+  matchHint,
   onActivate,
 }: TableProps) {
   const layout = useMemo(() => seatLayout(view.Seat), [view.Seat]);
@@ -48,6 +51,7 @@ export function Table({
       cards={bySeat.get(seat) ?? []}
       isSelectable={isSelectable}
       isSelected={isSelected}
+      matchHint={matchHint}
       onActivate={onActivate}
     />
   );

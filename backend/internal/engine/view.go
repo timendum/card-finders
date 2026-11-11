@@ -73,7 +73,7 @@ type PlayerView struct {
 	CurrentSeat SeatID
 	YourTurn    bool
 	PowerUsed   [4]bool
-	Connected   [4]bool  // At next Player related field, create a substructure.
+	Connected   [4]bool // At next Player related field, create a substructure.
 	Cards       []ViewCard
 	Result      Result
 	SeatsFilled int

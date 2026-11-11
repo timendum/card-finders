@@ -18,11 +18,7 @@ export function EndBanner({ result, onLeave }: EndBannerProps) {
       data-result={won ? "win" : "loss"}
     >
       <h2>{won ? "You win!" : "Game over"}</h2>
-      <p>
-        {won
-          ? "Every card is revealed — the team found them all."
-          : "The life pool is empty. Better luck next time."}
-      </p>
+      <p>{won ? "Every card is revealed — the team found them all." : "Better luck next time."}</p>
       <button type="button" onClick={onLeave}>
         Back to lobby
       </button>

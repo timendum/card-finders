@@ -1,9 +1,10 @@
 // Board card primitives: CardElement (a card in a CardRow slot), TokenSquare
 // (a face-down card's token), RevealedCardMini (a face-up card in the
-// TokenRow) and PowerIndicator. All are presentational; state arrives as props.
+// TokenRow) and Indicators. All are presentational; state arrives as props.
 
 import type { KeyboardEvent } from "react";
 import { valueLabel } from "./cardLabel.ts";
+import type { MatchHint } from "./matchHints.ts";
 import { Face, SpecialKind, type CardValue } from "../types.ts";
 
 export function kindName(kind: SpecialKind): "suited" | "silver" | "gold" {
@@ -24,6 +25,8 @@ export interface CardElementProps {
   own?: boolean;
   selectable?: boolean;
   selected?: boolean;
+  // Exclusion hint for the selected source card; absent when not applicable.
+  match?: MatchHint;
   onActivate?: () => void;
 }
 
@@ -46,6 +49,7 @@ export function CardElement({
   own = false,
   selectable = false,
   selected = false,
+  match,
   onActivate,
 }: CardElementProps) {
   const activate = () => {
@@ -72,6 +76,7 @@ export function CardElement({
       data-kind={value ? kindName(value.Kind) : undefined}
       data-selectable={selectable}
       data-selected={selected}
+      data-match={match}
       onClick={activate}
       onKeyDown={onKeyDown}
     >
@@ -104,10 +109,17 @@ export function RevealedCardMini({ value }: { value: CardValue }) {
   );
 }
 
-export function PowerIndicator({ used }: { used: boolean }) {
+export function Indicators({ used, away = false }: { used: boolean; away?: boolean }) {
   return (
-    <div className="power-indicator" data-power={used ? "consumed" : "available"}>
-      {used ? "Safe call used" : "Safe call available"}
+    <div className="indicators">
+      <span className="power-indicator" data-power={used ? "consumed" : "available"}>
+        {used ? "Safe call used" : "Safe call available"}
+      </span>
+      {away && (
+        <span className="away-indicator" role="status">
+          Away
+        </span>
+      )}
     </div>
   );
 }
