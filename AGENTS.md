@@ -110,12 +110,14 @@ Inbound `{ "type", ...payload }`, decoded (`internal/server/wsmsg.go`) into an
 
 | type | payload | action |
 |------|---------|--------|
-| `openingReveal` | `{ cardId }` | opening reveal |
-| `guess` | `{ sourceCardId, targetCardId }` | guess / silver feat |
-| `safeCall` | `{ sourceCardId, targetCardId, targetCardId2 }` | safe call |
-| `safeChooseReveal` | `{ chosenTargetCardId }` | multi-hit reveal choice, miss token choice, or the Swap (joker 3) target's pick of its own card |
+| `openingReveal` | `{ targetCardIds: [id] }` | opening reveal |
+| `guess` | `{ sourceCardIds: [id], targetCardIds: [id] }` | guess / silver feat |
+| `safeCall` | `{ sourceCardIds: [id], targetCardIds: [id, id] }` | safe call |
+| `safeChooseReveal` | `{ targetCardIds: [id] }` | multi-hit reveal choice, miss token choice, or the Swap (joker 3) target's pick of its own card |
 | `selfReveal` | `{ value }` (rank number, `"silver"`, or `"gold"`) | self-reveal |
-| `joker` | `{ joker, sourceCardId?, sourceCardId2?, targetCardId?, targetCardId2?, targetCardId3?, targetSeat?, targetSeat2?, value? }` | joker use (fields per rank, see `engine.Action`; Census sends its rank in `value`) |
+| `joker` | `{ joker, sourceCardIds?, targetCardIds?, targetSeats?, value? }` | joker use (array lengths per rank, see `jokerArities` in the engine; Differ/Match send both own cards in `sourceCardIds`; Census sends its rank in `value`) |
+
+Array lengths are validated by the engine (`invalid_input`), not by decoding.
 
 The announced value is derived from the source card (see GAME.md), never sent
 directly. Outbound: `state` (full per-seat `PlayerView` snapshot, on connect and
@@ -225,6 +227,7 @@ REST status + envelope or a WS `error` code.
 | `ErrNoGame` (WS action) | WS `no_game` |
 | `ErrGameEnded` | WS `game_ended` |
 | `ErrUnknownAction` | WS `unknown_action` |
+| `ErrInvalidInput` | WS `invalid_input` |
 | `ErrWrongPhase` | WS `wrong_phase` |
 | `ErrNotYourTurn` | WS `not_your_turn` |
 | `ErrInvalidOpeningSelection` | WS `invalid_opening_selection` |

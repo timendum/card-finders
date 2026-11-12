@@ -89,28 +89,27 @@ export type ServerMessage = StateMessage | ErrorMessage;
 /** Opening-phase reveal of one card. */
 export interface OpeningRevealMessage {
   type: "openingReveal";
-  cardId: CardID;
+  targetCardIds: [CardID];
 }
 
 /** A guess against a single target card. */
 export interface GuessMessage {
   type: "guess";
-  sourceCardId: CardID;
-  targetCardId: CardID;
+  sourceCardIds: [CardID];
+  targetCardIds: [CardID];
 }
 
 /** A safe call against two target cards. */
 export interface SafeCallMessage {
   type: "safeCall";
-  sourceCardId: CardID;
-  targetCardId: CardID;
-  targetCardId2: CardID;
+  sourceCardIds: [CardID];
+  targetCardIds: [CardID, CardID];
 }
 
 /** The targeted player's choice of which card to reveal after a double hit. */
 export interface SafeChooseRevealMessage {
   type: "safeChooseReveal";
-  chosenTargetCardId: CardID;
+  targetCardIds: [CardID];
 }
 
 /** A suited rank (2..13) or one of the two specials. */
@@ -129,13 +128,9 @@ export interface SelfRevealMessage {
 export interface JokerMessage {
   type: "joker";
   joker: number;
-  sourceCardId?: CardID;
-  sourceCardId2?: CardID;
-  targetCardId?: CardID;
-  targetCardId2?: CardID;
-  targetCardId3?: CardID;
-  targetSeat?: number;
-  targetSeat2?: number;
+  sourceCardIds?: CardID[];
+  targetCardIds?: CardID[];
+  targetSeats?: number[];
   value?: SelfRevealValue;
 }
 

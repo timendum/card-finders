@@ -131,7 +131,7 @@ func pickAction(t *rapid.T, e *Engine) (SeatID, Action) {
 			}
 		}
 		id := rapid.SampledFrom(suited).Draw(t, "openCard")
-		return s.CurrentSeat, Action{Kind: ActionKindOpeningReveal, OpeningCard: id}
+		return s.CurrentSeat, Action{Kind: ActionKindOpeningReveal, TargetCards: []CardID{id}}
 	case PhaseAwaitingResponse:
 		p := s.PendingSafeChoice
 		options := p.Options
@@ -139,7 +139,7 @@ func pickAction(t *rapid.T, e *Engine) (SeatID, Action) {
 			options = ownFaceDown(e, p.TargetPlayer) // a swap target gives any own card
 		}
 		c := rapid.SampledFrom(options).Draw(t, "choice")
-		return p.TargetPlayer, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: c}
+		return p.TargetPlayer, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{c}}
 	}
 	seat := s.CurrentSeat
 	maxMode := 4
@@ -204,9 +204,9 @@ func randomGuess(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 		return Action{}, false
 	}
 	return Action{
-		Kind:       ActionKindGuess,
-		SourceCard: rapid.SampledFrom(srcs).Draw(t, "src"),
-		TargetCard: rapid.SampledFrom(tgts).Draw(t, "tgt"),
+		Kind:        ActionKindGuess,
+		SourceCards: []CardID{rapid.SampledFrom(srcs).Draw(t, "src")},
+		TargetCards: []CardID{rapid.SampledFrom(tgts).Draw(t, "tgt")},
 	}, true
 }
 
@@ -215,7 +215,7 @@ func hitGuess(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 	for _, src := range hiddenNonGold(e, seat) {
 		for _, tgt := range targetsOf(e, seat) {
 			if matchesAnnouncedValue(e.state.Cards[src].Card, e.state.Cards[tgt].Card) {
-				hits = append(hits, Action{Kind: ActionKindGuess, SourceCard: src, TargetCard: tgt})
+				hits = append(hits, Action{Kind: ActionKindGuess, SourceCards: []CardID{src}, TargetCards: []CardID{tgt}})
 			}
 		}
 	}
@@ -248,7 +248,7 @@ func doubleHitSafeCall(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 				}
 			}
 			if len(m) >= 2 {
-				found = append(found, Action{Kind: ActionKindSafeCall, SourceCard: src, TargetCard: m[0], TargetCard2: m[1]})
+				found = append(found, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{src}, TargetCards: []CardID{m[0], m[1]}})
 			}
 		}
 	}
@@ -280,9 +280,8 @@ func randomSafeCall(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 	}
 	return Action{
 		Kind:        ActionKindSafeCall,
-		SourceCard:  rapid.SampledFrom(hiddenNonGold(e, seat)).Draw(t, "scSrc"),
-		TargetCard:  tg[i],
-		TargetCard2: tg[j],
+		SourceCards: []CardID{rapid.SampledFrom(hiddenNonGold(e, seat)).Draw(t, "scSrc")},
+		TargetCards: []CardID{tg[i], tg[j]},
 	}, true
 }
 

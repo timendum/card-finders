@@ -3,9 +3,13 @@ package engine
 // applyOpeningReveal reveals the acting seat's single opening card: it tokens
 // the card with its natural identity while keeping it face-down, then advances
 // the turn. Validation runs before any mutation, so a rejected reveal is a
-// no-op.
+// no-op. Reads TargetCards: exactly one, the own card.
 func (e *Engine) applyOpeningReveal(seat SeatID, action Action) (Result, error) {
+	if err := action.checkLens(anyLen, exactly(1), anyLen); err != nil {
+		return ResultNone, err
+	}
 	s := e.state
+	cardID := action.TargetCards[0]
 
 	if s.Phase != PhaseOpening {
 		return ResultNone, ErrWrongPhase
@@ -14,7 +18,7 @@ func (e *Engine) applyOpeningReveal(seat SeatID, action Action) (Result, error) 
 		return ResultNone, ErrNotYourTurn
 	}
 
-	pc, ok := s.Cards[action.OpeningCard]
+	pc, ok := s.Cards[cardID]
 	if !ok || pc.Owner != seat || pc.Facing != FaceDown {
 		return ResultNone, ErrInvalidOpeningSelection
 	}
@@ -29,7 +33,7 @@ func (e *Engine) applyOpeningReveal(seat SeatID, action Action) (Result, error) 
 	s.recordAction(&LastAction{
 		Actor:   seat,
 		Kind:    ActionKindOpeningReveal,
-		Targets: []CardID{action.OpeningCard},
+		Targets: []CardID{cardID},
 		Outcome: OutcomeNone,
 	})
 

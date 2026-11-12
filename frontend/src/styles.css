@@ -528,8 +528,8 @@ body {
 }
 
 .value-summary-title {
-    margin: 0.5em 0 0.4em;
-    font-size: var(--font-size-lg);
+  margin: 0.5em 0 0.4em;
+  font-size: var(--font-size-lg);
 }
 
 .value-summary-list {

@@ -1,8 +1,13 @@
 package engine
 
-// applyGuess resolves a normal guess.
+// applyGuess resolves a normal guess. Reads SourceCards (exactly one, the
+// caller's card announcing the value) and TargetCards (exactly one).
 func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
+	if err := action.checkLens(exactly(1), exactly(1), anyLen); err != nil {
+		return ResultNone, err
+	}
 	s := e.state
+	targetID := action.TargetCards[0]
 
 	if s.Phase != PhasePlaying {
 		return ResultNone, ErrWrongPhase
@@ -12,7 +17,7 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 	}
 
 	// Source: owned, face-down, non-gold.
-	source, ok := s.Cards[action.SourceCard]
+	source, ok := s.Cards[action.SourceCards[0]]
 	if !ok || source.Owner != seat || source.Facing != FaceDown {
 		return ResultNone, ErrInvalidSource
 	}
@@ -21,7 +26,7 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 	}
 
 	// Target: exists, face-down, owned by another player.
-	target, ok := s.Cards[action.TargetCard]
+	target, ok := s.Cards[targetID]
 	if !ok {
 		return ResultNone, ErrInvalidTarget
 	}
@@ -37,7 +42,7 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 		Actor:          seat,
 		Kind:           ActionKindGuess,
 		AnnouncedValue: announcedValueOf(source.Card),
-		Targets:        []CardID{action.TargetCard},
+		Targets:        []CardID{targetID},
 		SourceCard:     &sourceID,
 	}
 
@@ -49,7 +54,7 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 	s.Shield = false
 
 	if target.Card.Kind == SpecialKindGold && shield {
-		s.placeToken(action.TargetCard)
+		s.placeToken(targetID)
 		la.Outcome = OutcomeMiss
 		s.recordAction(la)
 		s.logActionOn(seat, target.Owner, "called "+announcedText(la.AnnouncedValue)+" and the shield protected a gold card")
@@ -57,9 +62,9 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 	}
 
 	if target.Card.Kind == SpecialKindGold {
-		s.flipUp(action.TargetCard)
+		s.flipUp(targetID)
 		la.Outcome = OutcomeGoldHit
-		la.Revealed = []CardID{action.TargetCard}
+		la.Revealed = []CardID{targetID}
 		s.recordAction(la)
 		s.logActionOn(seat, target.Owner, "called "+announcedText(la.AnnouncedValue)+" and hit a gold card")
 		return e.endGoldHit(), nil
@@ -67,9 +72,9 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 
 	if matchesAnnouncedValue(source.Card, target.Card) {
 		// Hit: Pair_Reveal flips both face-up.
-		s.flipUp(sourceID, action.TargetCard)
+		s.flipUp(sourceID, targetID)
 		la.Outcome = OutcomeHit
-		la.Revealed = []CardID{sourceID, action.TargetCard}
+		la.Revealed = []CardID{sourceID, targetID}
 	} else {
 		// Miss: lose one life (clamped, none under the Shield), token the
 		// target face-down.
@@ -77,7 +82,7 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 			s.LifePool--
 			la.LivesLost = 1
 		}
-		s.placeToken(action.TargetCard)
+		s.placeToken(targetID)
 		la.Outcome = OutcomeMiss
 	}
 

@@ -5,9 +5,16 @@
 import { selfRevealOptions } from "./actions.ts";
 import { availableActions } from "./availableActions.ts";
 import { rankLabel } from "./cardLabel.ts";
-import { isSwapChoice, jokerDescriptions, jokerLabel, jokerSeatChoices, jokerShape } from "./jokers.ts";
+import {
+  isSwapChoice,
+  jokerDescriptions,
+  jokerLabel,
+  jokerSeatChoices,
+  jokerShape,
+} from "./jokers.ts";
 import { seatPositionName } from "./seatLayout.ts";
-import { canConfirm, confirmLabel, type SelectionState } from "./selection.ts";
+import { canConfirm, confirmLabel } from "./confirm.ts";
+import type { SelectionState } from "./selection.ts";
 import type { SocketError } from "../api/useGameSocket.ts";
 import {
   ActionKind,

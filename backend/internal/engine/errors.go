@@ -27,6 +27,7 @@ var (
 	ErrInvalidOpeningSelection = errors.New("the opening selection is invalid")
 	ErrSpecialOpening          = errors.New("a special card cannot be revealed during the opening")
 	ErrUnknownAction           = errors.New("unknown action kind")
+	ErrInvalidInput            = errors.New("the action carries the wrong number of cards or seats")
 )
 
 var (

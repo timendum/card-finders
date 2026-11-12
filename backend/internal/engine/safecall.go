@@ -9,8 +9,12 @@ import (
 // targeting two distinct face-down cards of a single other player. The power is
 // spent on every valid call. On a double hit resolution defers to
 // applySafeChooseReveal, so PowerUsed is set but the Pair_Reveal and turn pass
-// wait for the targeted player's choice.
+// wait for the targeted player's choice. Reads SourceCards (exactly one) and
+// TargetCards (exactly two).
 func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
+	if err := action.checkLens(exactly(1), exactly(2), anyLen); err != nil {
+		return ResultNone, err
+	}
 	s := e.state
 
 	if s.Phase != PhasePlaying {
@@ -29,7 +33,7 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 	}
 
 	// Source: owned, face-down, non-gold.
-	source, ok := s.Cards[action.SourceCard]
+	source, ok := s.Cards[action.SourceCards[0]]
 	if !ok || source.Owner != seat || source.Facing != FaceDown {
 		return ResultNone, ErrInvalidSource
 	}
@@ -39,12 +43,12 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 
 	// Targets: both exist, distinct, face-down, owned by the same other player
 	// who holds at least two face-down cards. Any failure is ErrSafeCallTargets.
-	t1, ok1 := s.Cards[action.TargetCard]
-	t2, ok2 := s.Cards[action.TargetCard2]
+	t1, ok1 := s.Cards[action.TargetCards[0]]
+	t2, ok2 := s.Cards[action.TargetCards[1]]
 	if !ok1 || !ok2 {
 		return ResultNone, ErrSafeCallTargets
 	}
-	if action.TargetCard == action.TargetCard2 {
+	if action.TargetCards[0] == action.TargetCards[1] {
 		return ResultNone, ErrSafeCallTargets
 	}
 	if t1.Facing != FaceDown || t2.Facing != FaceDown {
@@ -60,7 +64,7 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 
 	s.Players[seat].PowerUsed = true
 
-	targets := []CardID{action.TargetCard, action.TargetCard2}
+	targets := slices.Clone(action.TargetCards)
 	return e.resolveMultiTarget(multiCall{
 		seat:         seat,
 		source:       source,
@@ -88,9 +92,14 @@ func faceDownCount(s *GameState, seat SeatID) int {
 // applySafeChooseReveal resolves the second step of a pending choice: the
 // targeted player picks which matching card is revealed (or which card gets the
 // token on a miss), or, for a Swap, which of its own cards it gives. A plain
-// Safe_Call was already marked spent by applySafeCall.
+// Safe_Call was already marked spent by applySafeCall. Reads TargetCards:
+// exactly one, the chosen card.
 func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, error) {
+	if err := action.checkLens(anyLen, exactly(1), anyLen); err != nil {
+		return ResultNone, err
+	}
 	s := e.state
+	chosen := action.TargetCards[0]
 
 	if s.Phase != PhaseAwaitingResponse {
 		return ResultNone, ErrWrongPhase
@@ -105,7 +114,7 @@ func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, erro
 	if pending.Joker == JokerSwap {
 		return e.resolveSwap(seat, action, pending)
 	}
-	if !slices.Contains(pending.Options, action.ChosenTarget) {
+	if !slices.Contains(pending.Options, chosen) {
 		return ResultNone, ErrInvalidChoice
 	}
 
@@ -115,7 +124,7 @@ func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, erro
 		Actor:      caller,
 		Kind:       ActionKindSafeChooseReveal,
 		Joker:      pending.Joker,
-		Targets:    []CardID{action.ChosenTarget},
+		Targets:    []CardID{chosen},
 		SourceCard: &sourceID,
 	}
 	if src, ok := s.Cards[sourceID]; ok {
@@ -128,17 +137,17 @@ func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, erro
 
 	if pending.Miss {
 		// Miss: token only the chosen target; nothing is revealed.
-		s.placeToken(action.ChosenTarget)
+		s.placeToken(chosen)
 		la.Outcome = OutcomeMiss
 		s.recordAction(la)
-		s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[action.ChosenTarget])+" to receive the token")
+		s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[chosen])+" to receive the token")
 		return e.endCall(caller, pending.PassTurn), nil
 	}
 
-	s.flipUp(sourceID, action.ChosenTarget)
+	s.flipUp(sourceID, chosen)
 	la.Outcome = OutcomeHit
-	la.Revealed = []CardID{sourceID, action.ChosenTarget}
+	la.Revealed = []CardID{sourceID, chosen}
 	s.recordAction(la)
-	s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[action.ChosenTarget])+" to reveal")
+	s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[chosen])+" to reveal")
 	return e.endCall(caller, pending.PassTurn), nil
 }

@@ -50,7 +50,8 @@ export const jokerDescriptions: Readonly<Record<number, string>> = {
   [JokerSwap]: "Pick one of your cards and a player; they give you one of theirs back.",
   [JokerTripleCall]: "Pick one of your cards, then three face-down cards of one opponent.",
   [JokerSelfMark]: "Pick one of your face-down cards to token.",
-  [JokerSweep]: "Pick one of your suited cards, then a player: it hits every matching card they hold.",
+  [JokerSweep]:
+    "Pick one of your suited cards, then a player: it hits every matching card they hold.",
   [JokerExtraLife]: "Gain one life.",
   [JokerSecondWind]: "Restore the double call of players who used it.",
   [JokerCensus]: "Ask every player whether they hold a rank face down.",
@@ -194,33 +195,9 @@ export function jokerComplete(view: PlayerView, rank: Rank, picks: JokerPicks): 
 export function buildJoker(view: PlayerView, rank: Rank, picks: JokerPicks): JokerMessage | null {
   if (!jokerComplete(view, rank, picks)) return null;
   const msg: JokerMessage = { type: "joker", joker: rank };
-  const [own1, own2] = picks.own;
-  const [t1, t2, t3] = picks.targets;
-  switch (rank) {
-    case JokerDiffer:
-    case JokerMatch:
-      // The pair travels as source + target, both own cards.
-      msg.sourceCardId = own1;
-      msg.targetCardId = own2;
-      break;
-    case JokerReverseCall:
-      msg.sourceCardId = own1;
-      msg.sourceCardId2 = own2;
-      msg.targetCardId = t1;
-      break;
-    case JokerTripleCall:
-      msg.sourceCardId = own1;
-      msg.targetCardId = t1;
-      msg.targetCardId2 = t2;
-      msg.targetCardId3 = t3;
-      break;
-    case JokerCensus:
-      msg.value = picks.rank ?? undefined;
-      break;
-    default:
-      if (own1 !== undefined) msg.sourceCardId = own1;
-  }
-  if (picks.seats.length > 0) msg.targetSeat = picks.seats[0];
-  if (picks.seats.length > 1) msg.targetSeat2 = picks.seats[1];
+  if (picks.own.length > 0) msg.sourceCardIds = [...picks.own];
+  if (picks.targets.length > 0) msg.targetCardIds = [...picks.targets];
+  if (picks.seats.length > 0) msg.targetSeats = [...picks.seats];
+  if (rank === JokerCensus) msg.value = picks.rank ?? undefined;
   return msg;
 }

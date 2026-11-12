@@ -29,53 +29,22 @@ export interface SelfRevealTarget {
 }
 /**
  * Action is the tagged union of every gameplay action. Kind selects the active
- * action; only the fields documented for that Kind are meaningful.
+ * action; each applyX documents and checks the fields it reads. The slices are
+ * read-only to the engine.
  */
 export interface Action {
   Kind: ActionKind;
+  SourceCards: CardID[];
+  TargetCards: CardID[];
+  TargetSeats: SeatID[];
   /**
-   * OpeningReveal: the card revealed in the opening phase.
-   */
-  OpeningCard: CardID;
-  /**
-   * Guess / SafeCall: for a guess, the targeted face-down card; for a safe
-   * call, the first of the two targets.
-   */
-  TargetCard: CardID;
-  /**
-   * Guess / SafeCall: the caller's own face-down card. Announces the value
-   * (gold rejected) and flips face-up on a hit.
-   */
-  SourceCard: CardID;
-  /**
-   * SafeCall: the second target (first is TargetCard).
-   */
-  TargetCard2: CardID;
-  /**
-   * SafeChooseReveal: the card chosen to reveal after the safe call resolves.
-   */
-  ChosenTarget: CardID;
-  /**
-   * SelfReveal: the chosen value; all matching cards reveal at once.
+   * SelfReveal and Census: the chosen value.
    */
   SelfRevealValue: SelfRevealTarget;
   /**
-   * Joker: the joker rank activated. The other fields it uses by rank:
-   *  2, 13: SourceCard + TargetCard, two adjacent own cards to link.
-   *  3: SourceCard (own card given) + TargetSeat.
-   *  4: SourceCard + TargetCard, TargetCard2, TargetCard3.
-   *  5: SourceCard, the own card to mark.
-   *  6: SourceCard + TargetSeat.
-   *  8: TargetSeat + TargetSeat2, only when more than two seats used Safe_Call.
-   *  9: SelfRevealValue.Rank (SpecialKindNone), the rank asked.
-   *  11: SourceCard + SourceCard2 (own cards) + TargetCard.
-   *  12: TargetSeat, the next current seat.
+   * Joker: the rank activated.
    */
   Joker: Rank;
-  SourceCard2: CardID;
-  TargetCard3: CardID;
-  TargetSeat: SeatID;
-  TargetSeat2: SeatID;
 }
 
 //////////
@@ -86,12 +55,12 @@ export interface Action {
  * for suited (SpecialKindNone) cards and used for sort tie-breaking. SeatID is
  * 0..3 clockwise. See GAME.md for terms.
  */
-export type Suit = number /* uint8 */;
-export type Rank = number /* uint8 */;
+export type Suit = number; /* uint8 */
+export type Rank = number; /* uint8 */
 /**
  * 0-3, ordered, the first to play is randomly choose
  */
-export type SeatID = number /* uint8 */;
+export type SeatID = number; /* uint8 */
 export enum SpecialKind {
   None = 0, // suited card
   Silver, // no suit, ranks 2..Q
@@ -100,7 +69,7 @@ export enum SpecialKind {
 /**
  * CardID is a stable identity assigned at deck build time.
  */
-export type CardID = number /* uint16 */;
+export type CardID = number; /* uint16 */
 /**
  * Card is an immutable card identity.
  */
@@ -113,7 +82,6 @@ export interface Card {
 
 //////////
 // source: deal.go
-
 
 //////////
 // source: deck.go
@@ -140,8 +108,7 @@ Package engine is the pure, deterministic Card Finders game engine.
  * Engine is the game state machine. rng seeds pool formation, dealing, and
  * first-player selection; state is nil until a game is created.
  */
-export interface Engine {
-}
+export interface Engine {}
 
 //////////
 // source: joker.go
@@ -231,6 +198,9 @@ export interface JokerView {
 }
 
 //////////
+// source: jokeractions.go
+
+//////////
 // source: level.go
 
 /**
@@ -251,7 +221,6 @@ export interface Level {
 //////////
 // source: lifecycle.go
 
-
 //////////
 // source: log.go
 
@@ -271,7 +240,6 @@ export interface LogEntry {
 
 //////////
 // source: multicall.go
-
 
 //////////
 // source: state.go
@@ -315,19 +283,14 @@ export interface GameState {
   SpecialPool: SpecialPool;
   JoinCode: string;
   Players: (Player | undefined)[]; // nil until that seat is filled
-  Cards: { [key: CardID]: PlacedCard | undefined};
+  Cards: { [key: CardID]: PlacedCard | undefined };
   HandOrder: CardID[][]; // each seat's card ids, for stable positions
   /**
-   * Slot is each card's 1-based position within its owning seat's hand. It is
-   * value-sorted at deal and stays put for the rest of the game, except after
-   * a Swap joker: the two hands involved lose one card and gain another, and
-   * their slots are renumbered (the received card goes after every card of
-   * lower or equal Sort_Value, so a sorted hand stays sorted).
+   * Slot is each card's 1-based position within its owning seat's hand.
    */
-  Slot: { [key: CardID]: number /* int */};
+  Slot: { [key: CardID]: number /* int */ };
   /**
-   * LifePool is floored at 0 by misses. It starts at Level.StartLives and may
-   * later exceed it (joker 7 adds a life with no cap); MaxLife stays the start.
+   * LifePool is floored at 0 by misses, joker 7 adds a life with no cap).
    */
   LifePool: number /* int */;
   CurrentSeat: SeatID; // meaningful in Opening/Playing
@@ -338,8 +301,7 @@ export interface GameState {
    */
   Jokers: JokerSlot[];
   /**
-   * Shield is armed by joker 10 and consumed by the next normal guess or
-   * silver feat.
+   * Shield is armed by joker 10.
    */
   Shield: boolean;
   GameResult: Result;
@@ -417,10 +379,7 @@ export enum TokenKind {
    */
   NaturalIdentity = 1,
   /**
-   * TokenKindSame / TokenKindDifferent are link tokens (jokers 13 and 2):
-   * two tokens of the same kind on two adjacent cards of one hand claim that
-   * the pair has the same / a different identity. They show no card value and
-   * have no peer field: the peer is the adjacent card with the same kind.
+   * TokenKindSame / TokenKindDifferent are link tokens (jokers 13 and 2)
    */
   Same = 2,
   Different = 3,
@@ -493,8 +452,7 @@ export interface LastAction {
   LivesLost: number /* int */;
   SourceCard?: CardID;
   /**
-   * Joker is the joker rank behind this action, 0 when none. A choice raised
-   * by a joker (and its reply) carries it too.
+   * Joker is the joker rank behind this action.
    */
   Joker: Rank;
 }

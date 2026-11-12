@@ -1,29 +1,22 @@
 import { useCallback, useState } from "react";
-import { Table } from "../board/Table.tsx";
-import { StatusPanel } from "../status/StatusPanel.tsx";
-import { PromptPanel } from "../board/PromptPanel.tsx";
-import { GameLog } from "../board/GameLog.tsx";
-import { EndBanner } from "../status/EndBanner.tsx";
 import { useGameSocket } from "../api/useGameSocket.ts";
-import { buildGuess, buildSafeCall, buildSelfReveal } from "../board/actions.ts";
-import { buildJoker } from "../board/jokers.ts";
-import { matchHints } from "../board/matchHints.ts";
 import {
-  buildChoice,
+  GameLog,
+  PromptPanel,
+  Table,
   emptySelection,
-  inferredAction,
   isSelectable,
-  jokerPicks,
+  matchHints,
+  messageFor,
   selectionReducer,
   type SelectionEvent,
   type SelectionState,
-} from "../board/selection.ts";
+} from "../board/index.ts";
+import { EndBanner, StatusPanel } from "../status/index.ts";
 import {
   Phase,
   Result,
   type CardID,
-  type ClientMessage,
-  type PlayerView,
   type SeatID,
   type SessionToken,
   type ViewCard,
@@ -34,29 +27,6 @@ export interface GameScreenProps {
   /** Shown until the first view arrives; thereafter the view supplies the seat. */
   seat: SeatID;
   onLeave: () => void;
-}
-
-/** The single message the current selection confirms, or null if incomplete. */
-export function messageFor(selection: SelectionState, view: PlayerView): ClientMessage | null {
-  const { source, targets, selfValue } = selection;
-  switch (inferredAction(selection, view)) {
-    case "openingReveal":
-      return source === null ? null : { type: "openingReveal", cardId: source };
-    case "guess":
-      return source === null ? null : buildGuess(source, targets[0]);
-    case "safeCall":
-      return source === null ? null : buildSafeCall(source, targets[0], targets[1]);
-    case "selfReveal":
-      return selfValue === null ? null : buildSelfReveal(selfValue);
-    case "safeChooseReveal":
-      return buildChoice(selection);
-    case "joker":
-      return selection.jokerRank === null
-        ? null
-        : buildJoker(view, selection.jokerRank, jokerPicks(selection));
-    default:
-      return null;
-  }
 }
 
 export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
@@ -131,8 +101,7 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
     selection.jokerOwn.includes(card.ID) ||
     selection.targets.includes(card.ID);
 
-  const hints =
-    ended || selection.jokerRank !== null ? null : matchHints(view, selection.source);
+  const hints = ended || selection.jokerRank !== null ? null : matchHints(view, selection.source);
 
   return (
     <main className="game-screen">

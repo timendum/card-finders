@@ -1,5 +1,7 @@
 package engine
 
+import "strings"
+
 import "strconv"
 
 // multiCall describes a call against several face-down cards of one other
@@ -153,18 +155,18 @@ func (s *GameState) slotsText(ids []CardID) string {
 			}
 		}
 	}
-	out := ""
+	var out strings.Builder
 	for i, n := range slots {
 		switch {
 		case i == 0:
 		case i == len(slots)-1:
-			out += " and "
+			out.WriteString(" and ")
 		default:
-			out += ", "
+			out.WriteString(", ")
 		}
-		out += strconv.Itoa(n)
+		out.WriteString(strconv.Itoa(n))
 	}
-	return out
+	return out.String()
 }
 
 func countWord(n int) string {

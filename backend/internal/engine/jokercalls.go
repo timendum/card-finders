@@ -1,6 +1,9 @@
 package engine
 
-import "strconv"
+import (
+	"slices"
+	"strconv"
+)
 
 // jokerSource validates the owned, face-down, non-gold source card shared by
 // the call jokers (the same rule as a normal guess).
@@ -30,11 +33,11 @@ func (e *Engine) jokerTripleCall(seat SeatID, a Action, slot *JokerSlot) (Result
 	if err := s.requireCurrentSeat(seat); err != nil {
 		return ResultNone, err
 	}
-	source, err := s.jokerSource(seat, a.SourceCard)
+	source, err := s.jokerSource(seat, a.SourceCards[0])
 	if err != nil {
 		return ResultNone, err
 	}
-	targets := []CardID{a.TargetCard, a.TargetCard2, a.TargetCard3}
+	targets := slices.Clone(a.TargetCards)
 	first, ok := s.Cards[targets[0]]
 	if !ok || first.Owner == seat {
 		return ResultNone, ErrJokerInvalid
@@ -44,10 +47,8 @@ func (e *Engine) jokerTripleCall(seat SeatID, a Action, slot *JokerSlot) (Result
 		if !ok || pc.Owner != first.Owner || pc.Facing != FaceDown {
 			return ResultNone, ErrJokerInvalid
 		}
-		for _, other := range targets[:i] {
-			if other == id {
-				return ResultNone, ErrJokerInvalid
-			}
+		if slices.Contains(targets[:i], id) {
+			return ResultNone, ErrJokerInvalid
 		}
 	}
 
@@ -70,15 +71,16 @@ func (e *Engine) jokerSweep(seat SeatID, a Action, slot *JokerSlot) (Result, err
 	if err := s.requireCurrentSeat(seat); err != nil {
 		return ResultNone, err
 	}
-	source, err := s.jokerSource(seat, a.SourceCard)
+	source, err := s.jokerSource(seat, a.SourceCards[0])
 	if err != nil {
 		return ResultNone, err
 	}
-	if source.Card.Kind != SpecialKindNone || !s.validOtherSeat(seat, a.TargetSeat) {
+	targetSeat := a.TargetSeats[0]
+	if source.Card.Kind != SpecialKindNone || !s.validOtherSeat(seat, targetSeat) {
 		return ResultNone, ErrJokerInvalid
 	}
 	var targets []CardID
-	for _, id := range s.handBySlot(a.TargetSeat) {
+	for _, id := range s.handBySlot(targetSeat) {
 		if s.Cards[id].Facing == FaceDown {
 			targets = append(targets, id)
 		}
@@ -88,7 +90,7 @@ func (e *Engine) jokerSweep(seat SeatID, a Action, slot *JokerSlot) (Result, err
 	return e.resolveMultiTarget(multiCall{
 		seat:         seat,
 		source:       source,
-		targetPlayer: a.TargetSeat,
+		targetPlayer: targetSeat,
 		targets:      targets,
 		joker:        a.Joker,
 		passTurn:     true,
@@ -108,18 +110,19 @@ func (e *Engine) jokerReverseCall(seat SeatID, a Action, slot *JokerSlot) (Resul
 	if err := s.requireCurrentSeat(seat); err != nil {
 		return ResultNone, err
 	}
-	src1, err := s.jokerSource(seat, a.SourceCard)
+	srcID1, srcID2, targetID := a.SourceCards[0], a.SourceCards[1], a.TargetCards[0]
+	src1, err := s.jokerSource(seat, srcID1)
 	if err != nil {
 		return ResultNone, err
 	}
-	src2, err := s.jokerSource(seat, a.SourceCard2)
+	src2, err := s.jokerSource(seat, srcID2)
 	if err != nil {
 		return ResultNone, err
 	}
-	if a.SourceCard == a.SourceCard2 || sameIdentity(src1.Card, src2.Card) {
+	if srcID1 == srcID2 || sameIdentity(src1.Card, src2.Card) {
 		return ResultNone, ErrJokerInvalid
 	}
-	target, ok := s.Cards[a.TargetCard]
+	target, ok := s.Cards[targetID]
 	switch {
 	case !ok:
 		return ResultNone, ErrInvalidTarget
@@ -131,9 +134,9 @@ func (e *Engine) jokerReverseCall(seat SeatID, a Action, slot *JokerSlot) (Resul
 
 	slot.Used = true
 	la := jokerAction(seat, a.Joker)
-	la.Targets = []CardID{a.TargetCard}
-	where := "cards " + s.slotsText([]CardID{a.SourceCard, a.SourceCard2}) +
-		" against card " + strconv.Itoa(s.Slot[a.TargetCard])
+	la.Targets = []CardID{targetID}
+	where := "cards " + s.slotsText([]CardID{srcID1, srcID2}) +
+		" against card " + strconv.Itoa(s.Slot[targetID])
 
 	var hit *PlacedCard
 	for _, src := range []*PlacedCard{src1, src2} {
@@ -144,19 +147,19 @@ func (e *Engine) jokerReverseCall(seat SeatID, a Action, slot *JokerSlot) (Resul
 
 	switch {
 	case target.Card.Kind == SpecialKindGold:
-		s.flipUp(a.TargetCard)
+		s.flipUp(targetID)
 		la.Outcome = OutcomeGoldHit
-		la.Revealed = []CardID{a.TargetCard}
+		la.Revealed = []CardID{targetID}
 		s.recordAction(la)
 		s.logActionOn(seat, target.Owner, jokerText(a.Joker, where+" and hit a gold card"))
 		return e.endGoldHit(), nil
 	case hit != nil:
 		id := hit.Card.ID
-		s.flipUp(id, a.TargetCard)
+		s.flipUp(id, targetID)
 		la.Outcome = OutcomeHit
 		la.AnnouncedValue = announcedValueOf(hit.Card)
 		la.SourceCard = &id
-		la.Revealed = []CardID{id, a.TargetCard}
+		la.Revealed = []CardID{id, targetID}
 		s.recordAction(la)
 		s.logActionOn(seat, target.Owner, jokerText(a.Joker, where+" and hit"))
 	default:
@@ -164,7 +167,7 @@ func (e *Engine) jokerReverseCall(seat SeatID, a Action, slot *JokerSlot) (Resul
 			s.LifePool--
 			la.LivesLost = 1
 		}
-		s.placeToken(a.TargetCard)
+		s.placeToken(targetID)
 		la.Outcome = OutcomeMiss
 		s.recordAction(la)
 		s.logActionOn(seat, target.Owner, jokerText(a.Joker, where+" and missed"))
@@ -176,15 +179,15 @@ func (e *Engine) jokerReverseCall(seat SeatID, a Action, slot *JokerSlot) (Resul
 // to a seat, whose player then picks the card it gives back (pending choice).
 func (e *Engine) jokerSwap(seat SeatID, a Action, slot *JokerSlot) (Result, error) {
 	s := e.state
-	if _, ok := s.ownFaceDown(seat, a.SourceCard); !ok || !s.validOtherSeat(seat, a.TargetSeat) {
+	sourceID, targetSeat := a.SourceCards[0], a.TargetSeats[0]
+	if _, ok := s.ownFaceDown(seat, sourceID); !ok || !s.validOtherSeat(seat, targetSeat) {
 		return ResultNone, ErrJokerInvalid
 	}
 
 	slot.Used = true
-	sourceID := a.SourceCard
 	s.PendingSafeChoice = &PendingSafeChoice{
 		Caller:       seat,
-		TargetPlayer: a.TargetSeat,
+		TargetPlayer: targetSeat,
 		SourceCard:   sourceID,
 		Joker:        a.Joker,
 	}
@@ -193,7 +196,7 @@ func (e *Engine) jokerSwap(seat SeatID, a Action, slot *JokerSlot) (Result, erro
 	la.Outcome = OutcomeAwaitingChoice // empty Targets: pick any own face-down card
 	la.SourceCard = &sourceID
 	s.recordAction(la)
-	s.logActionOn(seat, a.TargetSeat, jokerText(a.Joker,
+	s.logActionOn(seat, targetSeat, jokerText(a.Joker,
 		"offered card "+strconv.Itoa(s.Slot[sourceID])+" for a swap"))
 	return ResultNone, nil
 }
@@ -203,10 +206,11 @@ func (e *Engine) jokerSwap(seat SeatID, a Action, slot *JokerSlot) (Result, erro
 // hand per swapCards. The turn is untouched.
 func (e *Engine) resolveSwap(seat SeatID, a Action, p *PendingSafeChoice) (Result, error) {
 	s := e.state
-	if _, ok := s.ownFaceDown(seat, a.ChosenTarget); !ok {
+	chosen := a.TargetCards[0]
+	if _, ok := s.ownFaceDown(seat, chosen); !ok {
 		return ResultNone, ErrInvalidChoice
 	}
-	given, taken := p.SourceCard, a.ChosenTarget
+	given, taken := p.SourceCard, chosen
 	from, to := s.Slot[given], s.Slot[taken]
 
 	s.PendingSafeChoice = nil

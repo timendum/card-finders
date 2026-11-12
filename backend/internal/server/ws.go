@@ -226,6 +226,7 @@ var wsActionErrorMap = map[error]string{
 	engine.ErrGoldRevealIneligible:    "gold_reveal_ineligible",
 	engine.ErrJokerUnavailable:        "joker_unavailable",
 	engine.ErrJokerInvalid:            "joker_invalid",
+	engine.ErrInvalidInput:            "invalid_input",
 	engine.ErrShieldActive:            "shield_active",
 }
 

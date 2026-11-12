@@ -53,7 +53,7 @@ func TestResolveMultiTargetSeveralHitsAwaitChoice(t *testing.T) {
 	if la.Outcome != OutcomeAwaitingChoice || len(la.Targets) != 2 {
 		t.Errorf("last action = %+v, want the options as Targets", la)
 	}
-	if _, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 12}); err != nil {
+	if _, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{12}}); err != nil {
 		t.Fatal(err)
 	}
 	if e.state.Cards[12].Facing != FaceUp || e.state.Cards[1].Facing != FaceUp || e.state.Cards[10].Facing != FaceDown {
@@ -73,10 +73,10 @@ func TestResolveMultiTargetMissAwaitsTokenChoice(t *testing.T) {
 	if e.state.LifePool != 2 || p == nil || !p.Miss || len(p.Options) != 3 {
 		t.Fatalf("life %d pending %+v, want life 2 and a token choice among the 3 non-gold cards", e.state.LifePool, p)
 	}
-	if _, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 12}); err != ErrInvalidChoice {
+	if _, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{12}}); err != ErrInvalidChoice {
 		t.Errorf("choosing the gold card: err = %v, want ErrInvalidChoice", err)
 	}
-	if _, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 11}); err != nil {
+	if _, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{11}}); err != nil {
 		t.Fatal(err)
 	}
 	if e.state.Cards[11].Token == nil || e.state.Cards[10].Token != nil {

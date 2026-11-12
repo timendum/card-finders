@@ -58,7 +58,7 @@ func TestGuessMissToZeroLifeEndsInLoss(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone}) // target (miss)
 	place(e, 3, 2, Card{Rank: 5, Kind: SpecialKindNone}) // spare, so not also a win
 
-	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
@@ -82,7 +82,7 @@ func TestGuessHitRevealingLastCardsEndsInWin(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone}) // source
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone}) // target (match), last two cards
 
-	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
@@ -122,7 +122,7 @@ func TestActionAfterEndedRejected(t *testing.T) {
 	e.state.Phase = PhaseEnded
 	e.state.GameResult = ResultWin
 
-	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrGameEnded) {
 		t.Errorf("err = %v, want ErrGameEnded", err)
 	}

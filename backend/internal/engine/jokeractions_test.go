@@ -32,18 +32,18 @@ func TestJokerLinkDifferAndMatchClaims(t *testing.T) {
 	layout(e)
 
 	// Match on a false claim is rejected and changes nothing.
-	wantJokerErr(t, e, 0, Action{Joker: JokerMatch, SourceCard: 1, TargetCard: 2}, ErrJokerInvalid)
+	wantJokerErr(t, e, 0, Action{Joker: JokerMatch, SourceCards: []CardID{1, 2}}, ErrJokerInvalid)
 	if e.state.Cards[1].Token != nil || e.state.Jokers[1].Used {
 		t.Fatal("rejected joker mutated state")
 	}
 	// Non-adjacent pair is rejected.
-	wantJokerErr(t, e, 0, Action{Joker: JokerDiffer, SourceCard: 1, TargetCard: 3}, ErrJokerInvalid)
+	wantJokerErr(t, e, 0, Action{Joker: JokerDiffer, SourceCards: []CardID{1, 3}}, ErrJokerInvalid)
 	// Another seat's cards are not mine to link.
-	wantJokerErr(t, e, 1, Action{Joker: JokerDiffer, SourceCard: 1, TargetCard: 2}, ErrJokerInvalid)
+	wantJokerErr(t, e, 1, Action{Joker: JokerDiffer, SourceCards: []CardID{1, 2}}, ErrJokerInvalid)
 
 	// Anytime: seat 2 is not the current seat but may use a joker; the pair
 	// belongs to seat 0 so seat 0 does it, and the turn does not move.
-	mustJoker(t, e, 0, Action{Joker: JokerDiffer, SourceCard: 1, TargetCard: 2})
+	mustJoker(t, e, 0, Action{Joker: JokerDiffer, SourceCards: []CardID{1, 2}})
 	for _, id := range []CardID{1, 2} {
 		if tk := e.state.Cards[id].Token; tk == nil || tk.Displayed != TokenKindDifferent {
 			t.Errorf("card %d token = %+v, want Different", id, tk)
@@ -53,7 +53,7 @@ func TestJokerLinkDifferAndMatchClaims(t *testing.T) {
 		t.Error("an anytime joker must not advance the turn")
 	}
 	// Silver 6 and silver 7 are the "same": specials compare by kind only.
-	mustJoker(t, e, 0, Action{Joker: JokerMatch, SourceCard: 3, TargetCard: 4})
+	mustJoker(t, e, 0, Action{Joker: JokerMatch, SourceCards: []CardID{3, 4}})
 	if tk := e.state.Cards[3].Token; tk == nil || tk.Displayed != TokenKindSame {
 		t.Errorf("silver pair token = %+v, want Same", tk)
 	}
@@ -69,8 +69,8 @@ func TestJokerDifferSilverGoldAndTokenedRejected(t *testing.T) {
 	place(e, 3, 0, suited(9))
 	layout(e)
 	e.state.Cards[3].Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
-	wantJokerErr(t, e, 0, Action{Joker: JokerDiffer, SourceCard: 2, TargetCard: 3}, ErrJokerInvalid)
-	mustJoker(t, e, 0, Action{Joker: JokerDiffer, SourceCard: 1, TargetCard: 2})
+	wantJokerErr(t, e, 0, Action{Joker: JokerDiffer, SourceCards: []CardID{2, 3}}, ErrJokerInvalid)
+	mustJoker(t, e, 0, Action{Joker: JokerDiffer, SourceCards: []CardID{1, 2}})
 }
 
 func TestJokerSelfMark(t *testing.T) {
@@ -78,9 +78,9 @@ func TestJokerSelfMark(t *testing.T) {
 	place(e, 1, 0, silver(5))
 	place(e, 2, 0, suited(6))
 	layout(e)
-	wantJokerErr(t, e, 0, Action{Joker: JokerSelfMark, SourceCard: 1}, ErrJokerInvalid)
-	wantJokerErr(t, e, 2, Action{Joker: JokerSelfMark, SourceCard: 2}, ErrJokerInvalid) // not mine
-	mustJoker(t, e, 0, Action{Joker: JokerSelfMark, SourceCard: 2})
+	wantJokerErr(t, e, 0, Action{Joker: JokerSelfMark, SourceCards: []CardID{1}}, ErrJokerInvalid)
+	wantJokerErr(t, e, 2, Action{Joker: JokerSelfMark, SourceCards: []CardID{2}}, ErrJokerInvalid) // not mine
+	mustJoker(t, e, 0, Action{Joker: JokerSelfMark, SourceCards: []CardID{2}})
 	if tk := e.state.Cards[2].Token; tk == nil || tk.Displayed != TokenKindNaturalIdentity {
 		t.Errorf("token = %+v, want a natural-identity token", tk)
 	}
@@ -129,9 +129,9 @@ func TestJokerSecondWind(t *testing.T) {
 
 	// More than two spent: the activator picks two valid, distinct seats.
 	e = setup(0, 1, 2)
-	wantJokerErr(t, e, 0, Action{Joker: JokerSecondWind, TargetSeat: 1, TargetSeat2: 1}, ErrJokerInvalid)
-	wantJokerErr(t, e, 0, Action{Joker: JokerSecondWind, TargetSeat: 1, TargetSeat2: 3}, ErrJokerInvalid)
-	mustJoker(t, e, 0, Action{Joker: JokerSecondWind, TargetSeat: 0, TargetSeat2: 2})
+	wantJokerErr(t, e, 0, Action{Joker: JokerSecondWind, TargetSeats: []SeatID{1, 1}}, ErrJokerInvalid)
+	wantJokerErr(t, e, 0, Action{Joker: JokerSecondWind, TargetSeats: []SeatID{1, 3}}, ErrJokerInvalid)
+	mustJoker(t, e, 0, Action{Joker: JokerSecondWind, TargetSeats: []SeatID{0, 2}})
 	if e.state.Players[0].PowerUsed || e.state.Players[2].PowerUsed || !e.state.Players[1].PowerUsed {
 		t.Error("only the two named seats should be restored")
 	}
@@ -166,7 +166,7 @@ func TestJokerShieldArmsAndRestrictsActions(t *testing.T) {
 	if _, err := e.Apply(0, Action{Kind: ActionKindSelfReveal, SelfRevealValue: SelfRevealTarget{Rank: 5}}); err != ErrShieldActive {
 		t.Errorf("self-reveal err = %v, want ErrShieldActive", err)
 	}
-	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 2}); err != ErrShieldActive {
+	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 2}}); err != ErrShieldActive {
 		t.Errorf("safe call err = %v, want ErrShieldActive", err)
 	}
 }
@@ -176,10 +176,10 @@ func TestJokerPass(t *testing.T) {
 	place(e, 1, 0, suited(5))
 	place(e, 2, 2, suited(6))
 	layout(e)
-	wantJokerErr(t, e, 1, Action{Joker: JokerPass, TargetSeat: 2}, ErrNotYourTurn)
-	wantJokerErr(t, e, 0, Action{Joker: JokerPass, TargetSeat: 0}, ErrJokerInvalid)
-	wantJokerErr(t, e, 0, Action{Joker: JokerPass, TargetSeat: 1}, ErrJokerInvalid) // no face-down card
-	mustJoker(t, e, 0, Action{Joker: JokerPass, TargetSeat: 2})
+	wantJokerErr(t, e, 1, Action{Joker: JokerPass, TargetSeats: []SeatID{2}}, ErrNotYourTurn)
+	wantJokerErr(t, e, 0, Action{Joker: JokerPass, TargetSeats: []SeatID{0}}, ErrJokerInvalid)
+	wantJokerErr(t, e, 0, Action{Joker: JokerPass, TargetSeats: []SeatID{1}}, ErrJokerInvalid) // no face-down card
+	mustJoker(t, e, 0, Action{Joker: JokerPass, TargetSeats: []SeatID{2}})
 	if e.state.CurrentSeat != 2 {
 		t.Errorf("CurrentSeat = %d, want 2", e.state.CurrentSeat)
 	}

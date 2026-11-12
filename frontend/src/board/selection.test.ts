@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildChoice,
-  emptySelection,
-  inferredAction,
-  isSelectable,
-  selectionReducer,
-} from "./selection.ts";
+import { emptySelection, isSelectable, selectionReducer } from "./selection.ts";
 import {
   ActionKind,
   Face,
@@ -72,14 +66,10 @@ describe("safe-choose-reveal selection", () => {
 
   it("picks one, switches, ignores other cards, and builds the message", () => {
     const view = awaiting(1, 1);
-    expect(inferredAction(emptySelection, view)).toBeNull();
-    expect(buildChoice(emptySelection)).toBeNull();
     const a = click(view, 2);
     expect(a.chosen).toBe(2);
     expect(click(view, 4, a)).toBe(a);
     const b = click(view, 3, a);
     expect(b.chosen).toBe(3);
-    expect(inferredAction(b, view)).toBe("safeChooseReveal");
-    expect(buildChoice(b)).toEqual({ type: "safeChooseReveal", chosenTargetCardId: 3 });
   });
 });

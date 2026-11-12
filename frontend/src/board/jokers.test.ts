@@ -48,11 +48,15 @@ function view(over: Partial<PlayerView> = {}): PlayerView {
 
 describe("joker names and timing", () => {
   it("names every rank 2..13 and nothing else", () => {
-    expect(Object.keys(jokerNames).map(Number).sort((a, b) => a - b)).toEqual(ranks);
+    expect(
+      Object.keys(jokerNames)
+        .map(Number)
+        .sort((a, b) => a - b),
+    ).toEqual(ranks);
   });
 
   it("splits ranks into anytime and current-player jokers", () => {
-    const anytime = ranks.filter(isAnytime);
+    const anytime = ranks.filter((a) => isAnytime(a));
     expect(anytime).toEqual([2, 3, 5, 7, 8, 9, 13]);
   });
 
@@ -90,32 +94,31 @@ describe("joker shapes and messages", () => {
   });
 
   it("maps picks to the wire fields of each shape", () => {
-    expect(buildJoker(view(), JokerDiffer, { own: [1, 2], targets: [], seats: [], rank: null })).toEqual({
+    expect(
+      buildJoker(view(), JokerDiffer, { own: [1, 2], targets: [], seats: [], rank: null }),
+    ).toEqual({
       type: "joker",
       joker: JokerDiffer,
-      sourceCardId: 1,
-      targetCardId: 2,
+      sourceCardIds: [1, 2],
     });
     expect(
       buildJoker(view(), JokerTripleCall, { own: [1], targets: [3, 4, 5], seats: [], rank: null }),
     ).toEqual({
       type: "joker",
       joker: JokerTripleCall,
-      sourceCardId: 1,
-      targetCardId: 3,
-      targetCardId2: 4,
-      targetCardId3: 5,
+      sourceCardIds: [1],
+      targetCardIds: [3, 4, 5],
     });
     expect(
       buildJoker(view(), JokerReverseCall, { own: [1, 2], targets: [3], seats: [], rank: null }),
-    ).toMatchObject({ sourceCardId: 1, sourceCardId2: 2, targetCardId: 3 });
+    ).toMatchObject({ sourceCardIds: [1, 2], targetCardIds: [3] });
     expect(buildJoker(view(), JokerCensus, { own: [], targets: [], seats: [], rank: 9 })).toEqual({
       type: "joker",
       joker: JokerCensus,
       value: 9,
     });
     expect(buildJoker(view(), 12, { own: [], targets: [], seats: [0], rank: null })).toMatchObject({
-      targetSeat: 0,
+      targetSeats: [0],
     });
   });
 });

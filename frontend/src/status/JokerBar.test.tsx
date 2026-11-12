@@ -19,17 +19,17 @@ const base = {
 describe("JokerBar", () => {
   it("marks each joker with its state", () => {
     const html = renderToStaticMarkup(<JokerBar view={base} />);
-    expect(html.match(/data-state="inactive"/g)).toHaveLength(1);
-    expect(html.match(/data-state="ready"/g)).toHaveLength(2);
-    expect(html.match(/data-state="used"/g)).toHaveLength(1);
+    expect(html.match(/data-state="inactive"/gu)).toHaveLength(1);
+    expect(html.match(/data-state="ready"/gu)).toHaveLength(2);
+    expect(html.match(/data-state="used"/gu)).toHaveLength(1);
   });
 
   it("enables only jokers the viewer can use now", () => {
     // Off turn: Extra life (anytime) is usable, Shield (current player) is not.
     const html = renderToStaticMarkup(<JokerBar view={base} />);
-    expect(html.match(/data-usable="true"/g)).toHaveLength(1);
+    expect(html.match(/data-usable="true"/gu)).toHaveLength(1);
     const own = renderToStaticMarkup(<JokerBar view={{ ...base, YourTurn: true }} />);
-    expect(own.match(/data-usable="true"/g)).toHaveLength(2);
+    expect(own.match(/data-usable="true"/gu)).toHaveLength(2);
   });
 
   it("renders nothing without jokers", () => {

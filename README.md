@@ -1,7 +1,8 @@
 # Card Finders
 
-Card Finders is a deterministic, multiplayer deduction card game. A single Go
-process hosts the game engine, a REST + WebSocket API, and (optionally) the
+Card Finders is a multiplayer deduction card game.
+
+A single Go process hosts the game engine, a REST + WebSocket API, and (optionally) the
 built frontend assets. A React + TypeScript client talks to that process.
 
 ## Repository layout

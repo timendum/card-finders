@@ -141,17 +141,16 @@ describe("message builders", () => {
   it("builds a guess envelope", () => {
     expect(buildGuess(10, 20)).toEqual({
       type: "guess",
-      sourceCardId: 10,
-      targetCardId: 20,
+      sourceCardIds: [10],
+      targetCardIds: [20],
     });
   });
 
   it("builds a safe-call envelope with both targets", () => {
     expect(buildSafeCall(10, 20, 30)).toEqual({
       type: "safeCall",
-      sourceCardId: 10,
-      targetCardId: 20,
-      targetCardId2: 30,
+      sourceCardIds: [10],
+      targetCardIds: [20, 30],
     });
   });
 
@@ -165,12 +164,11 @@ describe("message builders", () => {
     fc.assert(
       fc.property(fc.nat(65535), fc.nat(65535), fc.nat(65535), (s, t1, t2) => {
         const g = buildGuess(s, t1);
-        expect(g.sourceCardId).toBe(s);
-        expect(g.targetCardId).toBe(t1);
+        expect(g.sourceCardIds).toEqual([s]);
+        expect(g.targetCardIds).toEqual([t1]);
         const sc = buildSafeCall(s, t1, t2);
-        expect(sc.sourceCardId).toBe(s);
-        expect(sc.targetCardId).toBe(t1);
-        expect(sc.targetCardId2).toBe(t2);
+        expect(sc.sourceCardIds).toEqual([s]);
+        expect(sc.targetCardIds).toEqual([t1, t2]);
       }),
     );
   });

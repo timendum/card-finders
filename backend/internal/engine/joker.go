@@ -2,7 +2,7 @@ package engine
 
 import (
 	"math/rand"
-	"sort"
+	"slices"
 )
 
 // maxJokers is the number of joker ranks (2..13).
@@ -55,7 +55,7 @@ func drawJokerRanks(rng *rand.Rand, n int) []JokerSlot {
 	}
 	rng.Shuffle(len(ranks), func(i, j int) { ranks[i], ranks[j] = ranks[j], ranks[i] })
 	ranks = ranks[:n]
-	sort.Slice(ranks, func(i, j int) bool { return ranks[i] < ranks[j] })
+	slices.Sort(ranks)
 	out := make([]JokerSlot, n)
 	for i, r := range ranks {
 		out[i] = JokerSlot{Rank: r}

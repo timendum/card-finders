@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"log/slog"
+	"math"
 )
 
 // ActionKind is the discriminant of the Action tagged union; it selects which
@@ -26,35 +27,35 @@ type SelfRevealTarget struct {
 }
 
 // Action is the tagged union of every gameplay action. Kind selects the active
-// action; only the fields documented for that Kind are meaningful.
+// action; each applyX documents and checks the fields it reads. The slices are
+// read-only to the engine.
 type Action struct {
-	Kind ActionKind
-
-	// OpeningReveal: the card revealed in the opening phase.
-	OpeningCard CardID
-
-	// Guess / SafeCall: for a guess, the targeted face-down card; for a safe
-	// call, the first of the two targets.
-	TargetCard CardID
-	// Guess / SafeCall: the caller's own face-down card. Announces the value
-	// (gold rejected) and flips face-up on a hit.
-	SourceCard CardID
-
-	// SafeCall: the second target (first is TargetCard).
-	TargetCard2 CardID
-
-	// SafeChooseReveal: the card chosen to reveal after the safe call resolves.
-	ChosenTarget CardID
-
-	// SelfReveal: the chosen value; all matching cards reveal at once.
+	Kind        ActionKind
+	SourceCards []CardID
+	TargetCards []CardID
+	TargetSeats []SeatID
+	// SelfReveal and Census: the chosen value.
 	SelfRevealValue SelfRevealTarget
+	// Joker: the rank activated.
+	Joker Rank
+}
 
-	// Joker: the joker rank activated.
-	Joker       Rank
-	SourceCard2 CardID
-	TargetCard3 CardID
-	TargetSeat  SeatID
-	TargetSeat2 SeatID
+// lenRange is the accepted length interval of one Action slice.
+type lenRange struct{ min, max int }
+
+var anyLen = lenRange{0, math.MaxInt}
+
+func exactly(n int) lenRange { return lenRange{n, n} }
+
+func (r lenRange) holds(n int) bool { return n >= r.min && n <= r.max }
+
+// checkLens rejects an action whose slices fall outside the given lengths.
+func (a Action) checkLens(src, tgt, seats lenRange) error {
+	if !src.holds(len(a.SourceCards)) || !tgt.holds(len(a.TargetCards)) ||
+		!seats.holds(len(a.TargetSeats)) {
+		return ErrInvalidInput
+	}
+	return nil
 }
 
 // Apply is the single entry point for all gameplay actions. It returns the

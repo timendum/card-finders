@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -159,7 +160,7 @@ func TestOpeningRevealBroadcastsLastActionToAllSeats(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	if err := wsjson.Write(ctx, first.conn, map[string]any{"type": "openingReveal", "cardId": cardID}); err != nil {
+	if err := wsjson.Write(ctx, first.conn, map[string]any{"type": "openingReveal", "targetCardIds": []engine.CardID{cardID}}); err != nil {
 		t.Fatal(err)
 	}
 	for _, c := range conns {
@@ -205,27 +206,27 @@ func TestClientMessagesDecode(t *testing.T) {
 		name, json string
 		want       engine.Action
 	}{
-		{"openingReveal", `{"type":"openingReveal","cardId":4}`,
-			engine.Action{Kind: engine.ActionKindOpeningReveal, OpeningCard: 4}},
-		{"guess", `{"type":"guess","sourceCardId":1,"targetCardId":2}`,
-			engine.Action{Kind: engine.ActionKindGuess, SourceCard: 1, TargetCard: 2}},
-		{"safeCall", `{"type":"safeCall","sourceCardId":1,"targetCardId":2,"targetCardId2":3}`,
-			engine.Action{Kind: engine.ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3}},
-		{"safeChooseReveal", `{"type":"safeChooseReveal","chosenTargetCardId":6}`,
-			engine.Action{Kind: engine.ActionKindSafeChooseReveal, ChosenTarget: 6}},
+		{"openingReveal", `{"type":"openingReveal","targetCardIds":[4]}`,
+			engine.Action{Kind: engine.ActionKindOpeningReveal, TargetCards: []engine.CardID{4}}},
+		{"guess", `{"type":"guess","sourceCardIds":[1],"targetCardIds":[2]}`,
+			engine.Action{Kind: engine.ActionKindGuess, SourceCards: []engine.CardID{1}, TargetCards: []engine.CardID{2}}},
+		{"safeCall", `{"type":"safeCall","sourceCardIds":[1],"targetCardIds":[2,3]}`,
+			engine.Action{Kind: engine.ActionKindSafeCall, SourceCards: []engine.CardID{1}, TargetCards: []engine.CardID{2, 3}}},
+		{"safeChooseReveal", `{"type":"safeChooseReveal","targetCardIds":[6]}`,
+			engine.Action{Kind: engine.ActionKindSafeChooseReveal, TargetCards: []engine.CardID{6}}},
 		{"selfReveal rank", `{"type":"selfReveal","value":7}`,
 			engine.Action{Kind: engine.ActionKindSelfReveal, SelfRevealValue: engine.SelfRevealTarget{Rank: 7}}},
 		{"selfReveal silver", `{"type":"selfReveal","value":"silver"}`,
 			engine.Action{Kind: engine.ActionKindSelfReveal, SelfRevealValue: silver}},
 		{"selfReveal gold", `{"type":"selfReveal","value":"gold"}`,
 			engine.Action{Kind: engine.ActionKindSelfReveal, SelfRevealValue: gold}},
-		{"joker fields", `{"type":"joker","joker":11,"sourceCardId":1,"sourceCardId2":2,"targetCardId":3,"targetCardId2":4,"targetCardId3":5,"targetSeat":2,"targetSeat2":3}`,
-			engine.Action{Kind: engine.ActionKindJoker, Joker: 11, SourceCard: 1, SourceCard2: 2,
-				TargetCard: 3, TargetCard2: 4, TargetCard3: 5, TargetSeat: 2, TargetSeat2: 3}},
+		{"joker fields", `{"type":"joker","joker":11,"sourceCardIds":[1,2],"targetCardIds":[3,4,5],"targetSeats":[2,3]}`,
+			engine.Action{Kind: engine.ActionKindJoker, Joker: 11, SourceCards: []engine.CardID{1, 2},
+				TargetCards: []engine.CardID{3, 4, 5}, TargetSeats: []engine.SeatID{2, 3}}},
 		{"joker census rank", `{"type":"joker","joker":9,"value":12}`,
 			engine.Action{Kind: engine.ActionKindJoker, Joker: 9, SelfRevealValue: engine.SelfRevealTarget{Rank: 12}}},
-		{"joker choice reply", `{"type":"safeChooseReveal","chosenTargetCardId":8}`,
-			engine.Action{Kind: engine.ActionKindSafeChooseReveal, ChosenTarget: 8}},
+		{"joker choice reply", `{"type":"safeChooseReveal","targetCardIds":[8]}`,
+			engine.Action{Kind: engine.ActionKindSafeChooseReveal, TargetCards: []engine.CardID{8}}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -234,7 +235,7 @@ func TestClientMessagesDecode(t *testing.T) {
 				t.Fatal(err)
 			}
 			got, code, ok := decodeAction(in)
-			if !ok || code != "" || got != c.want {
+			if !ok || code != "" || !reflect.DeepEqual(got, c.want) {
 				t.Fatalf("decodeAction = %+v, %q, %v; want %+v", got, code, ok, c.want)
 			}
 		})

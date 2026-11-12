@@ -78,6 +78,43 @@ func TestApplyUnknownActionKind(t *testing.T) {
 	}
 }
 
+// TestApplyRejectsWrongLengths checks that every kind rejects a wrong number of
+// cards or seats with ErrInvalidInput before any other gate.
+func TestApplyRejectsWrongLengths(t *testing.T) {
+	e := newTestEngine()
+	if _, err := e.CreateGame(1); err != nil {
+		t.Fatalf("CreateGame: %v", err)
+	}
+	one := []CardID{1}
+	two := []CardID{1, 2}
+	three := []CardID{1, 2, 3}
+	seats := []SeatID{1}
+	cases := []struct {
+		name string
+		a    Action
+	}{
+		{"opening none", Action{Kind: ActionKindOpeningReveal}},
+		{"opening two", Action{Kind: ActionKindOpeningReveal, TargetCards: two}},
+		{"guess no source", Action{Kind: ActionKindGuess, TargetCards: one}},
+		{"guess two targets", Action{Kind: ActionKindGuess, SourceCards: one, TargetCards: two}},
+		{"safeCall one target", Action{Kind: ActionKindSafeCall, SourceCards: one, TargetCards: one}},
+		{"safeCall three targets", Action{Kind: ActionKindSafeCall, SourceCards: one, TargetCards: three}},
+		{"choose none", Action{Kind: ActionKindSafeChooseReveal}},
+		{"choose two", Action{Kind: ActionKindSafeChooseReveal, TargetCards: two}},
+		{"triple call two targets", Action{Kind: ActionKindJoker, Joker: JokerTripleCall, SourceCards: one, TargetCards: two}},
+		{"reverse call one source", Action{Kind: ActionKindJoker, Joker: JokerReverseCall, SourceCards: one, TargetCards: one}},
+		{"pass no seat", Action{Kind: ActionKindJoker, Joker: JokerPass}},
+		{"pass two seats", Action{Kind: ActionKindJoker, Joker: JokerPass, TargetSeats: []SeatID{1, 2}}},
+		{"second wind three seats", Action{Kind: ActionKindJoker, Joker: JokerSecondWind, TargetSeats: []SeatID{1, 2, 3}}},
+		{"shield with seat", Action{Kind: ActionKindJoker, Joker: JokerShield, TargetSeats: seats}},
+	}
+	for _, c := range cases {
+		if _, err := e.Apply(0, c.a); !errors.Is(err, ErrInvalidInput) {
+			t.Errorf("%s: err = %v, want ErrInvalidInput", c.name, err)
+		}
+	}
+}
+
 // Feature: frontend-rework, Property 6: Seq is monotonic.
 func TestPropSeqMonotonic(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {

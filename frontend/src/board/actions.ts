@@ -138,7 +138,7 @@ export function selfRevealOptions(view: PlayerView): SelfRevealOption[] {
 }
 
 export function buildGuess(sourceCardId: CardID, targetCardId: CardID): GuessMessage {
-  return { type: "guess", sourceCardId, targetCardId };
+  return { type: "guess", sourceCardIds: [sourceCardId], targetCardIds: [targetCardId] };
 }
 
 export function buildSafeCall(
@@ -146,7 +146,11 @@ export function buildSafeCall(
   targetCardId: CardID,
   targetCardId2: CardID,
 ): SafeCallMessage {
-  return { type: "safeCall", sourceCardId, targetCardId, targetCardId2 };
+  return {
+    type: "safeCall",
+    sourceCardIds: [sourceCardId],
+    targetCardIds: [targetCardId, targetCardId2],
+  };
 }
 
 export function buildSelfReveal(value: SelfRevealValue): SelfRevealMessage {

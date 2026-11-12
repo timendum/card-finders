@@ -10,20 +10,12 @@ import (
 // inbound is the shared client → server envelope: a discriminant type plus the
 // union of all payload fields.
 type inbound struct {
-	Type         string          `json:"type"`
-	CardID       engine.CardID   `json:"cardId"`
-	SourceCardID engine.CardID   `json:"sourceCardId"`
-	TargetCardID engine.CardID   `json:"targetCardId"`
-	TargetCard2  engine.CardID   `json:"targetCardId2"`
-	ChosenTarget engine.CardID   `json:"chosenTargetCardId"`
-	Value        json.RawMessage `json:"value"`
-
-	// joker message
-	Joker       engine.Rank   `json:"joker"`
-	SourceCard2 engine.CardID `json:"sourceCardId2"`
-	TargetCard3 engine.CardID `json:"targetCardId3"`
-	TargetSeat  engine.SeatID `json:"targetSeat"`
-	TargetSeat2 engine.SeatID `json:"targetSeat2"`
+	Type          string          `json:"type"`
+	SourceCardIDs []engine.CardID `json:"sourceCardIds"`
+	TargetCardIDs []engine.CardID `json:"targetCardIds"`
+	TargetSeats   []engine.SeatID `json:"targetSeats"`
+	Value         json.RawMessage `json:"value"`
+	Joker         engine.Rank     `json:"joker"`
 }
 
 // outboundState is the `state` frame: the receiving seat's full PlayerView.
@@ -44,30 +36,24 @@ type outboundError struct {
 // type or malformed payload it returns ok=false with a stable error code; it
 // does no gameplay validation (the engine does).
 func decodeAction(in inbound) (engine.Action, string, bool) {
+	a := engine.Action{
+		SourceCards: in.SourceCardIDs,
+		TargetCards: in.TargetCardIDs,
+		TargetSeats: in.TargetSeats,
+	}
 	switch in.Type {
 	case "openingReveal":
-		return engine.Action{
-			Kind:        engine.ActionKindOpeningReveal,
-			OpeningCard: in.CardID,
-		}, "", true
+		a.Kind = engine.ActionKindOpeningReveal
+		return a, "", true
 	case "guess":
-		return engine.Action{
-			Kind:       engine.ActionKindGuess,
-			SourceCard: in.SourceCardID,
-			TargetCard: in.TargetCardID,
-		}, "", true
+		a.Kind = engine.ActionKindGuess
+		return a, "", true
 	case "safeCall":
-		return engine.Action{
-			Kind:        engine.ActionKindSafeCall,
-			SourceCard:  in.SourceCardID,
-			TargetCard:  in.TargetCardID,
-			TargetCard2: in.TargetCard2,
-		}, "", true
+		a.Kind = engine.ActionKindSafeCall
+		return a, "", true
 	case "safeChooseReveal":
-		return engine.Action{
-			Kind:         engine.ActionKindSafeChooseReveal,
-			ChosenTarget: in.ChosenTarget,
-		}, "", true
+		a.Kind = engine.ActionKindSafeChooseReveal
+		return a, "", true
 	case "selfReveal":
 		target, ok := decodeSelfRevealValue(in.Value)
 		if !ok {
@@ -78,17 +64,8 @@ func decodeAction(in inbound) (engine.Action, string, bool) {
 			SelfRevealValue: target,
 		}, "", true
 	case "joker":
-		a := engine.Action{
-			Kind:        engine.ActionKindJoker,
-			Joker:       in.Joker,
-			SourceCard:  in.SourceCardID,
-			SourceCard2: in.SourceCard2,
-			TargetCard:  in.TargetCardID,
-			TargetCard2: in.TargetCard2,
-			TargetCard3: in.TargetCard3,
-			TargetSeat:  in.TargetSeat,
-			TargetSeat2: in.TargetSeat2,
-		}
+		a.Kind = engine.ActionKindJoker
+		a.Joker = in.Joker
 		// Census asks a suited rank, sent in the same optional `value` field.
 		if len(in.Value) > 0 {
 			target, ok := decodeSelfRevealValue(in.Value)

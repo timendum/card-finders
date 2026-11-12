@@ -112,16 +112,16 @@ export function availableActions(view: PlayerView): AvailableActions {
                 "A player swaps cards with you. Pick one of your face-down cards to hand over.",
               )
             : miss
-            ? enabledAction(
-                "safeChooseReveal",
-                "Choose a card to token",
-                "Both called cards missed. Pick one of the two highlighted cards to receive the token.",
-              )
-            : enabledAction(
-                "safeChooseReveal",
-                "Choose a card to reveal",
-                "Both called cards were hit. Pick one of the two highlighted cards to flip.",
-              ),
+              ? enabledAction(
+                  "safeChooseReveal",
+                  "Choose a card to token",
+                  "Both called cards missed. Pick one of the two highlighted cards to receive the token.",
+                )
+              : enabledAction(
+                  "safeChooseReveal",
+                  "Choose a card to reveal",
+                  "Both called cards were hit. Pick one of the two highlighted cards to flip.",
+                ),
         ],
       };
     }

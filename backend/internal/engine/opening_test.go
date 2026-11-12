@@ -30,7 +30,7 @@ func TestOpeningRevealSuccess(t *testing.T) {
 	e, first := openingGame(t)
 	card := firstCardOf(t, e, first)
 
-	res, err := e.Apply(first, Action{Kind: ActionKindOpeningReveal, OpeningCard: card})
+	res, err := e.Apply(first, Action{Kind: ActionKindOpeningReveal, TargetCards: []CardID{card}})
 	if err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
@@ -62,7 +62,7 @@ func TestOpeningAllFourTransitionToPlaying(t *testing.T) {
 	seat := first
 	for i := range 4 {
 		card := firstCardOf(t, e, seat)
-		if _, err := e.Apply(seat, Action{Kind: ActionKindOpeningReveal, OpeningCard: card}); err != nil {
+		if _, err := e.Apply(seat, Action{Kind: ActionKindOpeningReveal, TargetCards: []CardID{card}}); err != nil {
 			t.Fatalf("Apply reveal #%d (seat %d): %v", i+1, seat, err)
 		}
 		seat = nextSeat(seat)
@@ -86,7 +86,7 @@ func TestOpeningOutOfTurnRejected(t *testing.T) {
 	other := nextSeat(first) // not yet this seat's turn
 	card := firstCardOf(t, e, other)
 
-	res, err := e.Apply(other, Action{Kind: ActionKindOpeningReveal, OpeningCard: card})
+	res, err := e.Apply(other, Action{Kind: ActionKindOpeningReveal, TargetCards: []CardID{card}})
 	if !errors.Is(err, ErrNotYourTurn) {
 		t.Errorf("err = %v, want ErrNotYourTurn", err)
 	}
@@ -111,7 +111,7 @@ func TestOpeningNonOwnedCardRejected(t *testing.T) {
 	other := nextSeat(first)
 	foreign := firstCardOf(t, e, other) // owned by a different seat
 
-	res, err := e.Apply(first, Action{Kind: ActionKindOpeningReveal, OpeningCard: foreign})
+	res, err := e.Apply(first, Action{Kind: ActionKindOpeningReveal, TargetCards: []CardID{foreign}})
 	if !errors.Is(err, ErrInvalidOpeningSelection) {
 		t.Errorf("err = %v, want ErrInvalidOpeningSelection", err)
 	}
@@ -139,7 +139,7 @@ func TestOpeningAlreadyFaceUpRejected(t *testing.T) {
 	// guard without playing four reveals to wrap back around.
 	e.state.Cards[card].Facing = FaceUp
 
-	res, err := e.Apply(first, Action{Kind: ActionKindOpeningReveal, OpeningCard: card})
+	res, err := e.Apply(first, Action{Kind: ActionKindOpeningReveal, TargetCards: []CardID{card}})
 	if !errors.Is(err, ErrInvalidOpeningSelection) {
 		t.Errorf("err = %v, want ErrInvalidOpeningSelection", err)
 	}
@@ -161,7 +161,7 @@ func TestOpeningSpecialCardRejected(t *testing.T) {
 		// Turn the opener's card into a special without a full specials deal.
 		e.state.Cards[card].Card.Kind = kind
 
-		res, err := e.Apply(first, Action{Kind: ActionKindOpeningReveal, OpeningCard: card})
+		res, err := e.Apply(first, Action{Kind: ActionKindOpeningReveal, TargetCards: []CardID{card}})
 		if !errors.Is(err, ErrSpecialOpening) {
 			t.Errorf("kind %d: err = %v, want ErrSpecialOpening", kind, err)
 		}

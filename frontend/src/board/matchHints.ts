@@ -124,7 +124,7 @@ export function matchHints(
     if (remaining <= 0 || tokened === remaining) return "excluded";
     const { lo, hi } = neighbourBounds(hand, i);
     const inRange = feasible.filter((v) => sortValue(v) >= lo && sortValue(v) <= hi);
-    const matching = inRange.filter(sameValue);
+    const matching = inRange.filter((v) => sameValue(v));
     if (matching.length === 0) return "excluded";
     if (!isSilver) {
       // Everything right of the card is >= sv, everything left <= sv.

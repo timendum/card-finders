@@ -66,10 +66,10 @@ describe("shared types scaffold", () => {
     fc.assert(
       fc.property(fc.nat(65535), fc.nat(65535), (a, b) => {
         const msgs: ClientMessage[] = [
-          { type: "openingReveal", cardId: a },
-          { type: "guess", sourceCardId: a, targetCardId: b },
-          { type: "safeCall", sourceCardId: a, targetCardId: b, targetCardId2: a },
-          { type: "safeChooseReveal", chosenTargetCardId: b },
+          { type: "openingReveal", targetCardIds: [a] },
+          { type: "guess", sourceCardIds: [a], targetCardIds: [b] },
+          { type: "safeCall", sourceCardIds: [a], targetCardIds: [b, a] },
+          { type: "safeChooseReveal", targetCardIds: [b] },
           { type: "selfReveal", value: "silver" },
         ];
         return msgs.every((m) => typeof m.type === "string");

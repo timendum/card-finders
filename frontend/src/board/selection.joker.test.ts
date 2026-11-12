@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  canConfirm,
   chooseOptions,
   emptySelection,
-  inferredAction,
   isSelectable,
   selectionReducer,
   type SelectionEvent,
@@ -76,8 +74,7 @@ describe("joker selection", () => {
     ]);
     expect(isSelectable(off, cards[0], s)).toBe(true);
     expect(isSelectable(off, cards[2], s)).toBe(false);
-    expect(inferredAction(s, off)).toBe("joker");
-    expect(canConfirm(s, off)).toBe(true);
+    expect(s.jokerOwn).toEqual([1, 2]);
   });
 
   it("collects three same-seat targets for Triple call and restarts on another seat", () => {
@@ -88,22 +85,25 @@ describe("joker selection", () => {
       { type: "clickCard", cardId: 3 },
       { type: "clickCard", cardId: 4 },
     ]);
-    expect(inferredAction(s, v)).toBeNull();
+    expect(s.targets).toEqual([3, 4]);
     const done = selectionReducer(s, v, { type: "clickCard", cardId: 5 });
     expect(done.targets).toEqual([3, 4, 5]);
-    expect(inferredAction(done, v)).toBe("joker");
     const restarted = selectionReducer(done, v, { type: "clickCard", cardId: 6 });
     expect(restarted.targets).toEqual([6]);
   });
 
-  it("needs a seat for Pass and a rank for Census", () => {
+  it("records the seat for Pass and the rank for Census", () => {
     const v = view();
-    const pass = run(v, [{ type: "pickJoker", rank: 12 }]);
-    expect(canConfirm(pass, v)).toBe(false);
-    expect(canConfirm(selectionReducer(pass, v, { type: "pickJokerSeat", seat: 1 }), v)).toBe(true);
-    const census = run(v, [{ type: "pickJoker", rank: 9 }]);
-    expect(canConfirm(census, v)).toBe(false);
-    expect(canConfirm(selectionReducer(census, v, { type: "pickJokerAsk", rank: 7 }), v)).toBe(true);
+    const pass = run(v, [
+      { type: "pickJoker", rank: 12 },
+      { type: "pickJokerSeat", seat: 1 },
+    ]);
+    expect(pass.jokerSeats).toEqual([1]);
+    const census = run(v, [
+      { type: "pickJoker", rank: 9 },
+      { type: "pickJokerAsk", rank: 7 },
+    ]);
+    expect(census.jokerAsk).toBe(7);
   });
 
   it("clears the joker flow on clear", () => {
@@ -134,7 +134,6 @@ describe("swap pending choice", () => {
     expect(chooseOptions(swap)).toEqual([3, 4, 5]);
     const picked = selectionReducer(emptySelection, swap, { type: "clickCard", cardId: 4 });
     expect(picked.chosen).toBe(4);
-    expect(inferredAction(picked, swap)).toBe("safeChooseReveal");
   });
 
   it("offers nothing to other seats", () => {

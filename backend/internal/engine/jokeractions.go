@@ -8,6 +8,11 @@ import "strconv"
 // 12) need the actor to be the current seat. Validation always precedes
 // mutation, so a rejected activation is a no-op.
 func (e *Engine) applyJoker(seat SeatID, action Action) (Result, error) {
+	if a, ok := jokerArities[action.Joker]; ok {
+		if err := action.checkLens(a.source, a.target, a.seats); err != nil {
+			return ResultNone, err
+		}
+	}
 	s := e.state
 	if !s.jokerUsable(action.Joker) {
 		return ResultNone, ErrJokerUnavailable
@@ -40,6 +45,27 @@ func (e *Engine) applyJoker(seat SeatID, action Action) (Result, error) {
 	default:
 		return ResultNone, ErrJokerUnavailable
 	}
+}
+
+// jokerArity is the accepted Action slice lengths of one joker rank.
+type jokerArity struct{ source, target, seats lenRange }
+
+// jokerArities lists the slice lengths each joker expects. A rank missing here
+// is not a joker and falls through to ErrJokerUnavailable.
+var jokerArities = map[Rank]jokerArity{
+	JokerDiffer:     {exactly(2), exactly(0), exactly(0)},
+	JokerMatch:      {exactly(2), exactly(0), exactly(0)},
+	JokerSwap:       {exactly(1), exactly(0), exactly(1)},
+	JokerTripleCall: {exactly(1), exactly(3), exactly(0)},
+	JokerSelfMark:   {exactly(1), exactly(0), exactly(0)},
+	JokerSweep:      {exactly(1), exactly(0), exactly(1)},
+	JokerExtraLife:  {exactly(0), exactly(0), exactly(0)},
+	// Second Wind names two seats only when more than two spent their power.
+	JokerSecondWind:  {exactly(0), exactly(0), lenRange{0, 2}},
+	JokerCensus:      {exactly(0), exactly(0), exactly(0)},
+	JokerShield:      {exactly(0), exactly(0), exactly(0)},
+	JokerReverseCall: {exactly(2), exactly(1), exactly(0)},
+	JokerPass:        {exactly(0), exactly(0), exactly(1)},
 }
 
 // jokerAction starts the LastAction record of a joker use.
@@ -84,12 +110,13 @@ func (s *GameState) requireCurrentSeat(seat SeatID) error {
 // activator knows his own cards, so a false claim is rejected, not punished.
 func (e *Engine) jokerLink(seat SeatID, a Action, slot *JokerSlot) (Result, error) {
 	s := e.state
-	c1, ok1 := s.ownFaceDown(seat, a.SourceCard)
-	c2, ok2 := s.ownFaceDown(seat, a.TargetCard)
-	if !ok1 || !ok2 || a.SourceCard == a.TargetCard || c1.Token != nil || c2.Token != nil {
+	srcID, tgtID := a.SourceCards[0], a.SourceCards[1]
+	c1, ok1 := s.ownFaceDown(seat, srcID)
+	c2, ok2 := s.ownFaceDown(seat, tgtID)
+	if !ok1 || !ok2 || srcID == tgtID || c1.Token != nil || c2.Token != nil {
 		return ResultNone, ErrJokerInvalid
 	}
-	if d := s.Slot[a.SourceCard] - s.Slot[a.TargetCard]; d != 1 && d != -1 {
+	if d := s.Slot[srcID] - s.Slot[tgtID]; d != 1 && d != -1 {
 		return ResultNone, ErrJokerInvalid
 	}
 	kind, word := TokenKindDifferent, "Different"
@@ -104,7 +131,7 @@ func (e *Engine) jokerLink(seat SeatID, a Action, slot *JokerSlot) (Result, erro
 	c1.Token = &TokenInfo{Displayed: kind}
 	c2.Token = &TokenInfo{Displayed: kind}
 	la := jokerAction(seat, a.Joker)
-	la.Targets = []CardID{a.SourceCard, a.TargetCard}
+	la.Targets = []CardID{srcID, tgtID}
 	s.recordAction(la)
 	s.logAction(seat, jokerText(a.Joker, "put a "+word+" token on cards "+
 		s.slotsText(la.Targets)))
@@ -115,16 +142,17 @@ func (e *Engine) jokerLink(seat SeatID, a Action, slot *JokerSlot) (Result, erro
 // card without a token.
 func (e *Engine) jokerSelfMark(seat SeatID, a Action, slot *JokerSlot) (Result, error) {
 	s := e.state
-	pc, ok := s.ownFaceDown(seat, a.SourceCard)
+	srcID := a.SourceCards[0]
+	pc, ok := s.ownFaceDown(seat, srcID)
 	if !ok || pc.Card.Kind != SpecialKindNone || pc.Token != nil {
 		return ResultNone, ErrJokerInvalid
 	}
 	slot.Used = true
 	pc.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
 	la := jokerAction(seat, a.Joker)
-	la.Targets = []CardID{a.SourceCard}
+	la.Targets = []CardID{srcID}
 	s.recordAction(la)
-	s.logAction(seat, jokerText(a.Joker, "put a token on card "+strconv.Itoa(s.Slot[a.SourceCard])))
+	s.logAction(seat, jokerText(a.Joker, "put a token on card "+strconv.Itoa(s.Slot[srcID])))
 	return ResultNone, nil
 }
 
@@ -151,7 +179,10 @@ func (e *Engine) jokerSecondWind(seat SeatID, a Action, slot *JokerSlot) (Result
 	}
 	restore := spent
 	if len(spent) > 2 {
-		t1, t2 := a.TargetSeat, a.TargetSeat2
+		if len(a.TargetSeats) != 2 {
+			return ResultNone, ErrInvalidInput
+		}
+		t1, t2 := a.TargetSeats[0], a.TargetSeats[1]
 		if t1 == t2 || t1 >= seatCount || t2 >= seatCount ||
 			!s.Players[t1].PowerUsed || !s.Players[t2].PowerUsed {
 			return ResultNone, ErrJokerInvalid
@@ -221,12 +252,13 @@ func (e *Engine) jokerPass(seat SeatID, a Action, slot *JokerSlot) (Result, erro
 	if err := s.requireCurrentSeat(seat); err != nil {
 		return ResultNone, err
 	}
-	if !s.validOtherSeat(seat, a.TargetSeat) {
+	target := a.TargetSeats[0]
+	if !s.validOtherSeat(seat, target) {
 		return ResultNone, ErrJokerInvalid
 	}
 	slot.Used = true
-	s.CurrentSeat = a.TargetSeat
+	s.CurrentSeat = target
 	s.recordAction(jokerAction(seat, a.Joker))
-	s.logActionOn(seat, a.TargetSeat, jokerText(a.Joker, "passed the turn"))
+	s.logActionOn(seat, target, jokerText(a.Joker, "passed the turn"))
 	return ResultNone, nil
 }

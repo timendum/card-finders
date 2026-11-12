@@ -4,11 +4,9 @@
 import { sourceCards, targetCards } from "./actions.ts";
 import {
   isSwapChoice,
-  jokerComplete,
   jokerOwnCards,
   jokerShape,
   jokerTargetCards,
-  type JokerPicks,
   jokerUsable,
 } from "./jokers.ts";
 import {
@@ -19,7 +17,6 @@ import {
   type PlayerView,
   type Rank,
   type SeatID,
-  type SafeChooseRevealMessage,
   type SelfRevealValue,
   type ViewCard,
 } from "../types.ts";
@@ -40,14 +37,6 @@ export interface SelectionState {
   /** The rank a Census asks about. */
   jokerAsk: number | null;
 }
-
-export type InferredAction =
-  | "openingReveal"
-  | "guess"
-  | "safeCall"
-  | "selfReveal"
-  | "safeChooseReveal"
-  | "joker";
 
 export const emptySelection: SelectionState = {
   source: null,
@@ -71,7 +60,7 @@ export type SelectionEvent =
   | { type: "clear" }
   | { type: "shown"; seq: number | null };
 
-function isResponder(view: PlayerView): boolean {
+export function isResponder(view: PlayerView): boolean {
   return (
     view.Phase === Phase.AwaitingResponse &&
     view.HasResponsePlayer &&
@@ -116,13 +105,6 @@ export function isSelectable(
   if (!acting) return false;
   if (openingSourceCards(view).some((c) => c.ID === card.ID)) return true;
   return view.Phase === Phase.Playing && targetCards(view).some((c) => c.ID === card.ID);
-}
-
-/** The confirm message for the picked card, or null until one is chosen. */
-export function buildChoice(state: SelectionState): SafeChooseRevealMessage | null {
-  return state.chosen === null
-    ? null
-    : { type: "safeChooseReveal", chosenTargetCardId: state.chosen };
 }
 
 // A card click clears any pending self-reveal value: the two intents are exclusive.
@@ -245,49 +227,4 @@ export function selectionReducer(
     case "shown":
       return { ...state, lastShownSeq: event.seq };
   }
-}
-
-/** The move the current selection amounts to, or null when it is not yet a complete move. */
-export function inferredAction(state: SelectionState, view: PlayerView): InferredAction | null {
-  if (isResponder(view)) return state.chosen == null ? null : "safeChooseReveal";
-  if (view.Phase === Phase.Opening) return state.source == null ? null : "openingReveal";
-  if (view.Phase !== Phase.Playing) return null;
-  if (state.jokerRank !== null) {
-    return jokerComplete(view, state.jokerRank, jokerPicks(state)) ? "joker" : null;
-  }
-  if (state.selfValue !== null) return "selfReveal";
-  if (state.source === null) return null;
-  if (state.targets.length === 1) return "guess";
-  if (state.targets.length === 2) return "safeCall";
-  return null;
-}
-
-const confirmLabels: Record<InferredAction, string> = {
-  openingReveal: "Confirm reveal",
-  guess: "Confirm guess",
-  safeCall: "Confirm double call",
-  selfReveal: "Confirm self-reveal",
-  safeChooseReveal: "Confirm choice",
-  joker: "Confirm joker",
-};
-
-/** The picks of the joker flow in progress, in the shape the joker helpers take. */
-export function jokerPicks(state: SelectionState): JokerPicks {
-  return {
-    own: state.jokerOwn,
-    targets: state.targets,
-    seats: state.jokerSeats,
-    rank: state.jokerAsk,
-  };
-}
-
-/** Label for the confirm control; a neutral label while nothing is confirmable. */
-export function confirmLabel(state: SelectionState, view: PlayerView): string {
-  const action = inferredAction(state, view);
-  return action === null ? "Confirm" : confirmLabels[action];
-}
-
-/** Confirm is enabled only for a complete selection (source plus target(s) for calls). */
-export function canConfirm(state: SelectionState, view: PlayerView): boolean {
-  return inferredAction(state, view) !== null;
 }

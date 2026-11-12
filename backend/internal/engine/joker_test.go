@@ -265,9 +265,9 @@ func shieldGuess(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 		return Action{}, false
 	}
 	return Action{
-		Kind:       ActionKindGuess,
-		SourceCard: rapid.SampledFrom(srcs).Draw(t, "shieldSrc"),
-		TargetCard: rapid.SampledFrom(tgts).Draw(t, "shieldTgt"),
+		Kind:        ActionKindGuess,
+		SourceCards: []CardID{rapid.SampledFrom(srcs).Draw(t, "shieldSrc")},
+		TargetCards: []CardID{rapid.SampledFrom(tgts).Draw(t, "shieldTgt")},
 	}, true
 }
 
@@ -296,34 +296,34 @@ func pickJokerAction(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 					continue
 				}
 				if sameIdentity(a.Card, b.Card) == (j.Rank == JokerMatch) {
-					add(Action{Joker: j.Rank, SourceCard: hand[i], TargetCard: hand[i+1]})
+					add(Action{Joker: j.Rank, SourceCards: []CardID{hand[i], hand[i+1]}})
 				}
 			}
 		case JokerSwap:
 			for _, o := range others {
 				for _, c := range own {
-					add(Action{Joker: j.Rank, SourceCard: c, TargetSeat: o})
+					add(Action{Joker: j.Rank, SourceCards: []CardID{c}, TargetSeats: []SeatID{o}})
 				}
 			}
 		case JokerTripleCall:
 			for _, o := range others {
 				if tg := ownFaceDown(e, o); len(tg) >= 3 {
 					for _, src := range srcs {
-						add(Action{Joker: j.Rank, SourceCard: src, TargetCard: tg[0], TargetCard2: tg[1], TargetCard3: tg[2]})
+						add(Action{Joker: j.Rank, SourceCards: []CardID{src}, TargetCards: []CardID{tg[0], tg[1], tg[2]}})
 					}
 				}
 			}
 		case JokerSelfMark:
 			for _, c := range own {
 				if pc := s.Cards[c]; pc.Card.Kind == SpecialKindNone && pc.Token == nil {
-					add(Action{Joker: j.Rank, SourceCard: c})
+					add(Action{Joker: j.Rank, SourceCards: []CardID{c}})
 				}
 			}
 		case JokerSweep:
 			for _, o := range others {
 				for _, c := range srcs {
 					if s.Cards[c].Card.Kind == SpecialKindNone {
-						add(Action{Joker: j.Rank, SourceCard: c, TargetSeat: o})
+						add(Action{Joker: j.Rank, SourceCards: []CardID{c}, TargetSeats: []SeatID{o}})
 					}
 				}
 			}
@@ -339,7 +339,7 @@ func pickJokerAction(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 			if len(spent) <= 2 {
 				add(Action{Joker: j.Rank})
 			} else {
-				add(Action{Joker: j.Rank, TargetSeat: spent[0], TargetSeat2: spent[1]})
+				add(Action{Joker: j.Rank, TargetSeats: []SeatID{spent[0], spent[1]}})
 			}
 		case JokerCensus:
 			add(Action{Joker: j.Rank, SelfRevealValue: SelfRevealTarget{Rank: Rank(rapid.IntRange(2, 13).Draw(t, "censusRank"))}})
@@ -352,14 +352,14 @@ func pickJokerAction(t *rapid.T, e *Engine, seat SeatID) (Action, bool) {
 				for _, a := range srcs {
 					for _, b := range srcs {
 						if a < b && !sameIdentity(s.Cards[a].Card, s.Cards[b].Card) {
-							add(Action{Joker: j.Rank, SourceCard: a, SourceCard2: b, TargetCard: ownFaceDown(e, o)[0]})
+							add(Action{Joker: j.Rank, SourceCards: []CardID{a, b}, TargetCards: []CardID{ownFaceDown(e, o)[0]}})
 						}
 					}
 				}
 			}
 		case JokerPass:
 			for _, o := range others {
-				add(Action{Joker: j.Rank, TargetSeat: o})
+				add(Action{Joker: j.Rank, TargetSeats: []SeatID{o}})
 			}
 		}
 	}

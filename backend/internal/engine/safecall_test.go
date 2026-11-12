@@ -26,7 +26,7 @@ func TestSafeCallOneMatchHit(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone}) // seat 1 target A: match
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone}) // seat 1 target B: no match
 
-	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
@@ -66,7 +66,7 @@ func TestSafeCallBothMatchPending(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone}) // seat 1 target A: match
 	place(e, 3, 1, Card{Rank: 7, Kind: SpecialKindNone}) // seat 1 target B: match
 
-	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}}); err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
 
@@ -104,7 +104,7 @@ func TestSafeCallNoMatchMiss(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})  // seat 1 target A: no match
 	place(e, 3, 1, Card{Rank: 11, Kind: SpecialKindNone}) // seat 1 target B: no match
 
-	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}}); err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
 
@@ -133,7 +133,7 @@ func TestSafeCallMissLifeClampedAtZero(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 11, Kind: SpecialKindNone})
 
-	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}}); err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
 	if e.state.LifePool != 0 {
@@ -172,7 +172,7 @@ func TestSafeCallSpentRejected(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if !errors.Is(err, ErrSafeCallSpent) {
 		t.Errorf("err = %v, want ErrSafeCallSpent", err)
 	}
@@ -193,7 +193,7 @@ func TestSafeCallGoldSourceRejected(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if !errors.Is(err, ErrGoldSource) {
 		t.Errorf("err = %v, want ErrGoldSource", err)
 	}
@@ -209,7 +209,7 @@ func TestSafeCallNonOwnedSourceRejected(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if !errors.Is(err, ErrInvalidSource) {
 		t.Errorf("err = %v, want ErrInvalidSource", err)
 	}
@@ -223,7 +223,7 @@ func TestSafeCallNonDistinctTargetsRejected(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 2})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 2}})
 	if !errors.Is(err, ErrSafeCallTargets) {
 		t.Errorf("err = %v, want ErrSafeCallTargets", err)
 	}
@@ -237,7 +237,7 @@ func TestSafeCallSplitOwnerTargetsRejected(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone}) // seat 1
 	place(e, 3, 2, Card{Rank: 9, Kind: SpecialKindNone}) // seat 2 (different owner)
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if !errors.Is(err, ErrSafeCallTargets) {
 		t.Errorf("err = %v, want ErrSafeCallTargets", err)
 	}
@@ -251,7 +251,7 @@ func TestSafeCallOwnTargetsRejected(t *testing.T) {
 	place(e, 2, 0, Card{Rank: 7, Kind: SpecialKindNone}) // caller's own
 	place(e, 3, 0, Card{Rank: 9, Kind: SpecialKindNone}) // caller's own
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if !errors.Is(err, ErrSafeCallTargets) {
 		t.Errorf("err = %v, want ErrSafeCallTargets", err)
 	}
@@ -266,7 +266,7 @@ func TestSafeCallRevealedTargetRejected(t *testing.T) {
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
 	e.state.Cards[2].Facing = FaceUp
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if !errors.Is(err, ErrSafeCallTargets) {
 		t.Errorf("err = %v, want ErrSafeCallTargets", err)
 	}
@@ -283,7 +283,7 @@ func TestSafeCallTooFewFaceDownRejected(t *testing.T) {
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
 	e.state.Cards[3].Facing = FaceUp // seat 1 now has only one face-down card
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if !errors.Is(err, ErrSafeCallTargets) {
 		t.Errorf("err = %v, want ErrSafeCallTargets", err)
 	}
@@ -297,7 +297,7 @@ func TestSafeCallWrongPhaseRejected(t *testing.T) {
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
 	e.state.Phase = PhaseOpening
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if !errors.Is(err, ErrWrongPhase) {
 		t.Errorf("err = %v, want ErrWrongPhase", err)
 	}
@@ -311,7 +311,7 @@ func TestSafeCallOutOfTurnRejected(t *testing.T) {
 	place(e, 2, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 3, 0, Card{Rank: 9, Kind: SpecialKindNone})
 
-	_, err := e.Apply(1, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	_, err := e.Apply(1, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if !errors.Is(err, ErrNotYourTurn) {
 		t.Errorf("err = %v, want ErrNotYourTurn", err)
 	}
@@ -327,7 +327,7 @@ func TestSafeCallBothGoldEndsGame(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindGold})
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindGold})
 
-	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if err != nil || res != ResultLoss || e.state.Phase != PhaseEnded {
 		t.Fatalf("res=%d err=%v phase=%d, want loss/Ended", res, err, e.state.Phase)
 	}
@@ -350,14 +350,14 @@ func TestSafeChooseRevealResolves(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone}) // seat 1 target A: match
 	place(e, 3, 1, Card{Rank: 7, Kind: SpecialKindNone}) // seat 1 target B: match
 
-	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}}); err != nil {
 		t.Fatalf("safe call: unexpected error %v", err)
 	}
 	if e.state.PendingSafeChoice == nil {
 		t.Fatalf("expected a pending choice after a both-match safe call")
 	}
 
-	res, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 2})
+	res, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{2}})
 	if err != nil {
 		t.Fatalf("choose-reveal: unexpected error %v", err)
 	}
@@ -390,7 +390,7 @@ func pendingState() *Engine {
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 7, Kind: SpecialKindNone})
-	e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	return e
 }
 
@@ -416,7 +416,7 @@ func TestSafeChooseRevealNonOptionRejected(t *testing.T) {
 	e := pendingState()
 	place(e, 9, 1, Card{Rank: 7, Kind: SpecialKindNone}) // another seat-1 card, not an option
 
-	_, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 9})
+	_, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{9}})
 	if !errors.Is(err, ErrInvalidChoice) {
 		t.Errorf("err = %v, want ErrInvalidChoice", err)
 	}
@@ -427,7 +427,7 @@ func TestSafeChooseRevealNonOptionRejected(t *testing.T) {
 func TestSafeChooseRevealWrongSeatRejected(t *testing.T) {
 	e := pendingState()
 
-	_, err := e.Apply(0, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 2})
+	_, err := e.Apply(0, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrNotYourTurn) {
 		t.Errorf("err = %v, want ErrNotYourTurn", err)
 	}
@@ -439,7 +439,7 @@ func TestSafeChooseRevealNoPendingRejected(t *testing.T) {
 	e := safeCallState(4)
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 
-	_, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 2})
+	_, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrWrongPhase) {
 		t.Errorf("err = %v, want ErrWrongPhase", err)
 	}
@@ -459,7 +459,7 @@ func TestSafeCallGoldAndMatchReveals(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindGold})
 
-	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if err != nil || res != ResultNone {
 		t.Fatalf("res=%d err=%v, want ResultNone", res, err)
 	}
@@ -482,7 +482,7 @@ func TestSafeCallGoldAndMissTokensNonGold(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindGold})
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
 
-	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if err != nil || res != ResultNone {
 		t.Fatalf("res=%d err=%v, want ResultNone", res, err)
 	}
@@ -503,7 +503,7 @@ func TestSafeCallDoubleMissTargetChoosesToken(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 11, Kind: SpecialKindNone})
 
-	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}}); err != nil {
 		t.Fatalf("safe call: %v", err)
 	}
 	p := e.state.PendingSafeChoice
@@ -513,10 +513,10 @@ func TestSafeCallDoubleMissTargetChoosesToken(t *testing.T) {
 	if e.state.LifePool != 3 || e.state.Cards[2].Token != nil || e.state.Cards[3].Token != nil {
 		t.Errorf("life=%d, tokens must wait for the choice", e.state.LifePool)
 	}
-	if _, err := e.Apply(0, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 2}); !errors.Is(err, ErrNotYourTurn) {
+	if _, err := e.Apply(0, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{2}}); !errors.Is(err, ErrNotYourTurn) {
 		t.Errorf("caller choosing: err=%v, want ErrNotYourTurn", err)
 	}
-	if _, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: 3}); err != nil {
+	if _, err := e.Apply(1, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{3}}); err != nil {
 		t.Fatalf("choose: %v", err)
 	}
 	if e.state.Cards[3].Token == nil || e.state.Cards[2].Token != nil {
@@ -537,7 +537,7 @@ func TestSafeCallDoubleMissLastLifeEnds(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 11, Kind: SpecialKindNone})
 
-	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCard: 1, TargetCard: 2, TargetCard2: 3})
+	res, err := e.Apply(0, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{1}, TargetCards: []CardID{2, 3}})
 	if err != nil || res != ResultLoss || e.state.PendingSafeChoice != nil {
 		t.Errorf("res=%d err=%v pending=%v, want loss and no pending choice", res, err, e.state.PendingSafeChoice)
 	}
@@ -601,13 +601,13 @@ func probeGated(t *rapid.T, e *Engine, p *PendingSafeChoice) {
 		}
 	}
 	for seat := range SeatID(seatCount) {
-		reject(seat, Action{Kind: ActionKindOpeningReveal, OpeningCard: own[0]}, ErrWrongPhase)
-		reject(seat, Action{Kind: ActionKindGuess, SourceCard: own[0], TargetCard: other[0]}, ErrWrongPhase)
-		reject(seat, Action{Kind: ActionKindSafeCall, SourceCard: own[0], TargetCard: other[0], TargetCard2: other[1]}, ErrWrongPhase)
+		reject(seat, Action{Kind: ActionKindOpeningReveal, TargetCards: []CardID{own[0]}}, ErrWrongPhase)
+		reject(seat, Action{Kind: ActionKindGuess, SourceCards: []CardID{own[0]}, TargetCards: []CardID{other[0]}}, ErrWrongPhase)
+		reject(seat, Action{Kind: ActionKindSafeCall, SourceCards: []CardID{own[0]}, TargetCards: []CardID{other[0], other[1]}}, ErrWrongPhase)
 		reject(seat, Action{Kind: ActionKindSelfReveal, SelfRevealValue: SelfRevealTarget{Kind: SpecialKindGold}}, ErrWrongPhase)
 		if seat != p.TargetPlayer {
-			reject(seat, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: p.Options[0]}, ErrNotYourTurn)
+			reject(seat, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{p.Options[0]}}, ErrNotYourTurn)
 		}
 	}
-	reject(p.TargetPlayer, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: bad}, ErrInvalidChoice)
+	reject(p.TargetPlayer, Action{Kind: ActionKindSafeChooseReveal, TargetCards: []CardID{bad}}, ErrInvalidChoice)
 }

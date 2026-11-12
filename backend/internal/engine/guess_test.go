@@ -37,7 +37,7 @@ func TestGuessHitRevealsBothNoLifeLoss(t *testing.T) {
 	// the game would win and the turn would not pass.
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
 
-	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
@@ -68,7 +68,7 @@ func TestGuessMissTokensTargetLeavesSource(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
 
-	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
@@ -97,7 +97,7 @@ func TestGuessMissLifeClampedAtZero(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
 
-	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}}); err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
 	if e.state.LifePool != 0 {
@@ -112,7 +112,7 @@ func TestGuessSilverFeatHit(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 5, Kind: SpecialKindSilver})
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindSilver}) // rank differs; still a match
 
-	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}}); err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
 	if e.state.Cards[1].Facing != FaceUp || e.state.Cards[2].Facing != FaceUp {
@@ -130,7 +130,7 @@ func TestGuessSilverFeatMissSuitedTarget(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 5, Kind: SpecialKindSilver})
 	place(e, 2, 1, Card{Rank: 5, Kind: SpecialKindNone}) // same rank, not silver -> miss
 
-	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}}); err != nil {
 		t.Fatalf("Apply: unexpected error %v", err)
 	}
 	if e.state.LifePool != 3 {
@@ -148,7 +148,7 @@ func TestGuessSilverFeatSelfTargetRejected(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 5, Kind: SpecialKindSilver})
 	place(e, 2, 0, Card{Rank: 9, Kind: SpecialKindSilver}) // target owned by actor
 
-	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrTargetOwn) {
 		t.Errorf("err = %v, want ErrTargetOwn (silver feat self target)", err)
 	}
@@ -179,7 +179,7 @@ func TestGuessGoldSourceRejected(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 5, Kind: SpecialKindGold})
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrGoldSource) {
 		t.Errorf("err = %v, want ErrGoldSource", err)
 	}
@@ -196,7 +196,7 @@ func TestGuessNonOwnedSourceRejected(t *testing.T) {
 	place(e, 1, 1, Card{Rank: 7, Kind: SpecialKindNone}) // owned by seat 1
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrInvalidSource) {
 		t.Errorf("err = %v, want ErrInvalidSource", err)
 	}
@@ -209,7 +209,7 @@ func TestGuessUnknownTargetRejected(t *testing.T) {
 	e := playingState(4)
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 
-	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 99})
+	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{99}})
 	if !errors.Is(err, ErrInvalidTarget) {
 		t.Errorf("err = %v, want ErrInvalidTarget", err)
 	}
@@ -224,7 +224,7 @@ func TestGuessRevealedTargetRejected(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 	e.state.Cards[2].Facing = FaceUp
 
-	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrTargetRevealed) {
 		t.Errorf("err = %v, want ErrTargetRevealed", err)
 	}
@@ -240,7 +240,7 @@ func TestGuessOwnTargetRejected(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 2, 0, Card{Rank: 7, Kind: SpecialKindNone}) // target owned by actor
 
-	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrTargetOwn) {
 		t.Errorf("err = %v, want ErrTargetOwn", err)
 	}
@@ -255,7 +255,7 @@ func TestGuessWrongPhaseRejected(t *testing.T) {
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 	e.state.Phase = PhaseOpening
 
-	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	_, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrWrongPhase) {
 		t.Errorf("err = %v, want ErrWrongPhase", err)
 	}
@@ -269,7 +269,7 @@ func TestGuessOutOfTurnRejected(t *testing.T) {
 	place(e, 1, 1, Card{Rank: 7, Kind: SpecialKindNone}) // seat 1's source
 	place(e, 2, 0, Card{Rank: 7, Kind: SpecialKindNone})
 
-	_, err := e.Apply(1, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	_, err := e.Apply(1, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if !errors.Is(err, ErrNotYourTurn) {
 		t.Errorf("err = %v, want ErrNotYourTurn", err)
 	}
@@ -307,7 +307,7 @@ func TestGuessGoldTargetEndsGame(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindGold})
 
-	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	assertGoldHit(t, e, res, err, 4)
 }
 
@@ -318,7 +318,7 @@ func TestGuessSilverFeatGoldTargetEndsGame(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 5, Kind: SpecialKindSilver})
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindGold})
 
-	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	assertGoldHit(t, e, res, err, 4)
 }
 
@@ -329,7 +329,7 @@ func TestGuessShieldMissCostsNoLifeAndClears(t *testing.T) {
 	e.state.Shield = true
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
-	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}}); err != nil {
 		t.Fatal(err)
 	}
 	if e.state.LifePool != 4 || e.state.Cards[2].Token == nil || e.state.Shield {
@@ -350,7 +350,7 @@ func TestGuessShieldGoldTargetTokenedNotFlipped(t *testing.T) {
 	e.state.Shield = true
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 2, 1, Card{Rank: 5, Kind: SpecialKindGold})
-	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}})
 	if err != nil || res != ResultNone {
 		t.Fatalf("res=%d err=%v, want play to continue", res, err)
 	}
@@ -368,7 +368,7 @@ func TestGuessShieldClearedByHit(t *testing.T) {
 	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
 	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
-	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2}); err != nil {
+	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCards: []CardID{1}, TargetCards: []CardID{2}}); err != nil {
 		t.Fatal(err)
 	}
 	if e.state.Shield {
