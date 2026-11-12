@@ -124,6 +124,30 @@ export function buildValueSummary(view: PlayerView): ValueSummaryCount[] {
   });
 }
 
+export interface DecoyNote {
+  Kind: SpecialKind.Silver | SpecialKind.Gold;
+  InPlay: number;
+  Listed: number;
+}
+
+/**
+ * Kinds whose pool lists more entries than are in play (i.e. have decoys),
+ * unless every in-play special of the kind is already face-up (decoys settled).
+ */
+export function buildDecoyNotes(view: PlayerView): DecoyNote[] {
+  const pool = view.SpecialPool;
+  const foundOf = (kind: SpecialKind, ranks: { Rank: Rank }[]) =>
+    ranks.reduce((sum, e) => sum + countFound(view, { Rank: e.Rank, Kind: kind }), 0);
+  const notes: DecoyNote[] = [
+    { Kind: SpecialKind.Silver, InPlay: pool.SilverInPlay, Listed: pool.Silvers.length },
+    { Kind: SpecialKind.Gold, InPlay: pool.GoldInPlay, Listed: pool.Golds.length },
+  ];
+  return notes.filter((n) => {
+    const entries = n.Kind === SpecialKind.Silver ? pool.Silvers : pool.Golds;
+    return n.Listed > n.InPlay && foundOf(n.Kind, entries) < n.InPlay;
+  });
+}
+
 function kindName(kind: SpecialKind): "silver" | "gold" | "suited" {
   if (kind === SpecialKind.Silver) return "silver";
   if (kind === SpecialKind.Gold) return "gold";
@@ -137,9 +161,30 @@ export interface ValueSummaryProps {
 export function ValueSummary({ view }: ValueSummaryProps) {
   const rows = useMemo(() => buildValueSummary(view), [view]);
 
+  const decoyNotes = useMemo(() => buildDecoyNotes(view), [view]);
+
   return (
     <section className="value-summary" aria-label="Value summary">
-      <h2 className="value-summary-title">Values in play</h2>
+      <div className="value-summary-header">
+        <h2 className="value-summary-title">Values in play</h2>
+        {decoyNotes.length > 0 ? (
+          <p className="value-summary-decoys">
+            {decoyNotes.map((n) => {
+              const kind = kindName(n.Kind);
+              return (
+                <span
+                  key={kind}
+                  className="value-summary-decoy"
+                  data-decoy-kind={kind}
+                  aria-label={`${n.InPlay} of ${n.Listed} listed ${kind}s are in play`}
+                >
+                  {n.InPlay}/{n.Listed} {kind}
+                </span>
+              );
+            })}
+          </p>
+        ) : null}
+      </div>
       <ul className="value-summary-list" aria-live="polite">
         {rows.map((row) => {
           const dataCount =
