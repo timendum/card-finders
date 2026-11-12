@@ -17,6 +17,13 @@ type inbound struct {
 	TargetCard2  engine.CardID   `json:"targetCardId2"`
 	ChosenTarget engine.CardID   `json:"chosenTargetCardId"`
 	Value        json.RawMessage `json:"value"`
+
+	// joker message
+	Joker       engine.Rank   `json:"joker"`
+	SourceCard2 engine.CardID `json:"sourceCardId2"`
+	TargetCard3 engine.CardID `json:"targetCardId3"`
+	TargetSeat  engine.SeatID `json:"targetSeat"`
+	TargetSeat2 engine.SeatID `json:"targetSeat2"`
 }
 
 // outboundState is the `state` frame: the receiving seat's full PlayerView.
@@ -70,6 +77,27 @@ func decodeAction(in inbound) (engine.Action, string, bool) {
 			Kind:            engine.ActionKindSelfReveal,
 			SelfRevealValue: target,
 		}, "", true
+	case "joker":
+		a := engine.Action{
+			Kind:        engine.ActionKindJoker,
+			Joker:       in.Joker,
+			SourceCard:  in.SourceCardID,
+			SourceCard2: in.SourceCard2,
+			TargetCard:  in.TargetCardID,
+			TargetCard2: in.TargetCard2,
+			TargetCard3: in.TargetCard3,
+			TargetSeat:  in.TargetSeat,
+			TargetSeat2: in.TargetSeat2,
+		}
+		// Census asks a suited rank, sent in the same optional `value` field.
+		if len(in.Value) > 0 {
+			target, ok := decodeSelfRevealValue(in.Value)
+			if !ok {
+				return engine.Action{}, "bad_message", false
+			}
+			a.SelfRevealValue = target
+		}
+		return a, "", true
 	default:
 		return engine.Action{}, "unknown_type", false
 	}

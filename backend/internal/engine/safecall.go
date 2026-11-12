@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"slices"
 	"strconv"
 )
 
@@ -17,6 +18,9 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 	}
 	if seat != s.CurrentSeat {
 		return ResultNone, ErrNotYourTurn
+	}
+	if s.Shield {
+		return ResultNone, ErrShieldActive
 	}
 
 	// Players[seat] is non-nil during play.
@@ -53,117 +57,21 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 	if faceDownCount(s, targetPlayer) < 2 {
 		return ResultNone, ErrSafeCallTargets
 	}
-	gold1 := t1.Card.Kind == SpecialKindGold
-	gold2 := t2.Card.Kind == SpecialKindGold
-
-	match1 := matchesAnnouncedValue(source.Card, t1.Card)
-	match2 := matchesAnnouncedValue(source.Card, t2.Card)
 
 	s.Players[seat].PowerUsed = true
 
-	sourceID := source.Card.ID
-	la := &LastAction{
-		Actor:          seat,
-		Kind:           ActionKindSafeCall,
-		AnnouncedValue: announcedValueOf(source.Card),
-		Targets:        []CardID{action.TargetCard, action.TargetCard2},
-		SourceCard:     &sourceID,
-	}
-
-	// Both targets gold: game over, both flip face-up, Life_Pool untouched.
-	if gold1 && gold2 {
-		t1.Facing = FaceUp
-		t2.Facing = FaceUp
-		la.Outcome = OutcomeGoldHit
-		la.Revealed = []CardID{action.TargetCard, action.TargetCard2}
-		s.recordAction(la)
-		s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "hit two gold cards"))
-		return e.endGoldHit(), nil
-	}
-
-	switch {
-	case match1 && match2:
-		// Double hit: record the pending choice and defer the Pair_Reveal and
-		// turn pass to applySafeChooseReveal. The source is still face-down, so
-		// projection gates SourceCard; only the two options are announced.
-		s.PendingSafeChoice = &PendingSafeChoice{
-			Caller:       seat,
-			TargetPlayer: targetPlayer,
-			SourceCard:   source.Card.ID,
-			Option1:      action.TargetCard,
-			Option2:      action.TargetCard2,
-		}
-		// CurrentSeat stays the caller; the chooser is the pending TargetPlayer.
-		s.Phase = PhaseAwaitingResponse
-		la.Outcome = OutcomeAwaitingChoice
-		s.recordAction(la)
-		s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "hit both"))
-		return ResultNone, nil
-
-	case match1 || match2:
-		// One hit: Pair_Reveal flips the source and the lone matching target.
-		matched := t1
-		if match2 {
-			matched = t2
-		}
-		source.Facing = FaceUp
-		matched.Facing = FaceUp
-		la.Outcome = OutcomeHit
-		la.Revealed = []CardID{sourceID, matched.Card.ID}
-
-	default:
-		// Miss: lose one life (clamped); exactly one target gets a token and the
-		// source is untouched.
-		if s.LifePool > 0 {
-			s.LifePool--
-			la.LivesLost = 1
-		}
-		la.Outcome = OutcomeMiss
-		switch {
-		case gold1:
-			// Gold is never tokened: the lone non-gold target takes it.
-			t2.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
-		case gold2:
-			t1.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
-		case s.LifePool > 0:
-			// Two non-gold misses: the targeted player picks which gets the
-			// token. The life is already lost; the turn passes after the choice.
-			s.PendingSafeChoice = &PendingSafeChoice{
-				Caller:       seat,
-				TargetPlayer: targetPlayer,
-				SourceCard:   source.Card.ID,
-				Option1:      action.TargetCard,
-				Option2:      action.TargetCard2,
-				Miss:         true,
-			}
-			s.Phase = PhaseAwaitingResponse
-			la.Outcome = OutcomeAwaitingToken
-			s.recordAction(la)
-			s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "missed"))
-			return ResultNone, nil
-		}
-		// Otherwise the last life is gone and the game ends below.
-	}
-
-	s.recordAction(la)
-	if la.Outcome == OutcomeHit {
-		s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "hit one"))
-	} else {
-		s.logActionOn(seat, targetPlayer, s.safeCallText(action, la.AnnouncedValue, "missed"))
-	}
-
-	return e.finishTurn(s.CurrentSeat), nil
-}
-
-// safeCallText renders a safe call log line: the targeted slots (ascending),
-// the announced value, and the outcome phrase (e.g. "hit one").
-func (s *GameState) safeCallText(action Action, announced *CardValue, outcome string) string {
-	a, b := s.Slot[action.TargetCard], s.Slot[action.TargetCard2]
-	if a > b {
-		a, b = b, a
-	}
-	return "asked for a " + announcedText(announced) + " at cards " +
-		strconv.Itoa(a) + " and " + strconv.Itoa(b) + " and " + outcome
+	targets := []CardID{action.TargetCard, action.TargetCard2}
+	return e.resolveMultiTarget(multiCall{
+		seat:         seat,
+		source:       source,
+		targetPlayer: targetPlayer,
+		targets:      targets,
+		passTurn:     true,
+		text: func(outcome string) string {
+			return "asked for a " + announcedText(announcedValueOf(source.Card)) +
+				" at cards " + s.slotsText(targets) + " and " + outcome
+		},
+	})
 }
 
 // faceDownCount returns how many of a seat's cards are still face-down.
@@ -177,10 +85,10 @@ func faceDownCount(s *GameState, seat SeatID) int {
 	return n
 }
 
-// applySafeChooseReveal resolves the second step of a double-hit Safe_Call: the
-// targeted player picks which matching card is revealed, completing the deferred
-// Pair_Reveal and passing the turn from the caller. The power was already spent
-// by applySafeCall.
+// applySafeChooseReveal resolves the second step of a pending choice: the
+// targeted player picks which matching card is revealed (or which card gets the
+// token on a miss), or, for a Swap, which of its own cards it gives. A plain
+// Safe_Call was already marked spent by applySafeCall.
 func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, error) {
 	s := e.state
 
@@ -194,60 +102,43 @@ func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, erro
 	if seat != pending.TargetPlayer {
 		return ResultNone, ErrNotYourTurn
 	}
-	if action.ChosenTarget != pending.Option1 && action.ChosenTarget != pending.Option2 {
+	if pending.Joker == JokerSwap {
+		return e.resolveSwap(seat, action, pending)
+	}
+	if !slices.Contains(pending.Options, action.ChosenTarget) {
 		return ResultNone, ErrInvalidChoice
 	}
 
 	sourceID := pending.SourceCard
+	caller := pending.Caller
+	la := &LastAction{
+		Actor:      caller,
+		Kind:       ActionKindSafeChooseReveal,
+		Joker:      pending.Joker,
+		Targets:    []CardID{action.ChosenTarget},
+		SourceCard: &sourceID,
+	}
+	if src, ok := s.Cards[sourceID]; ok {
+		la.AnnouncedValue = announcedValueOf(src.Card)
+	}
+
+	// Leave the response phase first; finishing may then move on to Ended.
+	s.PendingSafeChoice = nil
+	s.Phase = PhasePlaying
 
 	if pending.Miss {
-		// Double miss: token only the chosen target; nothing is revealed.
-		var miss *CardValue
-		if src, ok := s.Cards[sourceID]; ok {
-			miss = announcedValueOf(src.Card)
-		}
-		if chosen, ok := s.Cards[action.ChosenTarget]; ok {
-			chosen.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
-		}
-		caller := pending.Caller
-		s.recordAction(&LastAction{
-			Actor:          caller,
-			Kind:           ActionKindSafeChooseReveal,
-			AnnouncedValue: miss,
-			Targets:        []CardID{action.ChosenTarget},
-			Outcome:        OutcomeMiss,
-			SourceCard:     &sourceID,
-		})
-		s.PendingSafeChoice = nil
-		s.Phase = PhasePlaying
+		// Miss: token only the chosen target; nothing is revealed.
+		s.placeToken(action.ChosenTarget)
+		la.Outcome = OutcomeMiss
+		s.recordAction(la)
 		s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[action.ChosenTarget])+" to receive the token")
-		return e.finishTurn(caller), nil
+		return e.endCall(caller, pending.PassTurn), nil
 	}
 
-	var av *CardValue
-	if src, ok := s.Cards[pending.SourceCard]; ok {
-		src.Facing = FaceUp
-		av = announcedValueOf(src.Card)
-	}
-	if chosen, ok := s.Cards[action.ChosenTarget]; ok {
-		chosen.Facing = FaceUp
-	}
-
-	caller := pending.Caller
-	srcID := sourceID
-	s.recordAction(&LastAction{
-		Actor:          caller,
-		Kind:           ActionKindSafeChooseReveal,
-		AnnouncedValue: av,
-		Targets:        []CardID{action.ChosenTarget},
-		Outcome:        OutcomeHit,
-		Revealed:       []CardID{srcID, action.ChosenTarget},
-		SourceCard:     &srcID,
-	})
-
-	s.PendingSafeChoice = nil
-	// Leave the response phase first; finishTurn may then move on to Ended.
-	s.Phase = PhasePlaying
+	s.flipUp(sourceID, action.ChosenTarget)
+	la.Outcome = OutcomeHit
+	la.Revealed = []CardID{sourceID, action.ChosenTarget}
+	s.recordAction(la)
 	s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[action.ChosenTarget])+" to reveal")
-	return e.finishTurn(caller), nil
+	return e.endCall(caller, pending.PassTurn), nil
 }

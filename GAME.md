@@ -1,8 +1,7 @@
 # Card Finders — Game Logic
 
-The authoritative business logic. `AGENTS.md` (technical) and the spec under
-`.kiro/specs/card-finders/` defer to this file for rules. The source of truth
-for exact behavior is `backend/internal/engine`.
+The authoritative business logic. `AGENTS.md` (technical) defer to this file
+for rules. The source of truth for exact behavior is `backend/internal/engine`.
 
 ## Concept
 
@@ -40,13 +39,17 @@ costs the shared team a life. The team **wins** by revealing every card and
   it is just a silver or gold card, not a "rank X" card. It never counts toward
   that rank's suited cards (e.g. a silver 5 is not one of the four 5s).
 - **Level** — config: number, name, silver count (even, 0–10), gold count
-  (0–11), extra silver / extra gold (optional, ≥ 0), starting lives (1–100).
+  (0–11), extra silver / extra gold (optional, ≥ 0), starting lives (1–100),
+  jokers (optional, 0–12, default 4).
   The level label shows extras only when present, e.g. `silver 2 + 1 decoy,
   gold 1`; a level with no extras is labelled `silver 2, gold 1`.
 - **Life_Pool** — shared team life counter. Reaches 0 → loss.
-- **Token** — a public marker in front of a **face-down** card showing its true
-  value to everyone. Placed by an opening reveal or a miss. A face-up card never
-  carries a token.
+- **Token** — a public marker in front of a **face-down** card. A
+  *value token* shows the card's true value to everyone; it is placed by an
+  opening reveal, a miss, or joker 5. A *link token* (Same / Different, jokers
+  13 and 2) shows no value, see Jokers. A face-up card never carries a token,
+  and a face-down card carries at most one.
+- **Joker** — a public, shared one-use power tied to a rank 2..13, see Jokers.
 - **Face_Down / Face_Up** — hidden-to-others vs. revealed-to-all.
 - **Value_Summary** — shared panel listing every value in play (suited ranks +
   Special_Pool identities) with found/total counts.
@@ -62,9 +65,10 @@ Phases (engine state machine; phase gates every action):
    choice; it stays **face-down** but gets a token showing its true value.
    Each player is granted one single-use Safe_Call here.
 3. **Playing** — normal turns until win or loss.
-4. **AwaitingResponse** — entered from Playing when a Safe_Call hits both
-   targets; the targeted player chooses which card is revealed, then play
-   resumes (or the game ends).
+4. **AwaitingResponse** — entered from Playing when a Safe_Call (or joker 4 or
+   6) hits several targets, misses with several tokenable targets, or when a
+   Swap (joker 3) is started; the targeted player chooses a card, then play
+   resumes (or the game ends). No joker can be used meanwhile.
 5. **Ended** — win (all cards face-up) or loss (Life_Pool hit 0). All further
    actions rejected.
 
@@ -81,9 +85,13 @@ phases; nothing can observe the intermediate states):
    the same pool, deal, and first player. Only real specials enter the deal.
 2. **Deal** — Base_Deck + the level's specials are combined, uniformly shuffled,
    and dealt across the 4 players (hand sizes differ by ≤1, no cards left
-   over). Each hand is then laid out in a **fixed, value-sorted order**
-   (ascending Sort_Value) that never changes for the rest of the game.
+   over). Each hand is then laid out in a **value-sorted order**
+   (ascending Sort_Value) that stays put for the rest of the game, except for
+   the Swap joker (see Hand order).
 3. **First player** — one of the four is chosen (each 0.25) and opens.
+4. **Jokers** — the level's `jokers` count of distinct ranks is drawn at random
+   from 2..13, after the first player is picked (so existing seeds keep the
+   same pool, deal and first player). They are public from the start.
 
 ### Dropping out and rejoining
 
@@ -96,10 +104,11 @@ previous holder out. The game is full only while all four seats are connected.
 
 ## Hand order and reveal in place
 
-Every hand is kept in a **fixed order** for the whole game. At deal time each
+Every hand is kept in a stable order for the whole game. At deal time each
 player's cards are sorted ascending by Sort_Value (suited rank, then silver at
 `rank + 0.3`, then gold at `rank + 0.6`); ties keep their shuffled deal
-order. A card's **position never moves** once dealt.
+order. A card's **position never moves** once dealt, with one exception: the
+Swap joker (3) moves a card between two hands.
 
 Revealing a card does not reorder or remove it: a card flips **face-up in
 place**, keeping its original position in the hand. So the layout of a hand is
@@ -143,13 +152,9 @@ other hidden card to the caller.
 - **Miss**: Life_Pool −1 (never below 0); target stays face-down and gets a
   token showing its true value; source stays face-down, untokened. Turn passes.
 
-### Silver feat
-
-A Guess whose source is a silver card calls the target as silver. Hit if the
-target is a silver card (Pair_Reveal); otherwise a normal Miss. Target must
-belong to another player.
-
 ### Safe_Call (one-time power per player)
+
+Called "Double call" for end-users in frontend and logs.
 
 In place of a Guess: play one owned face-down source card and target **two
 distinct** face-down cards of a **single** other player (that player must have
@@ -189,10 +194,87 @@ owner's face-down cards are gold. Then the player reveals all their gold at once
 with a Guess or silver feat, or with both Safe_Call targets, ends the game as a
 loss (see above); this is not a gold reveal.
 
+## Jokers
+
+At game start the level's `jokers` count of distinct ranks (2..13) is drawn.
+Jokers are public and shared: any player may use any joker, once per game.
+
+**Lifecycle.** A joker is *inactive* until all four suited cards of its rank
+are face-up, then *ready*, then *used* after one use. Special cards never count
+toward a rank. A joker that turns ready during a turn can be used the next time
+the game waits for a user action.
+
+**When.** A joker can only be used in Playing, when no choice is pending. The
+backend names jokers by their numeric rank only (J=11, Q=12, K=13); the
+frontend names are in parentheses.
+
+- *Anytime* jokers (2, 3, 5, 7, 8, 9, 13) can be used by any player, whoever's
+  turn it is, and do not advance the turn.
+- *Current-player* jokers (4, 6, 10, 11, 12) can only be used by the current
+  player, who must own a face-down card. All but 10 and 12 end the turn like a
+  Guess; 10 does not end it, and 12 hands the turn to the chosen seat.
+
+**Powers.**
+
+- **2 (Differ)** — see link tokens below.
+- **3 (Swap)** — the activator picks one of his face-down cards (silver and
+  gold allowed) and another player with a face-down card. That player (blind)
+  picks one of his own face-down cards. The cards change owner and are placed
+  by the Hand order insertion rule. The log gives the positions. Does not
+  advance the turn.
+- **4 (Triple Call)** — like a Safe_Call, with three targets in one other
+  player's hand (≥3 face-down cards). Independent of the Safe_Call power.
+- **5 (Self Mark)** — a value token on one of the activator's own face-down
+  suited cards that has no token (silver and gold are rejected).
+- **6 (Sweep)** — a suited face-down source plus a player: every face-down card
+  of that player is a target, resolved like a Safe_Call. If that player holds
+  only gold face-down it is a loss.
+- **7 (Extra Life)** — Life_Pool +1, with no cap.
+- **8 (Second Wind)** — restores Safe_Call powers. If at most two players
+  spent theirs they are restored; if more than two did, the activator picks
+  two of them; if none did, the joker is wasted.
+- **9 (Census)** — the activator names a suited rank; each of the four players
+  (the asker too) answers publicly, one log entry each, whether he holds a
+  face-down suited card of that rank. Silver and gold never match.
+- **10 (Shield)** — arms a Shield for the next normal Guess or silver feat:
+  a miss costs no life but still places the token, a gold target gets a token
+  with no flip and no game over. The Shield is then spent. While armed, only a
+  Guess, a silver feat or another joker is allowed (Safe_Call and self-reveal
+  are rejected). It does not cover jokers 4, 6 and 11.
+- **11 (J, Reverse Call)** — two own face-down cards of different identity
+  (different suited ranks, or suited and silver; no gold) and one face-down card
+  of another player. A hit is a target that matches either own card: that own
+  card and the target flip. A miss costs a life and puts a token on the target.
+  A gold target is a loss.
+- **12 (Q, Pass)** — skip the turn: the activator names the next current
+  player, another player with a face-down card.
+- **13 (Match)** — see link tokens below.
+
+Calls made through jokers 4, 6 and 11 follow the Safe_Call outcome rules where
+they apply: a single match flips the source and that match, several matches
+let the targeted player choose, and a miss costs one life and one token (the
+targeted player chooses among several non-gold targets, unless the life pool
+just emptied).
+
+**Link tokens (2 Differ, 13 Match).** The activator picks two cards at adjacent
+positions in his own hand (face-up cards occupy positions too), both face-down
+and without a token. The claim must be true, otherwise the use is rejected, so
+nothing is gained by guessing. Identity: suited cards compare by rank; specials
+compare by kind only (a silver 6 equals a silver 7, a silver never equals a
+gold or a suited card, even a suited 7 and a silver 7 differ). Differ is true
+when exactly one card is special, both are suited of different ranks, or one is
+silver and the other gold. Match is true when both are suited of the same rank
+or both are the same special kind. Both cards get a Different / Same link
+token; the pair is found as the two adjacent cards carrying the same link kind.
+A link is cleared as soon as either card flips face-up, is swapped, or gets a
+value token (a miss on it); a value token on a card follows the card in a swap.
+
 ## Win / loss
 
 - **Loss**: Life_Pool reaches 0 (from a Miss), or a gold card is targeted by a
-  Guess/silver feat or by both Safe_Call targets. Game ends immediately.
+  Guess/silver feat (unless the Shield is armed), by all targets of a
+  Safe_Call, Triple Call or Sweep, or by a Reverse Call. Game ends
+  immediately.
 - **Win**: every card across all four players is face-up.
 - In **Ended**, all gameplay actions are rejected and state is frozen.
 
@@ -204,8 +286,9 @@ The server computes a per-player view:
 - Other players' unrevealed cards appear as face-down: you see their **fixed
   value-sorted position** and facing, but not their value. Position conveys
   relative value (see Hand order and reveal in place), never the exact value.
-- A token's displayed value is visible to **everyone** (it sits on a face-down
-  card).
+- A value token's displayed value is visible to **everyone** (it sits on a
+  face-down card). Link tokens show no value, only Same / Different.
+- The drawn jokers, their state and the Shield are visible to everyone.
 - Every face-up card's value is visible to everyone.
 - The full Special_Pool is visible to everyone (which identities exist), without
   revealing who holds any particular special.

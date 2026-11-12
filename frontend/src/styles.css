@@ -116,23 +116,23 @@ body {
 .table-center {
   grid-area: center;
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: var(--space-4);
-  align-content: space-between;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  min-block-size: 0;
 }
 
 .table-center-bottom {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-block-size: 0;
   gap: var(--space-3);
-  align-items: end;
 }
 
 .game-log {
   box-sizing: border-box;
   block-size: 100%;
-  min-block-size: 6rem;
-  max-block-size: 12rem;
+  min-block-size: 0;
   overflow-y: auto;
   padding: var(--space-3);
   border: 1px solid var(--color-border);
@@ -432,13 +432,104 @@ body {
   justify-self: center;
   inline-size: 100%;
 }
-.prompt-panel {
-  align-self: end;
+.table-center-prompt {
+  min-block-size: 0;
+}
+.table-center-prompt > .prompt-panel {
+  block-size: 100%;
+  align-content: start;
+  overflow-y: auto;
 }
 
 .life-display {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
+}
+
+/* Top row: lives left, jokers right; value summary sits below. */
+.status-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.status-panel-jokers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.joker-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.joker {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+.joker[data-state="inactive"] {
+  color: var(--color-text-muted);
+}
+.joker[data-state="ready"] {
+  border-color: var(--color-success);
+}
+.joker[data-state="used"] {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+.joker[data-usable="true"] {
+  cursor: pointer;
+}
+.joker[data-active="true"] {
+  border-color: var(--color-accent);
+  outline: var(--outline-width) solid var(--color-accent);
+}
+
+.shield-indicator {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Joker link token: "=" same rank, "≠" different rank. */
+.link-marker {
+  inline-size: var(--token-size);
+  block-size: var(--token-size);
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-token);
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+.player-space[data-edge="left"] .link-marker {
+  place-self: center;
+  transform: rotate(90deg);
+}
+.player-space[data-edge="right"] .link-marker {
+  place-self: center;
+  transform: rotate(-90deg);
+}
+
+.value-summary-title {
+    margin: 0.5em 0 0.4em;
+    font-size: var(--font-size-lg);
 }
 
 .value-summary-list {
@@ -500,9 +591,6 @@ body {
 .prompt-action {
   display: grid;
 }
-.prompt-action[data-enabled="false"] {
-  color: var(--color-text-muted);
-}
 
 .prompt-action-name {
   font-weight: var(--font-weight-bold);
@@ -517,18 +605,17 @@ body {
 .prompt-single {
   display: grid;
 }
-.prompt-single .prompt-action-name,
-.prompt-single .prompt-action-description {
-  margin: 0;
-}
-
-.prompt-self-values {
+.prompt-self-values,
+.prompt-joker-seats,
+.prompt-joker-ranks {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
 .prompt-self-value,
+.prompt-joker-seat,
+.prompt-joker-rank,
 .prompt-confirm {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
@@ -539,7 +626,15 @@ body {
   cursor: pointer;
 }
 
-.prompt-self-value[aria-pressed="true"] {
+.prompt-self-value,
+.prompt-joker-seat,
+.prompt-joker-rank {
+  padding: var(--space-1) var(--space-2);
+}
+
+.prompt-self-value[aria-pressed="true"],
+.prompt-joker-seat[aria-pressed="true"],
+.prompt-joker-rank[aria-pressed="true"] {
   border-color: var(--color-accent);
 }
 

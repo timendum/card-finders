@@ -17,6 +17,7 @@ function viewWith(silvers: number[], inPlay: number, cards: ViewCard[] = []): Pl
       ExtraSilver: 1,
       ExtraGold: 0,
       StartLives: 4,
+      Jokers: 0,
     },
     SpecialPool: {
       Silvers: silvers.map((c) => silver(c)),
@@ -36,6 +37,8 @@ function viewWith(silvers: number[], inPlay: number, cards: ViewCard[] = []): Pl
     ResponsePlayer: 0,
     HasResponsePlayer: false,
     Log: [],
+    Jokers: [],
+    Shield: false,
   };
 }
 

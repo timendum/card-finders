@@ -134,12 +134,27 @@ func pickAction(t *rapid.T, e *Engine) (SeatID, Action) {
 		return s.CurrentSeat, Action{Kind: ActionKindOpeningReveal, OpeningCard: id}
 	case PhaseAwaitingResponse:
 		p := s.PendingSafeChoice
-		c := rapid.SampledFrom([]CardID{p.Option1, p.Option2}).Draw(t, "choice")
+		options := p.Options
+		if p.Joker == JokerSwap {
+			options = ownFaceDown(e, p.TargetPlayer) // a swap target gives any own card
+		}
+		c := rapid.SampledFrom(options).Draw(t, "choice")
 		return p.TargetPlayer, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: c}
 	}
 	seat := s.CurrentSeat
-	mode := rapid.IntRange(0, 4).Draw(t, "mode")
+	maxMode := 4
+	if s.Level.Jokers > 0 {
+		maxMode = 6 // levels without jokers keep the original draw sequence
+	}
+	mode := rapid.IntRange(0, maxMode).Draw(t, "mode")
+	if s.Shield && (mode == 2 || mode == 3 || mode == 4) {
+		mode = 1 // an armed Shield allows only guesses and jokers
+	}
 	switch mode {
+	case 5, 6:
+		if a, ok := pickJokerAction(t, e, seat); ok {
+			return seat, a
+		}
 	case 1:
 		if a, ok := hitGuess(t, e, seat); ok {
 			return seat, a
@@ -160,7 +175,12 @@ func pickAction(t *rapid.T, e *Engine) (SeatID, Action) {
 	if a, ok := randomGuess(t, e, seat); ok {
 		return seat, a
 	}
-	if a, ok := pickSelfReveal(t, e, seat); ok {
+	if !s.Shield {
+		if a, ok := pickSelfReveal(t, e, seat); ok {
+			return seat, a
+		}
+	}
+	if a, ok := shieldGuess(t, e, seat); ok {
 		return seat, a
 	}
 	t.Fatalf("no legal action for seat %d in phase %d", seat, s.Phase)

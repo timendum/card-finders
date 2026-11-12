@@ -2,6 +2,7 @@
 // Legality here is only plausibility from the shared selection helpers; the
 // engine remains the authority and rejects anything illegal.
 
+import { isSwapChoice } from "./jokers.ts";
 import { selfRevealOptions, sourceCards, targetCards, targetsForSeat } from "./actions.ts";
 import { Outcome, Phase, type PlayerView, type SeatID } from "../types.ts";
 
@@ -60,9 +61,9 @@ function standardTurnActions(view: PlayerView): AvailableAction[] {
 
   const actions = [guess];
 
-  // Once spent the safe call is not offered at all rather than shown disabled.
+  // Once spent the double call is not offered at all rather than shown disabled.
   if (!view.PowerUsed[view.Seat]) {
-    const safeName = "Safe call";
+    const safeName = "Double call";
     const safeDescription = "Add a second card of the same opponent to a guess.";
     const seatsWithPair = new Set<SeatID>();
     for (const card of targets) {
@@ -104,7 +105,13 @@ export function availableActions(view: PlayerView): AvailableActions {
       return {
         variant: "safeChooseReveal",
         actions: [
-          miss
+          isSwapChoice(view)
+            ? enabledAction(
+                "safeChooseReveal",
+                "Choose a card to give",
+                "A player swaps cards with you. Pick one of your face-down cards to hand over.",
+              )
+            : miss
             ? enabledAction(
                 "safeChooseReveal",
                 "Choose a card to token",

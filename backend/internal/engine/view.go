@@ -45,11 +45,14 @@ type LastAction struct {
 	Revealed       []CardID
 	LivesLost      int
 	SourceCard     *CardID
+	// Joker is the joker rank behind this action.
+	Joker Rank
 }
 
 // ViewCard is one card as projected for a single viewer. Value is non-nil only
 // when the viewer may see the card (face-up or owned). TokenDisplay is the
-// token's resolved public value, non-nil exactly when Token != nil, so a hidden
+// token's resolved public value, non-nil exactly when Token is a
+// natural-identity token (nil for Same/Different link tokens), so a hidden
 // card still shows its token value without exposing Value.
 type ViewCard struct {
 	ID           CardID
@@ -69,7 +72,7 @@ type PlayerView struct {
 	Level       Level
 	SpecialPool ViewSpecialPool
 	LifePool    int
-	MaxLife     int // Level.StartLives
+	MaxLife     int // Level.StartLives; LifePool may exceed it (joker 7)
 	CurrentSeat SeatID
 	YourTurn    bool
 	PowerUsed   [4]bool
@@ -79,6 +82,8 @@ type PlayerView struct {
 	SeatsFilled int
 	LastAction  *LastAction
 	Log         []LogEntry
+	Jokers      []JokerView // public, ascending rank; never nil
+	Shield      bool        // joker 10 armed for the next normal guess
 
 	// ResponsePlayer is the seat that must choose; meaningful only when
 	// HasResponsePlayer. Identical for every viewer.
@@ -90,7 +95,7 @@ type PlayerView struct {
 // (state == nil) it returns a zero-valued view carrying only the seat.
 func (e *Engine) View(seat SeatID) PlayerView {
 	if e.state == nil {
-		return PlayerView{Seat: seat, SpecialPool: normalizePool(SpecialPool{})}
+		return PlayerView{Seat: seat, SpecialPool: normalizePool(SpecialPool{}), Jokers: []JokerView{}}
 	}
 	s := e.state
 
@@ -105,6 +110,11 @@ func (e *Engine) View(seat SeatID) PlayerView {
 		YourTurn:    seat == s.CurrentSeat && (s.Phase == PhaseOpening || s.Phase == PhasePlaying),
 		Result:      s.GameResult,
 		SeatsFilled: s.seatsFilled(),
+		Shield:      s.Shield,
+		Jokers:      make([]JokerView, 0, len(s.Jokers)),
+	}
+	for _, j := range s.Jokers {
+		v.Jokers = append(v.Jokers, JokerView{Rank: j.Rank, State: s.jokerStateOf(j)})
 	}
 	for i := range 4 {
 		if p := s.Players[i]; p != nil {
@@ -211,8 +221,11 @@ func projectCard(pc *PlacedCard, slot int, seat SeatID) ViewCard {
 	}
 	if pc.Token != nil {
 		vc.Token = pc.Token
-		td := resolveTokenDisplay(pc.Card, *pc.Token)
-		vc.TokenDisplay = &td
+		// Link tokens (Same/Different) show no card value.
+		if !pc.Token.isLink() {
+			td := resolveTokenDisplay(pc.Card, *pc.Token)
+			vc.TokenDisplay = &td
+		}
 	}
 	return vc
 }

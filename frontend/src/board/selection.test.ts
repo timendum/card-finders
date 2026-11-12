@@ -47,6 +47,7 @@ function awaiting(seat: number, responder: number): PlayerView {
       Outcome: Outcome.Hit,
       Revealed: [],
       LivesLost: 0,
+      Joker: 0,
     } as LastAction,
   } as PlayerView;
 }

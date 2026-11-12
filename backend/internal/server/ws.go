@@ -224,6 +224,9 @@ var wsActionErrorMap = map[error]string{
 	engine.ErrInvalidChoice:           "invalid_choice",
 	engine.ErrSelfRevealIncomplete:    "self_reveal_incomplete",
 	engine.ErrGoldRevealIneligible:    "gold_reveal_ineligible",
+	engine.ErrJokerUnavailable:        "joker_unavailable",
+	engine.ErrJokerInvalid:            "joker_invalid",
+	engine.ErrShieldActive:            "shield_active",
 }
 
 // actionErrorCode resolves an Apply error to its WS code, else "invalid_action".

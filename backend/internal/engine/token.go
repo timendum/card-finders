@@ -15,9 +15,18 @@ type TokenKind uint8
 
 const (
 	// TokenKindNaturalIdentity shows the card's Rank (SpecialKindNone) or its
-	// special kind (silver/gold). Other values are reserved for future modes.
+	// special kind (silver/gold).
 	TokenKindNaturalIdentity TokenKind = 1
+
+	// TokenKindSame / TokenKindDifferent are link tokens (jokers 13 and 2)
+	TokenKindSame      TokenKind = 2
+	TokenKindDifferent TokenKind = 3
 )
+
+// isLink reports whether a token is a Same/Different link token.
+func (t *TokenInfo) isLink() bool {
+	return t != nil && (t.Displayed == TokenKindSame || t.Displayed == TokenKindDifferent)
+}
 
 // TokenInfo is a token placed on a card, storing only which property to display.
 type TokenInfo struct {

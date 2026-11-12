@@ -41,6 +41,7 @@ function viewWith(cards: ViewCard[], seat: SeatID = 0): PlayerView {
       ExtraSilver: 0,
       ExtraGold: 0,
       StartLives: 4,
+      Jokers: 0,
     },
     SpecialPool: { Silvers: [], Golds: [], SilverInPlay: 0, GoldInPlay: 0 },
     LifePool: 4,
@@ -55,6 +56,8 @@ function viewWith(cards: ViewCard[], seat: SeatID = 0): PlayerView {
     ResponsePlayer: 0,
     HasResponsePlayer: false,
     Log: [],
+    Jokers: [],
+    Shield: false,
   };
 }
 

@@ -9,6 +9,9 @@ func (e *Engine) applySelfReveal(seat SeatID, action Action) (Result, error) {
 	if seat != s.CurrentSeat {
 		return ResultNone, ErrNotYourTurn
 	}
+	if s.Shield {
+		return ResultNone, ErrShieldActive
+	}
 
 	target := action.SelfRevealValue
 
@@ -26,10 +29,7 @@ func (e *Engine) applySelfReveal(seat SeatID, action Action) (Result, error) {
 		return ResultNone, err
 	}
 
-	for _, id := range toReveal {
-		pc := s.Cards[id]
-		pc.Facing = FaceUp
-	}
+	s.flipUp(toReveal...)
 
 	// Announce the self-revealed value from the chosen target. Use any revealed
 	// card as the concrete identity source (all share the announced value).

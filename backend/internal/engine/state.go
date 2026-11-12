@@ -46,13 +46,19 @@ type GameState struct {
 	Cards     map[CardID]*PlacedCard
 	HandOrder [4][]CardID // each seat's card ids, for stable positions
 
-	// Slot is each card's 1-based value-sorted position within its owning
-	// seat's hand, fixed at deal and never mutated for the rest of the game.
+	// Slot is each card's 1-based position within its owning seat's hand.
 	Slot map[CardID]int
 
-	LifePool    int    // clamped to [0, Level.StartLives]
+	// LifePool is floored at 0 by misses, joker 7 adds a life with no cap).
+	LifePool    int
 	CurrentSeat SeatID // meaningful in Opening/Playing
 	OpeningDone [4]bool
+
+	// Jokers are the public, shared jokers drawn at game start, ascending by
+	// rank. Their state (inactive/ready/used) is derived; only Used is stored.
+	Jokers []JokerSlot
+	// Shield is armed by joker 10.
+	Shield bool
 
 	GameResult Result
 
@@ -72,18 +78,26 @@ type GameState struct {
 	silverLogged bool
 }
 
-// PendingSafeChoice holds a double-hit Safe_Call awaiting the target's choice.
-// The caller's power is already marked used; only the Pair_Reveal and turn pass
-// remain, performed by ActionKindSafeChooseReveal once the target chooses.
+// PendingSafeChoice holds a multi-target call (Safe_Call, joker 4 or 6) or a
+// Swap (joker 3) awaiting the target player's choice. The caller's power is
+// already marked used; only the resolution and turn pass remain, performed by
+// ActionKindSafeChooseReveal once the target chooses.
 type PendingSafeChoice struct {
 	Caller       SeatID
 	TargetPlayer SeatID
-	SourceCard   CardID // flipped on resolution (hit only)
-	Option1      CardID // the two targets TargetPlayer chooses between
-	Option2      CardID
-	// Miss marks a double-miss: the life is already lost and the choice picks
-	// which single option gets the token; nothing is revealed.
+	// SourceCard is flipped on a hit; for a Swap it is the caller's card given.
+	SourceCard CardID
+	// Options are the cards TargetPlayer chooses between. Empty for a Swap,
+	// where the target picks any of its own face-down cards.
+	Options []CardID
+	// Miss marks a miss: the life is already lost and the choice picks which
+	// single option gets the token; nothing is revealed.
 	Miss bool
+	// Joker is the joker rank that raised the choice, 0 for a plain Safe_Call.
+	Joker Rank
+	// PassTurn is true when resolving the choice ends the caller's turn
+	// (Safe_Call, jokers 4 and 6); false for the anytime Swap.
+	PassTurn bool
 }
 
 // recordAction bumps Seq once and stores la as the authoritative LastAction,

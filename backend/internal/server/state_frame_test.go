@@ -219,6 +219,13 @@ func TestClientMessagesDecode(t *testing.T) {
 			engine.Action{Kind: engine.ActionKindSelfReveal, SelfRevealValue: silver}},
 		{"selfReveal gold", `{"type":"selfReveal","value":"gold"}`,
 			engine.Action{Kind: engine.ActionKindSelfReveal, SelfRevealValue: gold}},
+		{"joker fields", `{"type":"joker","joker":11,"sourceCardId":1,"sourceCardId2":2,"targetCardId":3,"targetCardId2":4,"targetCardId3":5,"targetSeat":2,"targetSeat2":3}`,
+			engine.Action{Kind: engine.ActionKindJoker, Joker: 11, SourceCard: 1, SourceCard2: 2,
+				TargetCard: 3, TargetCard2: 4, TargetCard3: 5, TargetSeat: 2, TargetSeat2: 3}},
+		{"joker census rank", `{"type":"joker","joker":9,"value":12}`,
+			engine.Action{Kind: engine.ActionKindJoker, Joker: 9, SelfRevealValue: engine.SelfRevealTarget{Rank: 12}}},
+		{"joker choice reply", `{"type":"safeChooseReveal","chosenTargetCardId":8}`,
+			engine.Action{Kind: engine.ActionKindSafeChooseReveal, ChosenTarget: 8}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -234,5 +241,8 @@ func TestClientMessagesDecode(t *testing.T) {
 	}
 	if _, code, ok := decodeAction(inbound{Type: "nope"}); ok || code != "unknown_type" {
 		t.Errorf("unknown type: ok=%v code=%q", ok, code)
+	}
+	if _, code, ok := decodeAction(inbound{Type: "joker", Value: json.RawMessage(`"bogus"`)}); ok || code != "bad_message" {
+		t.Errorf("bad census value: ok=%v code=%q", ok, code)
 	}
 }

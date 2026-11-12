@@ -19,6 +19,7 @@ func TestPropValidateLevelAcceptsExactlyWellFormed(t *testing.T) {
 			ExtraSilver: rapid.IntRange(-3, 14).Draw(t, "extraSilver"),
 			ExtraGold:   rapid.IntRange(-3, 14).Draw(t, "extraGold"),
 			StartLives:  rapid.IntRange(-1, 105).Draw(t, "lives"),
+			Jokers:      rapid.IntRange(-2, 15).Draw(t, "jokers"),
 		}
 
 		want := l.Number >= 1 && l.Number <= 50 &&
@@ -26,6 +27,7 @@ func TestPropValidateLevelAcceptsExactlyWellFormed(t *testing.T) {
 			l.SilverCount >= 0 && l.SilverCount <= 10 && l.SilverCount%2 == 0 &&
 			l.GoldCount >= 0 && l.GoldCount <= 11 &&
 			l.StartLives >= 1 && l.StartLives <= 100 &&
+			l.Jokers >= 0 && l.Jokers <= 12 &&
 			l.ExtraSilver >= 0 && l.ExtraGold >= 0 &&
 			l.SilverCount+l.ExtraSilver <= 11 &&
 			l.GoldCount+l.ExtraGold <= 11
@@ -35,6 +37,18 @@ func TestPropValidateLevelAcceptsExactlyWellFormed(t *testing.T) {
 			t.Fatalf("ValidateLevel(%+v) err=%v, want accepted=%v", l, err, want)
 		}
 	})
+}
+
+func TestValidateLevelJokersBounds(t *testing.T) {
+	for _, c := range []struct {
+		jokers int
+		ok     bool
+	}{{0, true}, {4, true}, {12, true}, {-1, false}, {13, false}} {
+		l := Level{Number: 1, Name: "L", StartLives: 3, Jokers: c.jokers}
+		if err := ValidateLevel(l); (err == nil) != c.ok {
+			t.Errorf("jokers=%d: err=%v, want accepted=%v", c.jokers, err, c.ok)
+		}
+	}
 }
 
 // Boundary examples for the extras bounds, ensuring both sides are exercised.

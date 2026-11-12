@@ -82,7 +82,7 @@ Three independent paths on one `http.ServeMux`:
 - `/api/...` — REST (JSON). Errors use `{ "error": { "code", "message" } }`.
   - `GET  /api/levels` → `{ levels: [Level...] }`. Each `Level` carries
     `Number`, `Name`, `SilverCount`, `GoldCount`, `ExtraSilver`, `ExtraGold`,
-    `StartLives` (extras = decoy specials, see GAME.md).
+    `StartLives`, `Jokers` (extras = decoy specials, see GAME.md).
   - `POST /api/game` `{ levelNumber }` → `201 { joinCode }`. Errors:
     `level_required` (400), `level_invalid` (400), `level_config_invalid` (400),
     `game_exists` (409).
@@ -113,8 +113,9 @@ Inbound `{ "type", ...payload }`, decoded (`internal/server/wsmsg.go`) into an
 | `openingReveal` | `{ cardId }` | opening reveal |
 | `guess` | `{ sourceCardId, targetCardId }` | guess / silver feat |
 | `safeCall` | `{ sourceCardId, targetCardId, targetCardId2 }` | safe call |
-| `safeChooseReveal` | `{ chosenTargetCardId }` | both-hit reveal choice, or double-miss token choice |
+| `safeChooseReveal` | `{ chosenTargetCardId }` | multi-hit reveal choice, miss token choice, or the Swap (joker 3) target's pick of its own card |
 | `selfReveal` | `{ value }` (rank number, `"silver"`, or `"gold"`) | self-reveal |
+| `joker` | `{ joker, sourceCardId?, sourceCardId2?, targetCardId?, targetCardId2?, targetCardId3?, targetSeat?, targetSeat2?, value? }` | joker use (fields per rank, see `engine.Action`; Census sends its rank in `value`) |
 
 The announced value is derived from the source card (see GAME.md), never sent
 directly. Outbound: `state` (full per-seat `PlayerView` snapshot, on connect and
@@ -151,7 +152,8 @@ validates (via `engine.ValidateLevel`, level number = file order). Outcomes:
 TOML schema: one named table per level (key = name); inner keys
 `silver`, `gold`, `lives`, plus optional `extraSilver`, `extraGold` (decoy
 specials, default 0; negative or `silver+extraSilver` / `gold+extraGold` above
-11 is a hard error). The engine's only hardcoded level is `dummyLevel`.
+11 is a hard error), and optional `jokers` (default 4, 0..12, otherwise a hard
+error). The engine's only hardcoded level is `dummyLevel`.
 
 ## Commands
 
@@ -238,21 +240,10 @@ REST status + envelope or a WS `error` code.
 | `ErrInvalidChoice` | WS `invalid_choice` |
 | `ErrSelfRevealIncomplete` | WS `self_reveal_incomplete` |
 | `ErrGoldRevealIneligible` | WS `gold_reveal_ineligible` |
+| `ErrJokerUnavailable` | WS `joker_unavailable` |
+| `ErrJokerInvalid` | WS `joker_invalid` |
+| `ErrShieldActive` | WS `shield_active` |
 | any other `Apply` error | WS `invalid_action` |
-
-Notes: `ErrInvalidOpeningSelection` = opening card missing, not owned, or not
-face-down; `ErrSpecialOpening` = opening card is silver/gold. On a guess/safe
-call, `ErrInvalidSource` = source missing, not owned, or not face-down;
-`ErrGoldSource` = source is gold. Targeting another player's gold is not an
-error: it ends the game (see GAME.md). Self-reveal splits into
-`ErrSelfRevealIncomplete` (suited rank/silver another player still holds, or
-none held) and `ErrGoldRevealIneligible` (gold while a non-gold face-down card
-is still held). WS decode failures send `error` frames `unknown_type` /
-`bad_message`. WS connect: a missing token → HTTP 400 `token_required`, an
-unknown token → HTTP 401 `token_invalid` (both before upgrade); a seat already
-held by a live connection → socket closed with reason `seat_occupied`
-(existing connection preserved). Config failures are **startup-time** errors
-in `cmd/server` (see Level config loading), distinct from these runtime errors.
 
 ## Correctness properties
 
@@ -261,10 +252,12 @@ The engine's universal invariants, one PBT each (tags above). Whole-game ones
 
 1. `ValidateLevel` accepts a level iff number 1..50, name 1..60, silver even
    0..10, gold 0..11, lives 1..100, extraSilver/extraGold ≥ 0, and
-   silver+extraSilver and gold+extraGold each fit the 11 ranks (2..Q).
+   silver+extraSilver and gold+extraGold each fit the 11 ranks (2..Q), and
+   jokers 0..12.
 2. Creating a game sets Life_Pool and MaxLife to the level's starting lives.
 3. Sort_Value = rank (suited), rank+0.3 (silver), rank+0.6 (gold).
-4. Hand display order is ascending Sort_Value, ties by suit, stable.
+4. Hand display order is ascending Sort_Value, ties by suit, stable. It is 
+   fixed for the whole game except for a Swap joker.
 5. Special_Pool has exactly silver+extraSilver / gold+extraGold entries (real
    plus decoy), distinct ranks per kind, each in 2..Q, formed before any deal;
    a shared rank is two entries. Only the real specials are dealt; decoys
@@ -281,14 +274,16 @@ The engine's universal invariants, one PBT each (tags above). Whole-game ones
     target), no life change.
 12. Every miss costs exactly one life (floored at 0), tokens exactly one
     un-revealed non-gold target (a safe-call double miss lets the target player
-    choose which), leaves the source untokened/face-down.
+    choose which), leaves the source untokened/face-down. Exception: a miss
+    covered by the Shield (joker 10).
 13. *Pairing invariant: every non-gold value's face-down count stays even.
-14. *Life_Pool is monotonic non-increasing, bounded [0, start], changes only on
-    a miss.
+14. *Life_Pool is non-negative, never increases except by joker 7, otherwise
+    decreases only on an uncovered miss.
 15. Safe_Call is consumed exactly once; a second use is rejected.
 16. *Gold becomes face-up only via its owner's gold self-reveal (all remaining
-    face-down cards gold) or when targeted by a guess / both safe-call targets
-    (the game-ending gold hit); neither changes life.
+    face-down cards gold) or when targeted by a guess / all call targets /
+    a Reverse Call (the game-ending gold hit); neither changes life. A gold
+    target of a guess under an armed Shield is tokened, not flipped.
 17. Suited-rank/silver self-reveal flips exactly the owner's cards of that
     value, nothing else, no life change.
 18. *Turn advance lands on the nearest clockwise seat with a face-down card, or
@@ -297,7 +292,8 @@ The engine's universal invariants, one PBT each (tags above). Whole-game ones
     hits 0 or a gold hit occurs; these are the only transitions into Ended.
 20. *A seat's view attaches a value only to face-up or own cards; others'
     face-down cards carry no value.
-21. *Every view includes all token display values and the full Special_Pool
+21. *Every view includes all value-token display values (link tokens carry
+    none), every joker with its derived state, the Shield flag, and the full Special_Pool
     (real and decoy entries merged, ascending rank per kind, with
     `SilverInPlay`/`GoldInPlay` = the level's silver/gold counts), with no
     special's owner and no real-vs-decoy marker revealed, in any phase.
@@ -312,3 +308,14 @@ The engine's universal invariants, one PBT each (tags above). Whole-game ones
     play). Recomputes on reveal.
 26. Seat layout puts the viewer bottom and the next three clockwise seats at
     left, top, right.
+27. Jokers are drawn after the first-player pick (the deal is independent of
+    the joker count): `Level.Jokers` distinct ranks in 2..13, ascending. A
+    joker is ready only once all four suited cards of its rank are face-up, is
+    usable only in Playing with no choice pending, and only once.
+28. *Link tokens come in adjacent same-kind pairs on face-down cards of one
+    hand, never share a card with another token, and are truthful (Same iff
+    the two cards have the same identity: suited by rank, specials by kind).
+    They are cleared when either card flips, moves in a swap, or is tokened.
+29. Anytime jokers (2, 3, 5, 7, 8, 9, 13) and the Shield (10) never change
+    CurrentSeat; Pass (12) sets it to the chosen seat; the call jokers (4, 6,
+    11) advance it like a guess.

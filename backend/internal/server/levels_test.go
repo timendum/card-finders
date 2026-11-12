@@ -39,7 +39,7 @@ func TestLevelsListIncludesExtras(t *testing.T) {
 		t.Fatalf("got %d levels, want %d", len(body.Levels), len(levels))
 	}
 	for i, lv := range body.Levels {
-		for _, key := range []string{"ExtraSilver", "ExtraGold"} {
+		for _, key := range []string{"ExtraSilver", "ExtraGold", "Jokers"} {
 			if _, ok := lv[key]; !ok {
 				t.Errorf("level %d missing %s", i, key)
 			}

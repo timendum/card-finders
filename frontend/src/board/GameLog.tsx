@@ -30,7 +30,12 @@ export function GameLog({ view }: { view: PlayerView }) {
           <li key={`${entry.Seq}-${i}`} className="game-log-entry">
             {hasSeat(entry.Actor) && <strong>{actorName(view.Seat, entry.Actor)} </strong>}
             {entry.Text}
-            {hasSeat(entry.Target) && ` on ${seatPositionName(view.Seat, entry.Target)}`}
+            {hasSeat(entry.Target) && (
+              <>
+                {" on "}
+                <strong>{actorName(view.Seat, entry.Target)}</strong>
+              </>
+            )}
           </li>
         ))}
         <li ref={endRef} aria-hidden="true" />

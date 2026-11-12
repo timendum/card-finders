@@ -4,6 +4,8 @@
 
 import { selfRevealOptions } from "./actions.ts";
 import { availableActions } from "./availableActions.ts";
+import { rankLabel } from "./cardLabel.ts";
+import { isSwapChoice, jokerDescriptions, jokerLabel, jokerSeatChoices, jokerShape } from "./jokers.ts";
 import { seatPositionName } from "./seatLayout.ts";
 import { canConfirm, confirmLabel, type SelectionState } from "./selection.ts";
 import type { SocketError } from "../api/useGameSocket.ts";
@@ -12,6 +14,7 @@ import {
   Outcome,
   type LastAction,
   type PlayerView,
+  type SeatID,
   type SelfRevealValue,
 } from "../types.ts";
 
@@ -22,6 +25,9 @@ export interface PromptPanelProps {
   error: SocketError | null;
   onConfirm: () => void;
   onPickSelfValue: (value: SelfRevealValue | null) => void;
+  /** Joker flow controls; optional so a panel without jokers needs no wiring. */
+  onPickJokerSeat?: (seat: SeatID) => void;
+  onPickJokerAsk?: (rank: number | null) => void;
   /** Dismiss the result banner; receives its Seq so the owner can remember it. */
   onDismissResult?: (seq: number) => void;
 }
@@ -56,7 +62,11 @@ function resultText(last: LastAction): string {
 function notActingText(view: PlayerView, actingSeat: number, awaitingChoice: boolean): string {
   const pos = seatPositionName(view.Seat, actingSeat);
   const who = pos === "you" ? "You are" : `The ${pos} player is`;
-  const verb = view.LastAction?.Outcome === Outcome.AwaitingToken ? "token" : "reveal";
+  const verb = isSwapChoice(view)
+    ? "give"
+    : view.LastAction?.Outcome === Outcome.AwaitingToken
+      ? "token"
+      : "reveal";
   return awaitingChoice
     ? `${who} choosing a card to ${verb}.`
     : `Waiting for the ${pos} player to act.`;
@@ -68,12 +78,15 @@ export function PromptPanel({
   error,
   onConfirm,
   onPickSelfValue,
+  onPickJokerSeat,
+  onPickJokerAsk,
   onDismissResult,
 }: PromptPanelProps) {
   const result = visibleResult(view, selection.lastShownSeq);
   const prompt = availableActions(view);
   const single = prompt.actions.length === 1 ? prompt.actions[0] : null;
-  const showConfirm = prompt.variant !== "notActing";
+  const jokerRank = selection.jokerRank;
+  const showConfirm = prompt.variant !== "notActing" || jokerRank !== null;
   const enabled = canConfirm(selection, view);
   const selfOptions = prompt.variant === "standardTurn" ? selfRevealOptions(view) : [];
 
@@ -91,32 +104,62 @@ export function PromptPanel({
 
       {single && (
         <div className="prompt-single">
-          <p className="prompt-action-name">{single.name}</p>
-          <p className="prompt-action-description">{single.description}</p>
+          <div className="prompt-action-name">{single.name}</div>
+          <div className="prompt-action-description">{single.description}</div>
         </div>
       )}
 
       {!single && prompt.actions.length > 0 && (
         <ul className="prompt-actions">
-          {prompt.actions.map((action) => (
-            <li
-              key={action.id}
-              className="prompt-action"
-              data-enabled={action.enabled}
-              aria-disabled={!action.enabled}
-            >
-              <span className="prompt-action-name">{action.name}</span>
-              {action.enabled || !action.disabledReason ? (
+          {prompt.actions
+            .filter((action) => action.enabled)
+            .map((action) => (
+              <li key={action.id} className="prompt-action">
+                <span className="prompt-action-name">{action.name}</span>
                 <span className="prompt-action-description">{action.description}</span>
-              ) : (
-                <span className="prompt-action-reason">{action.disabledReason}</span>
-              )}
-            </li>
-          ))}
+              </li>
+            ))}
         </ul>
       )}
 
-      {selfOptions.length > 0 && (
+      {jokerRank !== null && (
+        <div className="prompt-joker" role="group" aria-label={`Joker: ${jokerLabel(jokerRank)}`}>
+          <div className="prompt-action-name">{jokerLabel(jokerRank)}</div>
+          <div className="prompt-action-description">{jokerDescriptions[jokerRank]}</div>
+          {jokerShape(view, jokerRank).seats > 0 && (
+            <div className="prompt-joker-seats" role="group" aria-label="Player">
+              {jokerSeatChoices(view, jokerRank).map((seat) => (
+                <button
+                  key={seat}
+                  type="button"
+                  className="prompt-joker-seat"
+                  aria-pressed={selection.jokerSeats.includes(seat)}
+                  onClick={() => onPickJokerSeat?.(seat)}
+                >
+                  {seat === view.Seat ? "You" : `The ${seatPositionName(view.Seat, seat)} player`}
+                </button>
+              ))}
+            </div>
+          )}
+          {jokerShape(view, jokerRank).rank && (
+            <div className="prompt-joker-ranks" role="group" aria-label="Rank">
+              {Array.from({ length: 12 }, (_, i) => i + 2).map((rank) => (
+                <button
+                  key={rank}
+                  type="button"
+                  className="prompt-joker-rank"
+                  aria-pressed={selection.jokerAsk === rank}
+                  onClick={() => onPickJokerAsk?.(selection.jokerAsk === rank ? null : rank)}
+                >
+                  {rankLabel(rank)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {selfOptions.length > 0 && jokerRank === null && (
         <div className="prompt-self-values" role="group" aria-label="Self-reveal value">
           {selfOptions.map((option) => {
             const selected = selection.selfValue === option.value;

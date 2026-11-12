@@ -1,7 +1,8 @@
 // One seat's CardRow and TokenRow. Both lay out the same fixed slots 1..N so a
 // card and its token or revealed mini line up column for column.
 
-import { CardElement, RevealedCardMini, TokenSquare } from "./CardElement.tsx";
+import { CardElement, LinkMarker, RevealedCardMini, TokenSquare } from "./CardElement.tsx";
+import { linkRoles } from "./links.ts";
 import type { MatchHint } from "./matchHints.ts";
 import { slotted } from "./slots.ts";
 import { Face, type CardID, type ViewCard } from "../types.ts";
@@ -61,6 +62,7 @@ export function TokenRow({
   cards: readonly ViewCard[];
   reversed?: boolean;
 }) {
+  const links = linkRoles(cards);
   return (
     <div className="token-row" role="group">
       {ordered(slotted(cards), reversed).map((card, i) => {
@@ -70,6 +72,8 @@ export function TokenRow({
         if (card?.Facing === Face.Down && card.TokenDisplay) {
           return <TokenSquare key={i} value={card.TokenDisplay} />;
         }
+        const link = card ? links.get(card.ID) : undefined;
+        if (link) return <LinkMarker key={i} link={link} />;
         return <div key={i} aria-hidden="true" />;
       })}
     </div>

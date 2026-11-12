@@ -80,8 +80,8 @@ func TestSafeCallBothMatchPending(t *testing.T) {
 	if p.Caller != 0 || p.TargetPlayer != 1 || p.SourceCard != 1 {
 		t.Errorf("pending = %+v, want caller 0 / targetPlayer 1 / source 1", p)
 	}
-	if !((p.Option1 == 2 && p.Option2 == 3) || (p.Option1 == 3 && p.Option2 == 2)) {
-		t.Errorf("pending options = %d,%d, want the two matching targets 2 and 3", p.Option1, p.Option2)
+	if !((p.Options[0] == 2 && p.Options[1] == 3) || (p.Options[0] == 3 && p.Options[1] == 2)) {
+		t.Errorf("pending options = %d,%d, want the two matching targets 2 and 3", p.Options[0], p.Options[1])
 	}
 	for _, id := range []CardID{1, 2, 3} {
 		if c := e.state.Cards[id]; c.Facing != FaceDown {
@@ -606,7 +606,7 @@ func probeGated(t *rapid.T, e *Engine, p *PendingSafeChoice) {
 		reject(seat, Action{Kind: ActionKindSafeCall, SourceCard: own[0], TargetCard: other[0], TargetCard2: other[1]}, ErrWrongPhase)
 		reject(seat, Action{Kind: ActionKindSelfReveal, SelfRevealValue: SelfRevealTarget{Kind: SpecialKindGold}}, ErrWrongPhase)
 		if seat != p.TargetPlayer {
-			reject(seat, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: p.Option1}, ErrNotYourTurn)
+			reject(seat, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: p.Options[0]}, ErrNotYourTurn)
 		}
 	}
 	reject(p.TargetPlayer, Action{Kind: ActionKindSafeChooseReveal, ChosenTarget: bad}, ErrInvalidChoice)

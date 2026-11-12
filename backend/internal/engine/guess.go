@@ -43,8 +43,21 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 
 	// Targeting another player's gold ends the game immediately: the gold card
 	// flips face-up and Life_Pool is untouched.
+	// An armed Shield covers this guess only: a gold target gets a token with
+	// no flip and no game over, a miss costs no life but still places the token.
+	shield := s.Shield
+	s.Shield = false
+
+	if target.Card.Kind == SpecialKindGold && shield {
+		s.placeToken(action.TargetCard)
+		la.Outcome = OutcomeMiss
+		s.recordAction(la)
+		s.logActionOn(seat, target.Owner, "called "+announcedText(la.AnnouncedValue)+" and the shield protected a gold card")
+		return e.finishTurn(s.CurrentSeat), nil
+	}
+
 	if target.Card.Kind == SpecialKindGold {
-		target.Facing = FaceUp
+		s.flipUp(action.TargetCard)
 		la.Outcome = OutcomeGoldHit
 		la.Revealed = []CardID{action.TargetCard}
 		s.recordAction(la)
@@ -54,17 +67,17 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 
 	if matchesAnnouncedValue(source.Card, target.Card) {
 		// Hit: Pair_Reveal flips both face-up.
-		source.Facing = FaceUp
-		target.Facing = FaceUp
+		s.flipUp(sourceID, action.TargetCard)
 		la.Outcome = OutcomeHit
 		la.Revealed = []CardID{sourceID, action.TargetCard}
 	} else {
-		// Miss: lose one life (clamped), token the target face-down.
-		if s.LifePool > 0 {
+		// Miss: lose one life (clamped, none under the Shield), token the
+		// target face-down.
+		if s.LifePool > 0 && !shield {
 			s.LifePool--
 			la.LivesLost = 1
 		}
-		target.Token = &TokenInfo{Displayed: TokenKindNaturalIdentity}
+		s.placeToken(action.TargetCard)
 		la.Outcome = OutcomeMiss
 	}
 

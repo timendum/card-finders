@@ -162,15 +162,16 @@ func TestLoadLevels_EmptyConfig(t *testing.T) {
 	}
 }
 
-// TestLoadLevels_ExtrasDefaultZero verifies omitted extras default to 0.
+// TestLoadLevels_ExtrasDefaultZero verifies omitted extras default to 0 and
+// omitted jokers default to 4.
 func TestLoadLevels_ExtrasDefaultZero(t *testing.T) {
 	levels, _, err := LoadLevels(writeTemp(t, validTwoLevels), true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	for _, l := range levels {
-		if l.ExtraSilver != 0 || l.ExtraGold != 0 {
-			t.Fatalf("extras should default to 0: %+v", l)
+		if l.ExtraSilver != 0 || l.ExtraGold != 0 || l.Jokers != 4 {
+			t.Fatalf("extras should default to 0 and jokers to 4: %+v", l)
 		}
 	}
 }
@@ -185,24 +186,33 @@ gold = 1
 lives = 4
 extraSilver = 3
 extraGold = 2
+jokers = 9
+
+["NoJokers"]
+silver = 2
+gold = 1
+lives = 4
+jokers = 0
 `
 	levels, _, err := LoadLevels(writeTemp(t, withExtras), true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(levels) != 1 || levels[0].ExtraSilver != 3 || levels[0].ExtraGold != 2 {
+	if len(levels) != 2 || levels[0].ExtraSilver != 3 || levels[0].ExtraGold != 2 || levels[0].Jokers != 9 || levels[1].Jokers != 0 {
 		t.Fatalf("extras not round-tripped: %+v", levels)
 	}
 }
 
-// TestLoadLevels_ExtrasInvalid verifies negative extras and sums above 11 are
-// hard errors.
+// TestLoadLevels_ExtrasInvalid verifies negative extras, sums above 11 and
+// out-of-range jokers are hard errors.
 func TestLoadLevels_ExtrasInvalid(t *testing.T) {
 	cases := map[string]string{
 		"negative extraSilver": "silver = 2\ngold = 1\nextraSilver = -1",
 		"negative extraGold":   "silver = 2\ngold = 1\nextraGold = -1",
 		"silver sum above 11":  "silver = 4\ngold = 1\nextraSilver = 8",
 		"gold sum above 11":    "silver = 2\ngold = 3\nextraGold = 9",
+		"negative jokers":      "silver = 2\ngold = 1\njokers = -1",
+		"jokers above 12":      "silver = 2\ngold = 1\njokers = 13",
 	}
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {

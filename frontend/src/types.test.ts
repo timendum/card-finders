@@ -24,6 +24,8 @@ describe("shared types scaffold", () => {
     expect(Phase.Waiting).toBe(0);
     expect(Result.None).toBe(0);
     expect(TokenKindValue.NaturalIdentity).toBe(1);
+    expect(TokenKindValue.Same).toBe(2);
+    expect(TokenKindValue.Different).toBe(3);
   });
 
   it("narrows the server message union on `type`", () => {
@@ -38,6 +40,7 @@ describe("shared types scaffold", () => {
         ExtraSilver: 0,
         ExtraGold: 0,
         StartLives: 4,
+        Jokers: 0,
       },
       SpecialPool: { Silvers: [], Golds: [], SilverInPlay: 0, GoldInPlay: 0 },
       LifePool: 4,
@@ -52,6 +55,8 @@ describe("shared types scaffold", () => {
       ResponsePlayer: 0,
       HasResponsePlayer: false,
       Log: [],
+      Jokers: [],
+      Shield: false,
     };
     const msg: ServerMessage = { type: "state", view };
     expect(msg.type === "state" ? msg.view.Seat : -1).toBe(0);

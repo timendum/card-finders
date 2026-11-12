@@ -80,6 +80,10 @@ func (e *Engine) startGame() error {
 
 	e.state.CurrentSeat = SeatID(e.rng.Intn(seatCount))
 
+	// Step: draw the jokers last, so existing seeds keep the same deal
+
+	e.state.Jokers = drawJokerRanks(e.rng, e.state.Level.Jokers)
+
 	e.state.Phase = PhaseOpening
 	return nil
 }
@@ -112,7 +116,7 @@ func (e *Engine) dealCombinedDeck(deck []Card) {
 // computeSlots assigns each card a 1-based position within its owning seat's
 // value-sorted hand: lowest Sort_Value is slot 1, ties resolved stably over the
 // shuffled deal order in HandOrder. Called once per deal; slots are never
-// mutated afterward.
+// mutated afterward, except by a Swap joker (see swapCards).
 func (e *Engine) computeSlots() {
 	for seat := range e.state.HandOrder {
 		ids := append([]CardID(nil), e.state.HandOrder[seat]...)

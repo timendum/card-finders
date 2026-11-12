@@ -321,3 +321,57 @@ func TestGuessSilverFeatGoldTargetEndsGame(t *testing.T) {
 	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
 	assertGoldHit(t, e, res, err, 4)
 }
+
+// An armed Shield makes a miss free of life but it still tokens the target, and
+// is consumed by that one guess.
+func TestGuessShieldMissCostsNoLifeAndClears(t *testing.T) {
+	e := playingState(4)
+	e.state.Shield = true
+	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 2, 1, Card{Rank: 9, Kind: SpecialKindNone})
+	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2}); err != nil {
+		t.Fatal(err)
+	}
+	if e.state.LifePool != 4 || e.state.Cards[2].Token == nil || e.state.Shield {
+		t.Errorf("life %d token %v shield %v, want life kept, token placed, shield cleared",
+			e.state.LifePool, e.state.Cards[2].Token, e.state.Shield)
+	}
+	if e.state.LastAction.LivesLost != 0 {
+		t.Error("LastAction reports a life lost")
+	}
+	if e.state.Shield {
+		t.Error("shield still armed after the guess")
+	}
+}
+
+// Under the Shield a gold target gets a token: no flip, no game over.
+func TestGuessShieldGoldTargetTokenedNotFlipped(t *testing.T) {
+	e := playingState(4)
+	e.state.Shield = true
+	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 2, 1, Card{Rank: 5, Kind: SpecialKindGold})
+	res, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2})
+	if err != nil || res != ResultNone {
+		t.Fatalf("res=%d err=%v, want play to continue", res, err)
+	}
+	gold := e.state.Cards[2]
+	if gold.Facing != FaceDown || gold.Token == nil || e.state.LifePool != 4 || e.state.Shield {
+		t.Errorf("gold %+v life %d shield %v, want tokened face-down gold, life kept, shield cleared",
+			gold, e.state.LifePool, e.state.Shield)
+	}
+}
+
+// A hit consumes the Shield too.
+func TestGuessShieldClearedByHit(t *testing.T) {
+	e := playingState(4)
+	e.state.Shield = true
+	place(e, 1, 0, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 2, 1, Card{Rank: 7, Kind: SpecialKindNone})
+	place(e, 3, 1, Card{Rank: 9, Kind: SpecialKindNone})
+	if _, err := e.Apply(0, Action{Kind: ActionKindGuess, SourceCard: 1, TargetCard: 2}); err != nil {
+		t.Fatal(err)
+	}
+	if e.state.Shield {
+		t.Error("shield still armed after the guess")
+	}
+}

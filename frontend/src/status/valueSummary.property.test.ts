@@ -63,6 +63,7 @@ function makeView(
       ExtraSilver: 0,
       ExtraGold: 0,
       StartLives: 4,
+      Jokers: 0,
     },
     SpecialPool: {
       // Unsorted on purpose: the summary must order by Sort_Value itself.
@@ -83,6 +84,8 @@ function makeView(
     ResponsePlayer: 0,
     HasResponsePlayer: false,
     Log: [],
+    Jokers: [],
+    Shield: false,
   };
 }
 

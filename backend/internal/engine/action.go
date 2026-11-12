@@ -15,6 +15,7 @@ const (
 	ActionKindSafeCall
 	ActionKindSafeChooseReveal
 	ActionKindSelfReveal
+	ActionKindJoker
 )
 
 // SelfRevealTarget names the value chosen to self-reveal: Kind SpecialKindNone
@@ -47,6 +48,13 @@ type Action struct {
 
 	// SelfReveal: the chosen value; all matching cards reveal at once.
 	SelfRevealValue SelfRevealTarget
+
+	// Joker: the joker rank activated.
+	Joker       Rank
+	SourceCard2 CardID
+	TargetCard3 CardID
+	TargetSeat  SeatID
+	TargetSeat2 SeatID
 }
 
 // Apply is the single entry point for all gameplay actions. It returns the
@@ -110,6 +118,8 @@ func (e *Engine) apply(seat SeatID, action Action) (Result, error) {
 		return e.applySafeChooseReveal(seat, action)
 	case ActionKindSelfReveal:
 		return e.applySelfReveal(seat, action)
+	case ActionKindJoker:
+		return e.applyJoker(seat, action)
 	default:
 		return ResultNone, ErrUnknownAction
 	}

@@ -6,12 +6,14 @@ import { GameLog } from "../board/GameLog.tsx";
 import { EndBanner } from "../status/EndBanner.tsx";
 import { useGameSocket } from "../api/useGameSocket.ts";
 import { buildGuess, buildSafeCall, buildSelfReveal } from "../board/actions.ts";
+import { buildJoker } from "../board/jokers.ts";
 import { matchHints } from "../board/matchHints.ts";
 import {
   buildChoice,
   emptySelection,
   inferredAction,
   isSelectable,
+  jokerPicks,
   selectionReducer,
   type SelectionEvent,
   type SelectionState,
@@ -48,6 +50,10 @@ export function messageFor(selection: SelectionState, view: PlayerView): ClientM
       return selfValue === null ? null : buildSelfReveal(selfValue);
     case "safeChooseReveal":
       return buildChoice(selection);
+    case "joker":
+      return selection.jokerRank === null
+        ? null
+        : buildJoker(view, selection.jokerRank, jokerPicks(selection));
     default:
       return null;
   }
@@ -122,15 +128,23 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
   const selected = (card: ViewCard) =>
     card.ID === selection.source ||
     card.ID === selection.chosen ||
+    selection.jokerOwn.includes(card.ID) ||
     selection.targets.includes(card.ID);
 
-  const hints = ended ? null : matchHints(view, selection.source);
+  const hints =
+    ended || selection.jokerRank !== null ? null : matchHints(view, selection.source);
 
   return (
     <main className="game-screen">
       <Table
         view={view}
-        status={<StatusPanel view={view} />}
+        status={
+          <StatusPanel
+            view={view}
+            activeJoker={ended ? null : selection.jokerRank}
+            onActivateJoker={ended ? undefined : (rank) => dispatch({ type: "pickJoker", rank })}
+          />
+        }
         prompt={
           ended ? (
             <EndBanner result={view.Result} onLeave={onLeave} />
@@ -141,12 +155,14 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
               error={error}
               onConfirm={onConfirm}
               onPickSelfValue={(value) => dispatch({ type: "pickSelfValue", value })}
+              onPickJokerSeat={(seat) => dispatch({ type: "pickJokerSeat", seat })}
+              onPickJokerAsk={(rank) => dispatch({ type: "pickJokerAsk", rank })}
               onDismissResult={(seq) => dispatch({ type: "shown", seq })}
             />
           )
         }
         log={<GameLog view={view} />}
-        isSelectable={ended ? undefined : (card) => isSelectable(view, card)}
+        isSelectable={ended ? undefined : (card) => isSelectable(view, card, selection)}
         isSelected={selected}
         matchHint={hints ? (card) => hints.get(card.ID) : undefined}
         onActivate={ended ? undefined : onActivate}

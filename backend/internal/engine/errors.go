@@ -45,6 +45,12 @@ var (
 )
 
 var (
+	ErrJokerUnavailable = errors.New("the joker is not drawn, not ready, already used, or cannot be used now")
+	ErrJokerInvalid     = errors.New("the joker arguments are invalid")
+	ErrShieldActive     = errors.New("only a guess, a silver feat or a joker is allowed while the shield is armed")
+)
+
+var (
 	ErrSelfRevealIncomplete = errors.New("the self-reveal is incomplete: another player still holds that value, or you hold none")
 	ErrGoldRevealIneligible = errors.New("the gold self-reveal is ineligible: you still hold a non-gold face-down card")
 )

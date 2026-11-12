@@ -12,6 +12,7 @@ type Level struct {
 	ExtraSilver int    // >= 0, decoy silvers; SilverCount+ExtraSilver <= 11
 	ExtraGold   int    // >= 0, decoy golds; GoldCount+ExtraGold <= 11
 	StartLives  int    // 1..100
+	Jokers      int    // 0..12, distinct jokers drawn at game start
 }
 
 // eligibleSpecialRanks counts the ranks a Special_Card may take: 2..queen, king excluded.
@@ -58,6 +59,9 @@ func ValidateLevel(l Level) error {
 		return fmt.Errorf("gold count %d plus extra gold %d exceeds the %d eligible ranks (2..queen)",
 			l.GoldCount, l.ExtraGold, eligibleSpecialRanks)
 	}
+	if l.Jokers < 0 || l.Jokers > maxJokers {
+		return fmt.Errorf("jokers must be between 0 and %d, got %d", maxJokers, l.Jokers)
+	}
 	return nil
 }
 
@@ -69,6 +73,7 @@ var dummyLevel = Level{
 	SilverCount: 0,
 	GoldCount:   0,
 	StartLives:  4,
+	Jokers:      4,
 }
 
 // DummyLevels returns the built-in fallback level list.

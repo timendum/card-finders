@@ -8,16 +8,19 @@
 #   lives  - starting lives (1..100)
 #   extraSilver - optional decoy silvers, default 0 (silver + extraSilver <= 11)
 #   extraGold   - optional decoy golds, default 0 (gold + extraGold <= 11)
+#   jokers - optional number of jokers, default 4 (0..12)
 
 ["Basic games"]
 silver = 0
 gold = 0
 lives = 4
+jokers = 0
 
 ["Two silvers"]
 silver = 2
 gold = 0
 lives = 4
+jokers = 2
 
 ["One gold"]
 silver = 0
@@ -40,3 +43,4 @@ extraSilver = 1
 gold = 1
 extraGold = 1
 lives = 4
+jokers = 6

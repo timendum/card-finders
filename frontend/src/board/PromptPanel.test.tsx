@@ -36,6 +36,7 @@ function playingView(overrides: Partial<PlayerView> = {}): PlayerView {
       ExtraSilver: 0,
       ExtraGold: 0,
       StartLives: 4,
+      Jokers: 0,
     },
     SpecialPool: { Silvers: [], Golds: [], SilverInPlay: 0, GoldInPlay: 0 },
     LifePool: 4,
@@ -67,7 +68,7 @@ describe("PromptPanel", () => {
     );
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Confirm<\/button>/u);
     expect(html).toContain("Guess");
-    expect(html).toContain("Safe call");
+    expect(html).toContain("Double call");
   });
 
   it("labels confirm for the inferred move and shows the error", () => {
@@ -113,6 +114,7 @@ describe("PromptPanel safe-choose-reveal", () => {
       Outcome: Outcome.Hit,
       Revealed: [],
       LivesLost: 0,
+      Joker: 0,
     } as LastAction,
   };
   const render = (view: PlayerView, chosen: number | null = null, error = null) =>
@@ -153,6 +155,7 @@ describe("PromptPanel result", () => {
       Outcome: Outcome.Miss,
       Revealed: [],
       LivesLost: 1,
+      Joker: 0,
       ...over,
     }) as LastAction;
   const render = (view: PlayerView, lastShownSeq: number | null = null) =>

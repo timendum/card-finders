@@ -17,9 +17,11 @@ export const SuitValue = {
   Clubs: 3,
 } as const satisfies Record<string, Suit>;
 
-/** Token display kinds. NaturalIdentity is the only kind today. */
+/** Token display kinds. Same/Different are the joker link tokens (no card value). */
 export const TokenKindValue = {
   NaturalIdentity: 1,
+  Same: 2,
+  Different: 3,
 } as const satisfies Record<string, TokenKind>;
 
 // REST envelopes — camelCase keys.
@@ -120,10 +122,28 @@ export interface SelfRevealMessage {
   value: SelfRevealValue;
 }
 
+/**
+ * A joker activation. `joker` is the numeric rank; the other fields depend on
+ * the rank (see engine.Action). Census sends its asked rank in `value`.
+ */
+export interface JokerMessage {
+  type: "joker";
+  joker: number;
+  sourceCardId?: CardID;
+  sourceCardId2?: CardID;
+  targetCardId?: CardID;
+  targetCardId2?: CardID;
+  targetCardId3?: CardID;
+  targetSeat?: number;
+  targetSeat2?: number;
+  value?: SelfRevealValue;
+}
+
 /** Any message the client may send to the server. */
 export type ClientMessage =
   | OpeningRevealMessage
   | GuessMessage
   | SafeCallMessage
   | SafeChooseRevealMessage
-  | SelfRevealMessage;
+  | SelfRevealMessage
+  | JokerMessage;

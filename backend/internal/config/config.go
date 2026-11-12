@@ -18,6 +18,7 @@ type rawLevel struct {
 	Lives       *int `toml:"lives"`
 	ExtraSilver *int `toml:"extraSilver"`
 	ExtraGold   *int `toml:"extraGold"`
+	Jokers      *int `toml:"jokers"`
 }
 
 // Defaults applied when silver/gold/lives are omitted from a level table.
@@ -25,6 +26,7 @@ const (
 	defaultSilver = 0
 	defaultGold   = 0
 	defaultLives  = 4
+	defaultJokers = 4
 )
 
 func orDefault(v *int, def int) int {
@@ -84,6 +86,7 @@ func convertAndValidate(path string, raw map[string]rawLevel, order []string) (l
 			StartLives:  orDefault(r.Lives, defaultLives),
 			ExtraSilver: orDefault(r.ExtraSilver, 0),
 			ExtraGold:   orDefault(r.ExtraGold, 0),
+			Jokers:      orDefault(r.Jokers, defaultJokers),
 		}
 		if vErr := engine.ValidateLevel(lvl); vErr != nil {
 			return nil, false, fmt.Errorf("level %q in %q: %w", name, path, vErr)

@@ -5,7 +5,8 @@
 import type { KeyboardEvent } from "react";
 import { valueLabel } from "./cardLabel.ts";
 import type { MatchHint } from "./matchHints.ts";
-import { Face, SpecialKind, type CardValue } from "../types.ts";
+import type { LinkInfo } from "./links.ts";
+import { Face, SpecialKind, TokenKind, type CardValue } from "../types.ts";
 
 export function kindName(kind: SpecialKind): "suited" | "silver" | "gold" {
   switch (kind) {
@@ -97,6 +98,21 @@ export function TokenSquare({ value }: { value: CardValue }) {
   );
 }
 
+/** A joker link token: "=" (same) or "≠" (different), shared by two adjacent cards. */
+export function LinkMarker({ link }: { link: LinkInfo }) {
+  const same = link.kind === TokenKind.Same;
+  return (
+    <div
+      className="link-marker"
+      data-link={same ? "same" : "different"}
+      data-part={link.part}
+      aria-label={same ? "Linked as same rank" : "Linked as different rank"}
+    >
+      {same ? "=" : "≠"}
+    </div>
+  );
+}
+
 export function RevealedCardMini({ value }: { value: CardValue }) {
   return (
     <div
@@ -113,7 +129,7 @@ export function Indicators({ used, away = false }: { used: boolean; away?: boole
   return (
     <div className="indicators">
       <span className="power-indicator" data-power={used ? "consumed" : "available"}>
-        {used ? "Safe call used" : "Safe call available"}
+        {used ? "Double call used" : "Double call available"}
       </span>
       {away && (
         <span className="away-indicator" role="status">
