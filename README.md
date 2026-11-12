@@ -1,179 +1,122 @@
 # Card Finders
 
-Card Finders is a multiplayer deduction card game.
+# Playing
 
-A single Go process hosts the game engine, a REST + WebSocket API, and (optionally) the
-built frontend assets. A React + TypeScript client talks to that process.
+Card Finders is a cooperative card game for four players. Cards are dealt face
+down and you see only your own. Together you must turn every card face up
+before the team runs out of lives.
 
-## Repository layout
+## Your turn
 
-- `backend/` — Go module (`cardfinders`) housing the game.
-  - `cmd/server` — executable entrypoint.
-  - `internal/engine` — pure, deterministic game engine.
-  - `internal/config` — TOML level-configuration loader.
-  - `internal/server` — HTTP/WebSocket transport layer.
-- `frontend/` — React + TypeScript client (Bun + Vite).
-- `levels.toml` — sample external level configuration.
+Pick one of your face-down cards and one face-down card in another player's
+hand. The rank of your card is your call: you are saying the other card has the
+same rank. If you are right, both cards flip face up. If you are wrong, the team
+loses a life and the card you pointed at gets a token showing its real value,
+so everyone learns something from the miss.
 
-## Prerequisites
+Hands are sorted from low to high and never reordered, so a card's position
+tells you roughly how high it is. At the start, each player puts a token on one
+of their own cards to give everyone a first clue.
 
-- **Go** — to build and run the backend server (`backend/`).
-- **Bun** — to install frontend dependencies and build the client
-  (`frontend/`). Bun runs the Vite build and the test suite.
+## Double guess
 
-## Building the frontend
+Once per game, each player can aim a call at two face-down cards of the same
+player instead of one. If one matches, it is a hit. If both match, the
+other player chooses which one flips. If neither matches, the team loses a life
+and one of the two cards gets a token (the other player chooses which when both
+are possible).
 
-From the `frontend/` directory:
+## Self reveal
 
-```
-bun install
-bun run build
-```
+If you hold every remaining face-down card of a rank, nobody else can be
+holding one, so you can flip them all at once on your turn. It costs nothing.
 
-`bun install` installs the dependencies pinned in `frontend/bun.lock`.
-`bun run build` type-checks the project (`tsc --noEmit`) and runs the Vite
-build, emitting the static bundle to `frontend/dist`. The Go server serves that
-directory from disk (see below), so a rebuild is picked up without rebuilding
-the Go binary.
+## Silver and gold
 
-Other frontend scripts:
+Some levels add silver and gold cards. They have no suit. A silver card can be
+called like any rank, and calling with it claims the target is silver. A gold
+card can never be used for a call, and pointing at someone's gold card ends the
+game in a loss. Gold is only revealed by its owner, once every card they have
+left is gold.
 
-- `bun run dev` — Vite dev server with `/api` and `/ws` proxied to the Go
-  backend on `http://localhost:8080`, so the browser talks to one origin.
-- `bun run typecheck` — type-check only (`tsc --noEmit`).
-- `bun run test` — run the Vitest suite once.
+The list of silver and gold ranks in the level is shown to everyone, but some
+entries may be decoys that nobody holds.
 
-## Building and running the backend
+## Jokers
 
-The Go toolchain is required. From the `backend/` directory:
+Each level draws some jokers, tied to ranks. A joker is ready once all four
+cards of its rank are face up, and then any player can use it, once. Some can
+be used at any time and some only on your turn. Jokers add a life, shield the
+next guess from a miss, swap cards between hands, skip a turn, and so on. The
+game shows what each one does.
+
+# Developing
+
+To install and run the server, see [INSTALL.md](INSTALL.md). This part is
+about working on the code.
+
+## Where the logic is
+
+The repository layout and architecture are in [AGENTS.md](AGENTS.md). Game
+rules are described in [GAME.md](GAME.md). In code they live in
+`backend/internal/engine`, one file per mechanic:
+
+- `engine.go`, `state.go`, `lifecycle.go`: engine API, state and phases.
+- `deck.go`, `deal.go`, `hand.go`, `order.go`, `turn.go`: cards, dealing, hand
+  order and turn order.
+- `opening.go`, `guess.go`, `safecall.go`, `selfreveal.go`, `multicall.go`:
+  the actions.
+- `joker.go`, `jokeractions.go`, `jokercalls.go`: jokers.
+- `token.go`: value and link tokens.
+- `view.go`: what each player is allowed to see.
+- `errors.go`: error values returned to the transport.
+
+Tests sit next to the file they cover (`guess_test.go` for `guess.go`).
+In `backend/internal/server`, `rest.go` and `ws.go` are the endpoints,
+`wsmsg.go` decodes client messages into engine actions, and `hub.go` handles
+broadcasting. In `frontend/src`, `screens/` has the join and game screens,
+`board/` and `status/` the in-game UI, and `api/` the REST calls, session
+storage and the WebSocket hook.
+
+AGENTS.md also describes the wire protocol, error mapping and the invariants
+the tests check.
+
+## Building and testing
+
+Prerequisites are Go and Bun. From `backend/`:
 
 ```
 go build ./...
+go test ./...
 ```
 
-Run the server directly with `go run`, or build and run the produced binary:
+From `frontend/`:
 
 ```
-go run ./cmd/server
-```
-
-The server listens on `:8080` by default and logs the resolved level config
-and listen address on startup.
-
-### Command-line flags
-
-All flags are optional except `--auth-hash` (or its env var); defaults shown.
-
-| Flag            | Default         | Purpose                                                                 |
-| --------------- | --------------- | ----------------------------------------------------------------------- |
-| `--auth-hash`   | (required)      | Argon2id PHC hash of the host password. Overrides `CARD_FINDERS_AUTH_HASH`. |
-| `--config`      | `""`            | Path to the level-config TOML file. Overrides `CARD_FINDERS_LEVELS`.    |
-| `--static-dir`  | `""`            | On-disk directory holding the built frontend, served from root.         |
-| `--listen`      | `:8080`         | HTTP listen address.                                                     |
-| `--seed`        | `0`             | RNG seed for deterministic dealing/pool selection (`0` = time-based).   |
-
-## Config path resolution
-
-The server resolves the level-config path with the following precedence:
-
-1. **`--config` flag** — if set, this path is used.
-2. **`CARD_FINDERS_LEVELS` environment variable** — used when `--config` is not
-   set.
-3. **Default `levels.toml`** — used when neither of the above is supplied.
-
-A path supplied by the flag or the env var is *explicit*: if the file is
-missing or invalid, startup aborts with an error. The default `levels.toml` is
-*soft*: if it is missing, the server logs a notice and continues with a
-built-in dummy level. A malformed or invalid config at any path is always a
-hard error.
-
-Note that the default path and `frontend/dist` are both relative to the
-server's working directory. Run the server from the repository root (or pass
-absolute paths via `--config` / `--static-dir`) so these resolve as expected.
-
-## Host authentication
-
-Creating a game is protected. `GET /api/levels` and `POST /api/game` require
-`Authorization: Bearer <password>`; joining does not. A missing or wrong
-password returns `403 forbidden`, and the lobby UI stays on the password form.
-
-The server is configured with an Argon2id hash in PHC form (flag
-`--auth-hash`, else env `CARD_FINDERS_AUTH_HASH`), for example
-`$argon2id$v=19$m=8192,t=2,p=1$<salt>$<hash>`. Startup aborts if it is missing
-or unparsable, and logs the parsed parameters (never salt or hash bytes). The
-hash contains `$`, so quote it with single quotes in a shell. The repo has no
-hash generator; use any Argon2id tool. Keep memory low (the `m` value is KiB);
-verification is limited to 2 concurrent computations, and verdicts are cached
-in RAM by SHA-256 of the password.
-
-The password travels in clear text unless TLS is terminated in front of the
-server; the server itself does not do TLS.
-
-## Serving the frontend
-
-The Go server mounts three independent surfaces on one listener:
-
-- `/api/...` — REST endpoints (levels, create game, join).
-- `/ws` — the WebSocket endpoint.
-- `/...` — an on-disk file server rooted at `--static-dir`, serving the built
-  frontend from root. The `/api` and `/ws` routes take priority over this
-  catch-all mount. Left unmounted when `--static-dir` is empty.
-
-The static assets are read from disk at request time, not embedded in the
-binary, so rebuilding the frontend (`bun run build`) is enough to serve new
-assets. The static file server is a convenience: you can instead host the
-built frontend behind a reverse proxy and point it at `/api` and `/ws`.
-
-## Level configuration
-
-Levels are defined in a TOML file using a named-table-per-level schema. Each
-level is a named table whose key is the level name; the inner keys are:
-
-| Key      | Type    | Description                              |
-| -------- | ------- | ---------------------------------------- |
-| `silver` | integer | Count of silver special cards (even, 0–10). |
-| `gold`   | integer | Count of gold special cards (0–11).      |
-| `lives`  | integer | Starting lives (1–100).                  |
-
-### Sample `levels.toml`
-
-```toml
-# Card Finders sample level configuration.
-#
-# Each level is a named TOML table. The table key is the level name and the
-# inner keys are:
-#   (level number = position in this file, starting at 1)
-#   silver - count of silver special cards (even, 0..10)
-#   gold   - count of gold special cards (0..11)
-#   lives  - starting lives (1..100)
-
-["Tutorial One"]
-silver = 0
-gold = 0
-lives = 4
-
-["Level two"]
-silver = 4
-gold = 2
-lives = 3
-```
-
-## Putting it together
-
-A typical local run:
-
-```
-# 1. Build the frontend bundle into frontend/dist.
-cd frontend
 bun install
-bun run build
-cd ..
-
-# 2. Build and run the server from the repo root so levels.toml and
-#    frontend/dist resolve relative to the working directory.
-go -C backend build ./...
-go -C backend run ./cmd/server --config ../levels.toml --static-dir ../frontend/dist --auth-hash '<argon2id PHC hash>'
+bun run typecheck
+bun run test
 ```
 
-Then open the server at its listen address (default `http://localhost:8080`),
-where the frontend is served from root.
+`bun run build` also type-checks. The production build is in
+[INSTALL.md](INSTALL.md).
+
+## Working on it
+
+Run the backend from the repository root without a static dir, then start the
+Vite dev server, which proxies `/api` and `/ws` to `:8080`:
+
+```
+go -C backend run ./cmd/server --config ../levels.toml --auth-hash '<argon2id PHC hash>'
+```
+
+```
+cd frontend
+bun run dev
+```
+
+Pass `--seed 1` to get the same deal every time.
+
+`frontend/src/generated/engine.ts` is generated from the Go structs. After
+changing an engine struct that goes over the wire, regenerate it as described
+under Types and codegen in [AGENTS.md](AGENTS.md).

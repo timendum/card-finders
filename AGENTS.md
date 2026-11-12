@@ -53,15 +53,13 @@ the lock:
   dealing/pool selection; holds the level slice it is handed.
 - `CreateGame(levelNumber int) (joinCode string, err error)`
 - `Join(joinCode string) (seat SeatID, token SessionToken, err error)` — the 4th
-  join internally runs special-pool + deal + opening setup. Once the game has
-  started, a join takes the lowest seat with no live connection and rotates its
-  token (the previous holder is locked out); `ErrGameFull` only when all four
-  seats are connected.
+  join internally runs special-pool + deal + opening setup. Joining after the
+  start takes over an away seat and rotates its token (rules: GAME.md);
+  `ErrGameFull` only when all four seats are connected.
 - `Connect(token SessionToken) (SeatID, error)` / `Disconnect(seat SeatID)` —
   transport marks a seat's `Player.Connected` as sockets open and close
-  (`ErrSeatOccupied` if already connected). Before the game starts a disconnect
-  empties the seat; afterwards the player and token are kept. The flags reach
-  clients as `PlayerView.Connected`.
+  (`ErrSeatOccupied` if already connected). The flags reach clients as
+  `PlayerView.Connected`.
 - `ResolveSeat(token SessionToken) (SeatID, error)` — reconnection.
 - `Apply(seat SeatID, action Action) (Result, error)` — single entry point for
   all gameplay actions (`Action` is a tagged union).
@@ -87,8 +85,7 @@ Three independent paths on one `http.ServeMux`:
     `level_required` (400), `level_invalid` (400), `level_config_invalid` (400),
     `game_exists` (409).
   - `GET /api/levels` and `POST /api/game` require `Authorization: Bearer
-    <password>`, checked against the Argon2id PHC hash from `--auth-hash` /
-    `CARD_FINDERS_AUTH_HASH`. Any failure → 403 `forbidden`.
+    <password>` (hash setup: INSTALL.md). Any failure → 403 `forbidden`.
   - `POST /api/game/join` `{ joinCode }` → `200 { sessionToken, seat }`. Errors:
     `code_required` (400), `code_invalid` (404), `game_full` (409).
 - `/ws` — WebSocket; `GET /ws?token=<SessionToken>`. On connect the token is
@@ -96,12 +93,10 @@ Three independent paths on one `http.ServeMux`:
   the other seats get a fresh snapshot. A token already held by a live
   connection is rejected `seat_occupied`. Disconnect releases the seat↔conn
   association (`engine.Disconnect`) and notifies the other seats, but preserves
-  game state; reconnect resumes until another player joins that seat.
-- `/...` — `http.FileServer` over `--static-dir`, serving the built frontend
-  from root (read from disk at request time, not embedded). The Vite bundle
-  references its assets with absolute `/assets/...` URLs, so it can only be
-  served from root; `/api` and `/ws` are more specific patterns and keep
-  priority. Unmounted when `--static-dir` is empty.
+  game state.
+- `/...` — `http.FileServer` over `--static-dir` (see INSTALL.md); `/api` and
+  `/ws` are more specific patterns and keep priority. Unmounted when
+  `--static-dir` is empty.
 
 ### WebSocket messages
 
@@ -142,41 +137,16 @@ the frame shape changed.
 
 ## Level config loading
 
-`cmd/server` resolves the config path `--config` flag > `CARD_FINDERS_LEVELS`
-env > default `levels.toml`; (flag/env = *explicit*). `internal/config` parses +
-validates (via `engine.ValidateLevel`, level number = file order). Outcomes:
-
-- Loaded-valid → those levels replace the dummy.
-- Default-missing (not explicit) → warn, use built-in `dummyLevel`, continue.
-- Explicit-missing → hard error, exit non-zero.
-- Malformed / invalid → hard error, exit non-zero.
-
-TOML schema: one named table per level (key = name); inner keys
-`silver`, `gold`, `lives`, plus optional `extraSilver`, `extraGold` (decoy
-specials, default 0; negative or `silver+extraSilver` / `gold+extraGold` above
-11 is a hard error), and optional `jokers` (default 4, 0..12, otherwise a hard
-error). The engine's only hardcoded level is `dummyLevel`.
+`cmd/server` resolves the config path and `internal/config` parses the TOML and
+validates each level via `engine.ValidateLevel` (level number = file order).
+Invalid input is a hard error. The engine's only hardcoded level is
+`dummyLevel`, used when the default config file is absent. Path resolution and
+the file format are in INSTALL.md.
 
 ## Commands
 
-Backend (from `backend/`):
-
-- `go build ./...` — build.
-- `go test ./...` — unit + property tests (`pgregory.net/rapid`).
-- `go run ./cmd/server` — run (flags: `--config`, `--static-dir`, `--listen`,
-  `--seed`; `--seed N` = deterministic RNG).
-- `go generate ./...` — regenerate frontend engine types (see codegen above).
-
-Frontend (from `frontend/`, Bun):
-
-- `bun install`
-- `bun run build` — `tsc --noEmit` then Vite build → `frontend/dist`.
-- `bun run typecheck` — type-check only.
-- `bun run test` — Vitest once (`vitest run`).
-- `bun run dev` — Vite dev server, proxies `/api` and `/ws` to `:8080`.
-
-Run the server from the repo root so `levels.toml` and `frontend/dist` resolve,
-or pass absolute paths. See [README.md](README.md) for a full local run.
+Build, test and dev commands are in [README.md](README.md). Server flags and
+deployment are in [INSTALL.md](INSTALL.md).
 
 ## Conventions
 
@@ -185,9 +155,6 @@ or pass absolute paths. See [README.md](README.md) for a full local run.
   serializes and routes.
 - All engine access goes through the single server mutex; don't add parallel
   state paths.
-- Don't hand-edit generated `engine.ts`; change the Go struct and regenerate.
-- Engine wire structs use PascalCase field names (no JSON tags) by design.
-- The server always sends full per-seat snapshots, never deltas.
 - Rule changes belong in `internal/engine` with tests; update
   [GAME.md](GAME.md) when the rules themselves change, and the properties
   below when invariants change.
@@ -253,10 +220,8 @@ REST status + envelope or a WS `error` code.
 The engine's universal invariants, one PBT each (tags above). Whole-game ones
 (*) are checked at every reachable state.
 
-1. `ValidateLevel` accepts a level iff number 1..50, name 1..60, silver even
-   0..10, gold 0..11, lives 1..100, extraSilver/extraGold ≥ 0, and
-   silver+extraSilver and gold+extraGold each fit the 11 ranks (2..Q), and
-   jokers 0..12.
+1. `ValidateLevel` accepts a level iff it meets the limits listed under Level
+   in GAME.md, and number 1..50, name 1..60.
 2. Creating a game sets Life_Pool and MaxLife to the level's starting lives.
 3. Sort_Value = rank (suited), rank+0.3 (silver), rank+0.6 (gold).
 4. Hand display order is ascending Sort_Value, ties by suit, stable. It is 

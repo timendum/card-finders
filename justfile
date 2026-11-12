@@ -32,10 +32,15 @@ install:
   @just backend install
   @just frontend install
 
-# build both projects
+exe := if os() == "windows" { ".exe" } else { "" }
+# build both projects into dist/ (server binary + static frontend)
 build:
-  @just backend build
+  @just backend build ../dist/server{{exe}}
   @just frontend build
+  @echo "==> assemble dist"
+  rm -rf dist/static
+  mkdir -p dist
+  cp -r frontend/dist dist/static
 
 generate:
   @just backend generate

@@ -3,10 +3,10 @@ default: help
 help:
   @just --list --unsorted
 
-# build all packages
-build:
+# build the server binary. Optional output path, e.g. just build ../dist/server
+build OUT="":
   @echo "==> build"
-  go build ./...
+  go build {{if OUT != "" { "-o " + OUT } else { "" }}} ./cmd/server
 
 # run the server with the frontend dir. Supports extra args, e.g. just run --seed 1
 run *ARGS:

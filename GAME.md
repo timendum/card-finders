@@ -1,7 +1,8 @@
 # Card Finders — Game Logic
 
-The authoritative business logic. `AGENTS.md` (technical) defer to this file
-for rules. The source of truth for exact behavior is `backend/internal/engine`.
+The authoritative game rules. [AGENTS.md](AGENTS.md) (technical) defers to this
+file for rules. The source of truth for exact behavior is
+`backend/internal/engine`.
 
 ## Concept
 
@@ -24,8 +25,8 @@ costs the shared team a life. The team **wins** by revealing every card and
   and golds, chosen randomly at game start and revealed to everyone before
   dealing. A silver and a gold may share a rank; two silvers (or two golds) may
   not.
-- **Extra_Silver / Extra_Gold** — optional per-level counts (TOML keys
-  `extraSilver` / `extraGold`, default 0, each ≥ 0). They add decoys to the
+- **Extra_Silver / Extra_Gold** — optional per-level counts (default 0, each
+  ≥ 0). They add decoys to the
   Special_Pool. `silver + extraSilver` and `gold + extraGold` must each be ≤ 11
   (the eligible ranks 2..queen). `extraSilver` may be odd: decoys are never
   dealt, so they do not affect pairing.
@@ -294,14 +295,14 @@ The server computes a per-player view:
   revealing who holds any particular special.
 - Real and decoy specials are indistinguishable in the view, even after the game
   ends. Each kind's pool entries are **sorted ascending by rank**, so draw order
-  (real first, decoys after) does not leak. The view also carries
-  `SilverInPlay` / `GoldInPlay`: the number of real silvers / golds dealt. No
-  per-entry decoy flag is sent.
+  (real first, decoys after) does not leak. The view also carries the number of
+  real silvers / golds dealt (`SilverInPlay` / `GoldInPlay`). No per-entry
+  decoy flag is sent.
 
 ### Value_Summary display of specials
 
-The client derives each special's count from the pool entries, `SilverInPlay` /
-`GoldInPlay`, and the found (face-up) count. Suited ranks always show
+The client derives each special's count from the pool entries, the number of
+real specials in play, and the found (face-up) count. Suited ranks always show
 `found/4`.
 
 - `0/1?` — nothing found and the entry may be a decoy (pool entries of that kind
@@ -311,8 +312,8 @@ The client derives each special's count from the pool entries, `SilverInPlay` /
 - `0/0` (marked completed) — all in-play specials of that kind are already
   found, so any entry still at 0 found was a decoy.
 
-Self-reveal eligibility for silver and gold uses `SilverInPlay` / `GoldInPlay`,
-not the pool length.
+Self-reveal eligibility for silver and gold uses the number of real specials in
+play, not the pool length.
 
 ## Card-count invariant
 
