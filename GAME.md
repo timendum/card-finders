@@ -36,6 +36,9 @@ costs the shared team a life. The team **wins** by revealing every card and
 - **Real_Special** — a special that is actually dealt (the level's `silver` /
   `gold` counts).
 - **Sort_Value** — display-ordering number only (rank, +0.3 silver, +0.6 gold).
+  A special's rank is used only to sort it once it is in a hand; after the deal
+  it is just a silver or gold card, not a "rank X" card. It never counts toward
+  that rank's suited cards (e.g. a silver 5 is not one of the four 5s).
 - **Level** — config: number, name, silver count (even, 0–10), gold count
   (0–11), extra silver / extra gold (optional, ≥ 0), starting lives (1–100).
   The level label shows extras only when present, e.g. `silver 2 + 1 decoy,
