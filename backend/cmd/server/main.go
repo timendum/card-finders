@@ -8,12 +8,16 @@ import (
 	"cardfinders/internal/engine"
 	"cardfinders/internal/server"
 	"flag"
+	"fmt"
 	"log/slog"
 	"math/rand"
 	"net/http"
 	"os"
 	"time"
 )
+
+// version is stamped at build time via -ldflags "-X main.version=<v>".
+var version = "dev"
 
 // envLevelsConfig is the environment variable consulted for the level-config
 // path when the --config flag is not set.
@@ -51,7 +55,9 @@ func main() {
 		seed       int64
 		debug      int
 		authHash   string
+		showVer    bool
 	)
+	flag.BoolVar(&showVer, "version", false, "print the version and exit")
 	flag.StringVar(&authHash, "auth-hash", "",
 		"Argon2id PHC hash protecting game creation (overrides "+envAuthHash+"); required")
 	flag.StringVar(&configPath, "config", "",
@@ -66,6 +72,11 @@ func main() {
 	flag.IntVar(&debug, "v", 0,
 		"set logging level (0 default, 1 for info, 2 for debug)")
 	flag.Parse()
+
+	if showVer {
+		fmt.Println(version)
+		return
+	}
 
 	level := slog.LevelWarn
 	if debug == 1 {
@@ -122,7 +133,7 @@ func main() {
 		AuthHash:  &ph,
 	})
 
-	slog.Info("Card Finders listening", "addr", listenAddr)
+	slog.Info("Card Finders listening", "addr", listenAddr, "version", version)
 	if err := http.ListenAndServe(listenAddr, srv.Handler()); err != nil {
 		slog.Error("http server", "err", err)
 		os.Exit(1)
