@@ -7,6 +7,8 @@ import (
 	"cardfinders/internal/config"
 	"cardfinders/internal/engine"
 	"cardfinders/internal/server"
+	crand "crypto/rand"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -47,6 +49,18 @@ func resolveConfigPath(flagValue string) (path string, explicit bool) {
 	return defaultLevelsConfig, false
 }
 
+func randomSeed() (int64, error) {
+	var b [8]byte
+	if _, err := crand.Read(b[:]); err != nil {
+		return 0, err
+	}
+	seed := int64(binary.BigEndian.Uint64(b[:]) >> 1)
+	if seed == 0 {
+		seed = time.Now().UnixNano()
+	}
+	return seed, nil
+}
+
 func main() {
 	var (
 		configPath string
@@ -68,7 +82,7 @@ func main() {
 			"(empty serves API and WS only)")
 	flag.StringVar(&listenAddr, "listen", ":8080", "HTTP listen address")
 	flag.Int64Var(&seed, "seed", 0,
-		"RNG seed for deterministic dealing/pool selection (0 = time-based)")
+		"RNG seed for deterministic dealing/pool selection (0 = random)")
 	flag.IntVar(&debug, "v", 0,
 		"set logging level (0 default, 1 for info, 2 for debug)")
 	flag.Parse()
@@ -105,11 +119,16 @@ func main() {
 		slog.Info("loaded levels", "count", len(levels), "path", path)
 	}
 
-	// Seed the RNG deterministically when --seed is given; otherwise derive a
-	// time-based seed so each run deals differently.
+	// Seed the RNG deterministically when --seed is given; otherwise draw an
+	// unpredictable seed from the OS. Logged so a game can be replayed.
 	if seed == 0 {
-		seed = time.Now().UnixNano()
+		seed, err = randomSeed()
+		if err != nil {
+			slog.Error("generating random seed", "err", err)
+			os.Exit(1)
+		}
 	}
+	slog.Info("rng seed", "seed", seed)
 	rng := rand.New(rand.NewSource(seed))
 
 	// The auth hash is mandatory; a missing or unparsable value aborts startup.

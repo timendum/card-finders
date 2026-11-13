@@ -44,7 +44,7 @@ On Windows, name the output `card-finders.exe`.
 | `--config`     | `CARD_FINDERS_LEVELS`    | `levels.toml`| Level config file.                                   |
 | `--static-dir` |                          | empty        | Directory with the built frontend. Empty disables it.|
 | `--listen`     |                          | `:8080`      | Listen address.                                      |
-| `--seed`       |                          | `0`          | RNG seed. `0` uses the clock.                        |
+| `--seed`       |                          | `0`          | RNG seed. `0` picks a random one, logged with `-v 1`.|
 
 The flag wins over the env var. A `--config` path or `CARD_FINDERS_LEVELS` that
 points to a missing file stops the server. If neither is set and `levels.toml`
