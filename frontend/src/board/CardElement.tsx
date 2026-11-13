@@ -1,6 +1,6 @@
 // Board card primitives: CardElement (a card in a CardRow slot), TokenSquare
-// (a face-down card's token), RevealedCardMini (a face-up card in the
-// TokenRow) and Indicators. All are presentational; state arrives as props.
+// (a face-down card's token) and Indicators. All are presentational; state
+// arrives as props.
 
 import type { KeyboardEvent } from "react";
 import { valueLabel } from "./cardLabel.ts";
@@ -26,6 +26,8 @@ export interface CardElementProps {
   own?: boolean;
   selectable?: boolean;
   selected?: boolean;
+  // Flipped face-up by the last action.
+  highlighted?: boolean;
   // Exclusion hint for the selected source card; absent when not applicable.
   match?: MatchHint;
   onActivate?: () => void;
@@ -50,6 +52,7 @@ export function CardElement({
   own = false,
   selectable = false,
   selected = false,
+  highlighted = false,
   match,
   onActivate,
 }: CardElementProps) {
@@ -77,6 +80,7 @@ export function CardElement({
       data-kind={value ? kindName(value.Kind) : undefined}
       data-selectable={selectable}
       data-selected={selected}
+      data-highlighted={highlighted}
       data-match={match}
       onClick={activate}
       onKeyDown={onKeyDown}
@@ -109,18 +113,6 @@ export function LinkMarker({ link }: { link: LinkInfo }) {
       aria-label={same ? "Linked as same rank" : "Linked as different rank"}
     >
       {same ? "=" : "≠"}
-    </div>
-  );
-}
-
-export function RevealedCardMini({ value }: { value: CardValue }) {
-  return (
-    <div
-      className="revealed-card-mini"
-      data-kind={kindName(value.Kind)}
-      aria-label={`Revealed ${valueLabel(value)}`}
-    >
-      {valueLabel(value)}
     </div>
   );
 }

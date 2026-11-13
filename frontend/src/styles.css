@@ -208,12 +208,12 @@ body {
 
 /* Rotate each card about its centre so its top faces the table centre.
    Layout boxes keep natural size; rows are sized to the rotated footprint. */
-.player-space[data-edge="left"] :is(.card-element, .revealed-card-mini, .token-square) {
+.player-space[data-edge="left"] :is(.card-element, .token-square) {
   place-self: center;
   transform: rotate(90deg);
 }
 
-.player-space[data-edge="right"] :is(.card-element, .revealed-card-mini, .token-square) {
+.player-space[data-edge="right"] :is(.card-element, .token-square) {
   place-self: center;
   transform: rotate(-90deg);
 }
@@ -267,11 +267,6 @@ body {
   order: 2;
 }
 
-.player-space[data-edge="left"] .revealed-card-mini,
-.player-space[data-edge="right"] .revealed-card-mini {
-  inline-size: var(--cw);
-}
-
 .player-space[data-edge="left"] .token-row,
 .player-space[data-edge="right"] .token-row {
   grid-auto-columns: calc(var(--token-size) * 1.5);
@@ -285,8 +280,6 @@ body {
 .card-slot-empty {
   inline-size: var(--card-width);
   block-size: var(--card-height);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
   box-sizing: border-box;
 }
 
@@ -316,28 +309,38 @@ body {
   color: var(--color-on-gold);
 }
 
-/* Taller, bordered and card-shaped so it reads as a flipped card, not a token. */
-.revealed-card-mini {
-  inline-size: var(--card-width);
+/* A revealed card keeps its token-row cell but is drawn full size, hanging over
+   the card row on the side facing it (the slot there is blank). */
+.revealed-slot {
+  position: relative;
+  inline-size: 100%;
   block-size: calc(var(--token-size) * 1.5);
-  box-sizing: border-box;
-  padding: var(--space-1);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  background: var(--color-suited);
-  color: var(--color-on-suited);
 }
 
-.revealed-card-mini[data-kind="silver"] {
-  background: var(--silver-fill);
-  color: var(--color-on-silver);
+.revealed-slot > .card-element {
+  position: absolute;
+  z-index: 1;
+  inset-inline-start: 0;
+  inset-block-start: 0;
 }
 
-.revealed-card-mini[data-kind="gold"] {
-  background: var(--gold-fill);
-  color: var(--color-on-gold);
+.player-space[data-edge="top"] .revealed-slot > .card-element {
+  inset-block: auto 0;
+}
+
+/* Side seats: the rotated footprint (--ch wide, --cw tall) is aligned to the
+   cell edge facing the card row. */
+.player-space[data-edge="left"] .revealed-slot,
+.player-space[data-edge="right"] .revealed-slot {
+  block-size: var(--card-height);
+}
+
+.player-space[data-edge="left"] .revealed-slot > .card-element {
+  inset: calc((var(--cw) - var(--ch)) / 2) calc((var(--ch) - var(--cw)) / 2) auto auto;
+}
+
+.player-space[data-edge="right"] .revealed-slot > .card-element {
+  inset: calc((var(--cw) - var(--ch)) / 2) auto auto calc((var(--ch) - var(--cw)) / 2);
 }
 
 .indicators {
@@ -415,6 +418,12 @@ body {
   .card-element[data-own="true"]:is([data-kind="silver"], [data-kind="gold"]) {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.card-element[data-highlighted="true"] {
+  box-shadow:
+    0 0 0 3px var(--color-accent),
+    0 0 12px var(--color-accent);
 }
 
 .card-element[data-selected="true"] {

@@ -1,7 +1,7 @@
 // One seat's CardRow and TokenRow. Both lay out the same fixed slots 1..N so a
-// card and its token or revealed mini line up column for column.
+// card and its token or revealed card line up column for column.
 
-import { CardElement, LinkMarker, RevealedCardMini, TokenSquare } from "./CardElement.tsx";
+import { CardElement, LinkMarker, TokenSquare } from "./CardElement.tsx";
 import { linkRoles } from "./links.ts";
 import type { MatchHint } from "./matchHints.ts";
 import { slotted } from "./slots.ts";
@@ -35,7 +35,7 @@ export function CardRow({
   return (
     <div className="card-row" role="group">
       {ordered(slotted(cards), reversed).map((card, i) =>
-        // A face-up card has moved to the TokenRow and leaves its slot empty.
+        // A face-up card is drawn from the TokenRow and leaves its slot blank.
         card && card.Facing === Face.Down ? (
           <CardElement
             key={i}
@@ -58,16 +58,28 @@ export function CardRow({
 export function TokenRow({
   cards,
   reversed = false,
+  isHighlighted,
 }: {
   cards: readonly ViewCard[];
   reversed?: boolean;
+  // Cards flipped face-up by the last action.
+  isHighlighted?: (card: ViewCard) => boolean;
 }) {
   const links = linkRoles(cards);
   return (
     <div className="token-row" role="group">
       {ordered(slotted(cards), reversed).map((card, i) => {
         if (card?.Facing === Face.Up && card.Value) {
-          return <RevealedCardMini key={i} value={card.Value} />;
+          // Full-size card anchored in the token row, overlapping its empty slot.
+          return (
+            <div key={i} className="revealed-slot">
+              <CardElement
+                facing={card.Facing}
+                value={card.Value}
+                highlighted={isHighlighted?.(card) ?? false}
+              />
+            </div>
+          );
         }
         if (card?.Facing === Face.Down && card.TokenDisplay) {
           return <TokenSquare key={i} value={card.TokenDisplay} />;

@@ -1,6 +1,6 @@
 import { Indicators } from "./CardElement.tsx";
 import { CardRow, TokenRow, type CardRowProps } from "./CardRows.tsx";
-import type { SeatID } from "../types.ts";
+import type { SeatID, ViewCard } from "../types.ts";
 
 export type Edge = "top" | "left" | "right" | "bottom";
 
@@ -14,6 +14,8 @@ export interface PlayerSpaceProps extends Omit<CardRowProps, "own"> {
   powerUsed: boolean;
   // False = "Away" label.
   connected: boolean;
+  // Cards flipped face-up by the last action.
+  isHighlighted?: (card: ViewCard) => boolean;
 }
 
 export function PlayerSpace({
@@ -29,6 +31,7 @@ export function PlayerSpace({
   isSelected,
   matchHint,
   onActivate,
+  isHighlighted,
 }: PlayerSpaceProps) {
   const reversed = edge === "top" || edge === "right";
   return (
@@ -40,7 +43,7 @@ export function PlayerSpace({
       data-current={highlighted && !responder}
       data-responder={highlighted && responder}
     >
-      <TokenRow cards={cards} reversed={reversed} />
+      <TokenRow cards={cards} reversed={reversed} isHighlighted={isHighlighted} />
       <CardRow
         cards={cards}
         own={isViewer}

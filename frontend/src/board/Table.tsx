@@ -2,6 +2,7 @@ import { useMemo, type CSSProperties, type ReactNode } from "react";
 import { PlayerSpace, type Edge } from "./PlayerSpace.tsx";
 import { seatLayout } from "./seatLayout.ts";
 import type { MatchHint } from "./matchHints.ts";
+import { lastRevealedIds } from "./lastReveal.ts";
 import { cardsBySeat } from "./slots.ts";
 import { Phase, type CardID, type PlayerView, type SeatID, type ViewCard } from "../types.ts";
 
@@ -35,6 +36,7 @@ export function Table({
     [bySeat],
   );
 
+  const revealed = lastRevealedIds(view);
   const awaiting = view.Phase === Phase.AwaitingResponse && view.HasResponsePlayer;
   const highlightedSeat = awaiting ? view.ResponsePlayer : view.CurrentSeat;
 
@@ -53,6 +55,7 @@ export function Table({
       isSelected={isSelected}
       matchHint={matchHint}
       onActivate={onActivate}
+      isHighlighted={(card) => revealed.has(card.ID)}
     />
   );
 
