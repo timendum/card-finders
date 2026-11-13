@@ -45,18 +45,14 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 		// A seat already held by a live connection is rejected; the existing
 		// connection is left untouched.
 		slog.Info("ws connect rejected: seat occupied", "token", tokenTag(token))
-		conn, aerr := websocket.Accept(w, r, nil)
-		if aerr == nil {
-			_ = conn.Close(websocket.StatusPolicyViolation, "seat_occupied")
-		}
+		rejectWS(w, r, "seat_occupied")
 		return
 	}
 	if err != nil {
+		// Rejected after the upgrade: browsers hide the status of a failed
+		// upgrade, so the client could not tell this from a network error.
 		slog.Info("ws connect rejected: token invalid", "token", tokenTag(token))
-		writeJSON(w, http.StatusUnauthorized, errorBody{Error: errorDetail{
-			Code:    "token_invalid",
-			Message: "the session token is invalid",
-		}})
+		rejectWS(w, r, "token_invalid")
 		return
 	}
 	slog.Info("ws connect", "token", tokenTag(token), "seat", seat)
@@ -98,6 +94,14 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 	go s.pingLoop(pingCtx, c)
 
 	s.readLoop(ctx, c)
+}
+
+// rejectWS upgrades and immediately closes with reason, which the client reads.
+func rejectWS(w http.ResponseWriter, r *http.Request, reason string) {
+	conn, err := websocket.Accept(w, r, nil)
+	if err == nil {
+		_ = conn.Close(websocket.StatusPolicyViolation, reason)
+	}
 }
 
 // pingLoop must run concurrently with readLoop: Ping waits for the pong but

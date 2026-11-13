@@ -91,7 +91,8 @@ Three independent paths on one `http.ServeMux`:
 - `/ws` — WebSocket; `GET /ws?token=<SessionToken>`. On connect the token is
   resolved to a seat (`engine.Connect`); the current `PlayerView` is pushed and
   the other seats get a fresh snapshot. A token already held by a live
-  connection is rejected `seat_occupied`. Disconnect releases the seat↔conn
+  connection is rejected `seat_occupied`, an unknown token `token_invalid`
+  (socket closed with that reason; the client retries only the former). Disconnect releases the seat↔conn
   association (`engine.Disconnect`) and notifies the other seats, but preserves
   game state.
 - `/...` — `http.FileServer` over `--static-dir` (see INSTALL.md); `/api` and

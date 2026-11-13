@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useGameSocket } from "../api/useGameSocket.ts";
 import {
   GameLog,
@@ -32,6 +32,12 @@ export interface GameScreenProps {
 export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
   const { view, error, status, sendAction } = useGameSocket(token);
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
+
+  // The session is dead (seat taken over, lobby seat released, server
+  // restarted): retrying cannot help, so go back to the join screen.
+  useEffect(() => {
+    if (status === "rejected") onLeave();
+  }, [status, onLeave]);
 
   // A new snapshot means the last move was accepted (or state moved on), so
   // any half-built selection is obsolete. Reset during render (React's
@@ -105,6 +111,11 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
 
   return (
     <main className="game-screen">
+      {status !== "open" && (
+        <p role="status" className="connection-banner">
+          Connection lost, reconnecting…
+        </p>
+      )}
       <Table
         view={view}
         status={

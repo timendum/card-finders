@@ -5,7 +5,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClientMessage, ErrorMessage, PlayerView, ServerMessage } from "../types.ts";
 
-export type SocketStatus = "idle" | "connecting" | "open" | "closed";
+// "rejected": the server refused the token (unknown or taken over); no retry.
+export type SocketStatus = "idle" | "connecting" | "open" | "closed" | "rejected";
+
+const TOKEN_INVALID_REASON = "token_invalid";
 
 /** The latest `error` frame, narrowed to its payload (no `type` field). */
 export interface SocketError {
@@ -122,9 +125,13 @@ export function useGameSocket(token: string | null): GameSocket {
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
         if (isStale()) return;
         socketRef.current = null;
+        if (ev.reason === TOKEN_INVALID_REASON) {
+          setStatus("rejected");
+          return;
+        }
         setStatus("closed");
         scheduleReconnect();
       };

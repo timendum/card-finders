@@ -280,6 +280,14 @@ body {
   color: var(--color-text-muted);
 }
 
+.connection-banner {
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--color-gold);
+}
+
 .away-indicator {
   font-size: var(--font-size-sm);
   color: var(--color-gold);
