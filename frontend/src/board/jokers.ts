@@ -147,6 +147,16 @@ function seatsWithFaceDown(view: PlayerView): Set<SeatID> {
 }
 
 /** Seats the viewer may name for a seat-picking joker, ascending. */
+/** Suited ranks 2..K a Census can still ask about (not all four face-up). */
+export function censusRanks(view: PlayerView): number[] {
+  const faceUp = new Map<number, number>();
+  for (const c of view.Cards) {
+    if (c.Facing !== Face.Up || c.Value?.Kind !== SpecialKind.None) continue;
+    faceUp.set(c.Value.Rank, (faceUp.get(c.Value.Rank) ?? 0) + 1);
+  }
+  return Array.from({ length: 12 }, (_, i) => i + 2).filter((r) => (faceUp.get(r) ?? 0) < 4);
+}
+
 export function jokerSeatChoices(view: PlayerView, rank: Rank): SeatID[] {
   if (rank === JokerSecondWind) {
     return view.PowerUsed.flatMap((used, seat) => (used ? [seat] : []));

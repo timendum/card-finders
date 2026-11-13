@@ -6,6 +6,7 @@ import { selfRevealOptions } from "./actions.ts";
 import { availableActions } from "./availableActions.ts";
 import { rankLabel } from "./cardLabel.ts";
 import {
+  censusRanks,
   isSwapChoice,
   jokerDescriptions,
   jokerLabel,
@@ -150,7 +151,7 @@ export function PromptPanel({
           )}
           {jokerShape(view, jokerRank).rank && (
             <div className="prompt-joker-ranks" role="group" aria-label="Rank">
-              {Array.from({ length: 12 }, (_, i) => i + 2).map((rank) => (
+              {censusRanks(view).map((rank) => (
                 <button
                   key={rank}
                   type="button"
