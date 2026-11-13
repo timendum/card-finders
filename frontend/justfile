@@ -37,6 +37,7 @@ typecheck:
 lint *ARGS:
   @echo "==> lint"
   bun run oxlint {{ARGS}}
+  bun run stylelint "src/**/*.css"
 
 # format with oxfmt
 fmt *ARGS:

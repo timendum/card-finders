@@ -53,6 +53,15 @@
   --outline-width: 0.1875rem;
 }
 
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height);
+}
+
 /* Re-resolve the size vars where --slots is overridden (var() is computed at
    the declaring element, so :root values would not see the table's --slots). */
 .table-region {
@@ -65,25 +74,12 @@
   --card-width: var(--cw);
   --card-height: var(--ch);
   --token-size: calc(var(--cw) * 0.57);
-}
 
-body {
-  margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-family);
-  font-size: var(--font-size-md);
-  line-height: var(--line-height);
-}
-
-.table-region {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  grid-template-areas:
-    "left top right"
-    "left center right"
-    "left bottom right";
+  grid-template:
+    "left top right" auto
+    "left center right" minmax(0, 1fr)
+    "left bottom right" auto / auto minmax(0, 1fr) auto;
   gap: var(--space-2);
   block-size: 100dvh;
   overflow: hidden;
@@ -206,33 +202,6 @@ body {
   align-self: center;
 }
 
-/* Rotate each card about its centre so its top faces the table centre.
-   Layout boxes keep natural size; rows are sized to the rotated footprint. */
-.player-space[data-edge="left"] :is(.card-element, .token-square) {
-  place-self: center;
-  transform: rotate(90deg);
-}
-
-.player-space[data-edge="right"] :is(.card-element, .token-square) {
-  place-self: center;
-  transform: rotate(-90deg);
-}
-
-.player-space[data-edge="left"] .card-element,
-.player-space[data-edge="right"] .card-element {
-  inline-size: var(--cw);
-  block-size: var(--ch);
-}
-
-.player-space[data-edge="left"] .indicators {
-  writing-mode: vertical-rl;
-}
-
-.player-space[data-edge="right"] .indicators {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}
-
 .player-space[data-edge="left"] .card-row,
 .player-space[data-edge="left"] .token-row,
 .player-space[data-edge="right"] .card-row,
@@ -257,14 +226,6 @@ body {
 
 .player-space[data-edge="right"] .token-row {
   order: 0;
-}
-
-.player-space[data-edge="right"] .indicators {
-  order: -1;
-}
-
-.player-space[data-edge="left"] .indicators {
-  order: 2;
 }
 
 .player-space[data-edge="left"] .token-row,
@@ -307,40 +268,6 @@ body {
 .token-square[data-kind="gold"] {
   background: var(--gold-fill);
   color: var(--color-on-gold);
-}
-
-/* A revealed card keeps its token-row cell but is drawn full size, hanging over
-   the card row on the side facing it (the slot there is blank). */
-.revealed-slot {
-  position: relative;
-  inline-size: 100%;
-  block-size: calc(var(--token-size) * 1.5);
-}
-
-.revealed-slot > .card-element {
-  position: absolute;
-  z-index: 1;
-  inset-inline-start: 0;
-  inset-block-start: 0;
-}
-
-.player-space[data-edge="top"] .revealed-slot > .card-element {
-  inset-block: auto 0;
-}
-
-/* Side seats: the rotated footprint (--ch wide, --cw tall) is aligned to the
-   cell edge facing the card row. */
-.player-space[data-edge="left"] .revealed-slot,
-.player-space[data-edge="right"] .revealed-slot {
-  block-size: var(--card-height);
-}
-
-.player-space[data-edge="left"] .revealed-slot > .card-element {
-  inset: calc((var(--cw) - var(--ch)) / 2) calc((var(--ch) - var(--cw)) / 2) auto auto;
-}
-
-.player-space[data-edge="right"] .revealed-slot > .card-element {
-  inset: calc((var(--cw) - var(--ch)) / 2) auto auto calc((var(--ch) - var(--cw)) / 2);
 }
 
 .indicators {
@@ -434,6 +361,69 @@ body {
 .card-element:focus-visible {
   outline: var(--outline-width) solid var(--color-text);
   outline-offset: 2px;
+}
+
+/* A revealed card keeps its token-row cell but is drawn full size, hanging over
+   the card row on the side facing it (the slot there is blank). */
+.revealed-slot {
+  position: relative;
+  inline-size: 100%;
+  block-size: calc(var(--token-size) * 1.5);
+}
+
+.revealed-slot > .card-element {
+  position: absolute;
+  z-index: 1;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+}
+
+.player-space[data-edge="left"] .card-element,
+.player-space[data-edge="right"] .card-element {
+  inline-size: var(--cw);
+  block-size: var(--ch);
+}
+
+.player-space[data-edge="top"] .revealed-slot > .card-element {
+  inset-block: auto 0;
+}
+
+/* Side seats: the rotated footprint (--ch wide, --cw tall) is aligned to the
+   cell edge facing the card row. */
+.player-space[data-edge="left"] .revealed-slot,
+.player-space[data-edge="right"] .revealed-slot {
+  block-size: var(--card-height);
+}
+
+/* Rotate each card about its centre so its top faces the table centre.
+   Layout boxes keep natural size; rows are sized to the rotated footprint. */
+.player-space[data-edge="left"] :is(.card-element, .token-square) {
+  place-self: center;
+  transform: rotate(90deg);
+}
+
+.player-space[data-edge="right"] :is(.card-element, .token-square) {
+  place-self: center;
+  transform: rotate(-90deg);
+}
+
+.player-space[data-edge="left"] .revealed-slot > .card-element {
+  inset: calc((var(--cw) - var(--ch)) / 2) calc((var(--ch) - var(--cw)) / 2) auto auto;
+}
+
+.player-space[data-edge="right"] .revealed-slot > .card-element {
+  inset: calc((var(--cw) - var(--ch)) / 2) auto auto calc((var(--ch) - var(--cw)) / 2);
+}
+
+.player-space[data-edge="left"] .indicators {
+  order: 2;
+  writing-mode: vertical-rl;
+}
+
+.player-space[data-edge="right"] .indicators {
+  order: -1;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }
 
 .status-panel,
@@ -608,13 +598,10 @@ body {
   font-size: var(--font-size-sm);
 }
 
-.value-summary-label {
-  font-weight: var(--font-weight-bold);
-}
-
 /* Top line: colored by kind (suited / silver / gold). */
 .value-summary-label {
   color: var(--color-text);
+  font-weight: var(--font-weight-bold);
 }
 
 .value-summary-row[data-kind="silver"] .value-summary-label {

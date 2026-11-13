@@ -36,9 +36,7 @@ jobs:
       - name: Test
         run: go test ./...
       - name: Format check
-        run: |
-          unformatted="$(gofmt -l .)"
-          if [ -n "$unformatted" ]; then echo "unformatted files:"; echo "$unformatted"; exit 1; fi
+        run: "! gofmt -l . | grep ."
 
   frontend:
     name: Frontend checks and build
@@ -54,6 +52,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Lint
         run: bun run oxlint
+      - name: Stylelint
+        run: bun run stylelint "src/**/*.css"
       - name: Typecheck
         run: bun run typecheck
       - name: Test

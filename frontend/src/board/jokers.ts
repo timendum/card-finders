@@ -30,7 +30,7 @@ import {
   type CardID,
 } from "../types.ts";
 
-export const jokerNames: Readonly<Record<number, string>> = {
+export const jokerNames: Readonly<Record<Rank, string>> = {
   [JokerDiffer]: "Differ",
   [JokerSwap]: "Swap",
   [JokerTripleCall]: "Triple call",
@@ -45,7 +45,7 @@ export const jokerNames: Readonly<Record<number, string>> = {
   [JokerMatch]: "Match",
 };
 
-export const jokerDescriptions: Readonly<Record<number, string>> = {
+export const jokerDescriptions: Readonly<Record<Rank, string>> = {
   [JokerDiffer]: "Pick two adjacent face-down cards of yours that have different ranks.",
   [JokerSwap]: "Pick one of your cards and a player; they give you one of theirs back.",
   [JokerTripleCall]: "Pick one of your cards, then three face-down cards of one opponent.",
@@ -62,7 +62,7 @@ export const jokerDescriptions: Readonly<Record<number, string>> = {
 };
 
 /** Jokers any player may use at any time; the rest need the current turn. */
-const anytime: ReadonlySet<number> = new Set([
+const anytime: ReadonlySet<Rank> = new Set([
   JokerDiffer,
   JokerSwap,
   JokerSelfMark,
@@ -115,7 +115,7 @@ export interface JokerShape {
   rank: boolean;
 }
 
-const shapes: Readonly<Record<number, JokerShape>> = {
+const shapes: Readonly<Record<Rank, JokerShape>> = {
   [JokerDiffer]: { own: 2, targets: 0, seats: 0, rank: false },
   [JokerMatch]: { own: 2, targets: 0, seats: 0, rank: false },
   [JokerSwap]: { own: 1, targets: 0, seats: 1, rank: false },
