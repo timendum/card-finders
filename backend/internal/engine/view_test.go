@@ -49,6 +49,20 @@ func TestViewOtherFaceDownHidesValue(t *testing.T) {
 	}
 }
 
+func TestViewEndedRevealsOtherFaceDownValue(t *testing.T) {
+	e := playingState(4)
+	place(e, 2, 1, Card{Rank: 9, Suit: 3, Kind: SpecialKindNone})
+	e.state.Phase = PhaseEnded
+
+	vc := findViewCard(t, e.View(0), 2)
+	if vc.Value == nil || vc.Value.Rank != 9 {
+		t.Fatalf("ended: other player's face-down Value = %+v, want rank 9", vc.Value)
+	}
+	if vc.Facing != FaceDown {
+		t.Errorf("Facing = %d, want FaceDown unchanged", vc.Facing)
+	}
+}
+
 func TestViewFaceUpVisibleToAll(t *testing.T) {
 	e := playingState(4)
 	place(e, 3, 1, Card{Rank: 11, Kind: SpecialKindNone}) // seat 1's card

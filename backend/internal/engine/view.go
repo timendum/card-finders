@@ -196,7 +196,7 @@ func normalizePool(p SpecialPool) ViewSpecialPool {
 func projectCards(s *GameState, seat SeatID) []ViewCard {
 	cards := make([]ViewCard, 0, len(s.Cards))
 	for _, pc := range s.Cards {
-		cards = append(cards, projectCard(pc, s.Slot[pc.Card.ID], seat))
+		cards = append(cards, projectCard(pc, s.Slot[pc.Card.ID], seat, s.Phase == PhaseEnded))
 	}
 	sort.Slice(cards, func(i, j int) bool {
 		if cards[i].Owner != cards[j].Owner {
@@ -207,15 +207,16 @@ func projectCards(s *GameState, seat SeatID) []ViewCard {
 	return cards
 }
 
-// projectCard projects a single PlacedCard for one viewer.
-func projectCard(pc *PlacedCard, slot int, seat SeatID) ViewCard {
+// projectCard projects a single PlacedCard for one viewer. Once the game has
+// ended every card's value is revealed.
+func projectCard(pc *PlacedCard, slot int, seat SeatID, ended bool) ViewCard {
 	vc := ViewCard{
 		ID:     pc.Card.ID,
 		Owner:  pc.Owner,
 		Slot:   slot,
 		Facing: pc.Facing,
 	}
-	if pc.Facing == FaceUp || pc.Owner == seat {
+	if ended || pc.Facing == FaceUp || pc.Owner == seat {
 		val := naturalValue(pc.Card)
 		vc.Value = &val
 	}

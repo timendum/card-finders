@@ -81,8 +81,6 @@ export function CardElement({
       data-facing={facing === Face.Up ? "up" : "down"}
       data-own={own}
       data-kind={value ? kindName(value.Kind) : undefined}
-      data-selectable={selectable}
-      data-selected={selected}
       data-highlighted={highlighted}
       data-log-focus={logFocus}
       data-match={match}

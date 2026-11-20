@@ -291,6 +291,7 @@ The server computes a per-player view:
   face-down card). Link tokens show no value, only Same / Different.
 - The drawn jokers, their state and the Shield are visible to everyone.
 - Every face-up card's value is visible to everyone.
+- Once the game has ended, every card's value is visible to everyone.
 - The full Special_Pool is visible to everyone (which identities exist), without
   revealing who holds any particular special.
 - Real and decoy specials are indistinguishable in the view, even after the game

@@ -352,13 +352,13 @@ body {
   color: var(--color-on-gold);
 }
 
-.card-element[data-facing="down"]:not([data-own="true"]) {
+.card-element[data-facing="down"]:not([data-kind]) {
   background: var(--color-card-back);
   border-color: var(--color-card-back-edge);
   color: transparent;
 }
 
-.card-element[data-selectable="true"] {
+.card-element[aria-pressed] {
   cursor: pointer;
   border-color: var(--color-accent);
 }
@@ -391,7 +391,7 @@ body {
     0 0 12px var(--color-accent);
 }
 
-.card-element[data-selected="true"] {
+.card-element[aria-pressed="true"] {
   outline: var(--outline-width) solid var(--color-accent);
   outline-offset: 2px;
 }

@@ -259,8 +259,8 @@ The engine's universal invariants, one PBT each (tags above). Whole-game ones
     reports none (terminal) rather than selecting a seat.
 19. *Ended=win exactly when all cards face-up; Ended=loss exactly when life
     hits 0 or a gold hit occurs; these are the only transitions into Ended.
-20. *A seat's view attaches a value only to face-up or own cards; others'
-    face-down cards carry no value.
+20. *Until the game ends, a seat's view attaches a value only to face-up or own
+    cards; others' face-down cards carry no value. In Ended every card has one.
 21. *Every view includes all value-token display values (link tokens carry
     none), every joker with its derived state, the Shield flag, and the full Special_Pool
     (real and decoy entries merged, ascending rank per kind, with
