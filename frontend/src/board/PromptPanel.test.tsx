@@ -66,7 +66,7 @@ describe("PromptPanel", () => {
         onPickSelfValue={noop}
       />,
     );
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Confirm<\/button>/u);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Choose cards to guess<\/button>/u);
     expect(html).toContain("Guess");
     expect(html).toContain("Double call");
   });

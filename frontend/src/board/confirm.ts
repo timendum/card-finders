@@ -1,6 +1,6 @@
 // Pure confirm logic: whether the current selection amounts to a complete move,
 // how to label it, and the message that sends it.
-import { buildGuess, buildSafeCall, buildSelfReveal } from "./actions.ts";
+import { buildGuess, buildSafeCall, buildSelfReveal, selfRevealOptions } from "./actions.ts";
 import { buildJoker, jokerComplete, type JokerPicks } from "./jokers.ts";
 import { isResponder, type SelectionState } from "./selection.ts";
 import {
@@ -80,10 +80,16 @@ export function messageFor(selection: SelectionState, view: PlayerView): ClientM
   }
 }
 
-/** Label for the confirm control; a neutral label while nothing is confirmable. */
+/** Label for the confirm control; while nothing is confirmable, it invites the next pick. */
 export function confirmLabel(state: SelectionState, view: PlayerView): string {
   const action = inferredAction(state, view);
-  return action === null ? "Confirm" : confirmLabels[action];
+  if (action !== null) return confirmLabels[action];
+  if (isResponder(view)) return "Choose a card";
+  if (view.Phase === Phase.Opening) return "Choose a card to reveal";
+  if (state.jokerRank !== null) return "Complete the joker";
+  return selfRevealOptions(view).length > 0
+    ? "Choose cards to guess or a value to reveal"
+    : "Choose cards to guess";
 }
 
 /** Confirm is enabled only for a complete selection (source plus target(s) for calls). */
