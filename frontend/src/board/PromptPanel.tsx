@@ -179,7 +179,17 @@ export function PromptPanel({
                 aria-pressed={selected}
                 onClick={() => onPickSelfValue(selected ? null : option.value)}
               >
-                {option.label}
+                Reveal all{" "}
+                <span
+                  className="card-small"
+                  data-kind={
+                    option.value === "silver" || option.value === "gold"
+                      ? option.value
+                      : "suited"
+                  }
+                >
+                  {typeof option.value === "number" ? rankLabel(option.value) : option.value}
+                </span>
               </button>
             );
           })}
