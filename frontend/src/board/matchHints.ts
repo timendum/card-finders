@@ -136,12 +136,79 @@ export function matchHints(
   };
 
   const hints = new Map<CardID, MatchHint>();
+  const hands: ViewCard[][] = [];
   for (let seat = 0; seat < 4; seat++) {
     if (seat === view.Seat) continue;
     const hand = handOf(view, seat);
+    hands.push(hand);
     hand.forEach((card, i) => {
       if (card.Facing === Face.Down) hints.set(card.ID, hintFor(hand, i));
     });
   }
+  if (!isSilver) refineBySlots(hands, hints, remaining - tokened, sv, feasible);
   return hints;
+}
+
+/**
+ * Placement pass for a suited call. Within a run of untokened face-down cards
+ * (hands are sorted), the copies of the called value form one contiguous block.
+ * When no feasible value fits below (above) the call in the run's bounds, the
+ * block touches the run's start (end), which excludes the other slots. When
+ * every remaining copy must sit in a single run, the slots shared by all block
+ * placements are "sure".
+ */
+function refineBySlots(
+  hands: ViewCard[][],
+  hints: Map<CardID, MatchHint>,
+  copies: number,
+  sv: number,
+  feasible: CardValue[],
+): void {
+  if (copies < 1) return;
+  type Run = { cards: ViewCard[]; lowNone: boolean; highNone: boolean };
+  const runs: Run[] = [];
+  for (const hand of hands) {
+    for (let start = 0; start < hand.length; start++) {
+      const isOpen = (c: ViewCard) => c.Facing === Face.Down && !c.TokenDisplay;
+      if (!isOpen(hand[start]!) || (start > 0 && isOpen(hand[start - 1]!))) continue;
+      let end = start;
+      while (end + 1 < hand.length && isOpen(hand[end + 1]!)) end++;
+      const { lo } = neighbourBounds(hand, start);
+      const { hi } = neighbourBounds(hand, end);
+      const fits = (min: number, max: number) =>
+        feasible.some((v) => sortValue(v) >= Math.max(lo, min) && sortValue(v) <= Math.min(hi, max));
+      runs.push({
+        cards: hand.slice(start, end + 1),
+        lowNone: !fits(-Infinity, sv - 1),
+        highNone: !fits(sv + 1, Infinity),
+      });
+    }
+  }
+
+  const candidates: { run: Run; index: number }[] = [];
+  for (const run of runs) {
+    const k = run.cards.length;
+    const block = Math.min(copies, k);
+    run.cards.forEach((card, j) => {
+      let allowed = true;
+      if (run.lowNone && run.highNone) allowed = k <= copies;
+      else if (run.lowNone) allowed = j < block;
+      else if (run.highNone) allowed = j >= k - block;
+      if (!allowed) hints.set(card.ID, "excluded");
+      else if (hints.get(card.ID) !== "excluded") candidates.push({ run, index: j });
+    });
+  }
+
+  if (candidates.length === copies) {
+    for (const { run, index } of candidates) hints.set(run.cards[index]!.ID, "sure");
+    return;
+  }
+  const only = candidates[0]?.run;
+  if (!only || candidates.some((c) => c.run !== only) || copies > only.cards.length) return;
+  const k = only.cards.length;
+  const first = only.lowNone ? 0 : k - copies;
+  const last = (only.highNone ? k - copies : 0) + copies;
+  for (const { run, index } of candidates) {
+    if (index >= first && index < last) hints.set(run.cards[index]!.ID, "sure");
+  }
 }
