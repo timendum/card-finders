@@ -543,6 +543,11 @@ body {
   text-decoration: line-through;
 }
 
+.joker:disabled .joker-rank {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
 .joker[data-usable="true"] {
   cursor: pointer;
 }

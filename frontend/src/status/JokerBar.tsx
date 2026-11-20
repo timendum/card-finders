@@ -39,7 +39,7 @@ export function JokerBar({ view, active = null, onActivate }: JokerBarProps) {
               aria-label={`${jokerLabel(joker.Rank)} (${rankLabel(joker.Rank)}), ${state}`}
               onClick={() => onActivate?.(joker.Rank)}
             >
-              <span className="joker-rank" aria-hidden="true">
+              <span className="joker-rank card-small" data-kind="suited" aria-hidden="true">
                 {rankLabel(joker.Rank)}
               </span>{" "}
               <span className="joker-name" aria-hidden="true">
