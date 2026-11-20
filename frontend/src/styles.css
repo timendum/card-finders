@@ -136,6 +136,24 @@ body {
   font-size: var(--font-size-sm);
 }
 
+.card-small {
+  padding: 0 0.35em;
+  border-radius: var(--radius-sm);
+  background: var(--color-suited);
+  color: var(--color-on-suited);
+  font-weight: var(--font-weight-bold);
+}
+
+.card-small[data-kind="silver"] {
+  background: var(--silver-fill);
+  color: var(--color-on-silver);
+}
+
+.card-small[data-kind="gold"] {
+  background: var(--gold-fill);
+  color: var(--color-on-gold);
+}
+
 .game-log-list {
   margin: 0;
   padding: 0;
@@ -344,6 +362,7 @@ body {
   cursor: pointer;
   border-color: var(--color-accent);
 }
+
 /* Same accent border as selectable cards, for the hovered log line. The extra
    attribute outranks the face-down rule for other players' cards. */
 .card-element[data-facing][data-log-focus="true"] {

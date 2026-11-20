@@ -6,6 +6,7 @@ import {
   Table,
   emptySelection,
   isSelectable,
+  logCardRefs,
   matchHints,
   messageFor,
   selectionReducer,
@@ -17,6 +18,7 @@ import {
   Phase,
   Result,
   type CardID,
+  type LogEntry,
   type SeatID,
   type SessionToken,
   type ViewCard,
@@ -32,6 +34,7 @@ export interface GameScreenProps {
 export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
   const { view, error, status, sendAction } = useGameSocket(token);
   const [selection, setSelection] = useState<SelectionState>(emptySelection);
+  const [logFocus, setLogFocus] = useState<LogEntry | null>(null);
 
   // The session is dead (seat taken over, lobby seat released, server
   // restarted): retrying cannot help, so go back to the join screen.
@@ -107,6 +110,9 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
     selection.jokerOwn.includes(card.ID) ||
     selection.targets.includes(card.ID);
 
+  const focusRefs = logFocus ? logCardRefs(logFocus) : [];
+  const isLogFocus = (card: ViewCard) =>
+    focusRefs.some((ref) => ref.seat === card.Owner && ref.slot === card.Slot);
   const hints = ended || selection.jokerRank !== null ? null : matchHints(view, selection.source);
 
   return (
@@ -141,7 +147,8 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
             />
           )
         }
-        log={<GameLog view={view} />}
+        log={<GameLog view={view} onFocusEntry={setLogFocus} />}
+        isLogFocus={focusRefs.length > 0 ? isLogFocus : undefined}
         isSelectable={ended ? undefined : (card) => isSelectable(view, card, selection)}
         isSelected={selected}
         matchHint={hints ? (card) => hints.get(card.ID) : undefined}

@@ -26,6 +26,7 @@ jokers = 2
 silver = 0
 gold = 1
 lives = 4
+jokers = 2
 
 ["Two silver plus one"]
 silver = 2

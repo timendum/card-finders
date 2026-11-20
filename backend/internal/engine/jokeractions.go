@@ -1,7 +1,5 @@
 package engine
 
-import "strconv"
-
 // applyJoker activates a joker. A joker is usable only while the game waits for
 // a user action: Playing, never with a choice pending. "Anytime" jokers (2, 3,
 // 5, 7, 8, 9, 13) leave the turn alone; "current player" jokers (4, 6, 10, 11,
@@ -73,9 +71,14 @@ func jokerAction(seat SeatID, rank Rank) *LastAction {
 	return &LastAction{Actor: seat, Kind: ActionKindJoker, Joker: rank}
 }
 
-// jokerText prefixes a log line with the joker's numeric rank.
-func jokerText(rank Rank, detail string) string {
-	return " used joker " + announcedText(&CardValue{Rank: rank}) + ": " + detail
+// logJoker logs a joker use by actor; entry carries the joker and its details.
+func (s *GameState) logJoker(actor SeatID, target *SeatID, entry LogEntry) {
+	entry.Actor = new(actor)
+	if target != nil {
+		entry.Target = new(*target)
+	}
+	entry.Event = LogEventJoker
+	s.logEntry(entry)
 }
 
 // ownFaceDown returns seat's own face-down card id, or false.
@@ -119,9 +122,9 @@ func (e *Engine) jokerLink(seat SeatID, a Action, slot *JokerSlot) (Result, erro
 	if d := s.Slot[srcID] - s.Slot[tgtID]; d != 1 && d != -1 {
 		return ResultNone, ErrJokerInvalid
 	}
-	kind, word := TokenKindDifferent, "Different"
+	kind := TokenKindDifferent
 	if a.Joker == JokerMatch {
-		kind, word = TokenKindSame, "Same"
+		kind = TokenKindSame
 	}
 	if sameIdentity(c1.Card, c2.Card) != (kind == TokenKindSame) {
 		return ResultNone, ErrJokerInvalid
@@ -133,8 +136,7 @@ func (e *Engine) jokerLink(seat SeatID, a Action, slot *JokerSlot) (Result, erro
 	la := jokerAction(seat, a.Joker)
 	la.Targets = []CardID{srcID, tgtID}
 	s.recordAction(la)
-	s.logAction(seat, jokerText(a.Joker, "put a "+word+" token on cards "+
-		s.slotsText(la.Targets)))
+	s.logJoker(seat, nil, LogEntry{Joker: a.Joker, Slots: s.slotsOf(la.Targets...)})
 	return ResultNone, nil
 }
 
@@ -152,7 +154,7 @@ func (e *Engine) jokerSelfMark(seat SeatID, a Action, slot *JokerSlot) (Result, 
 	la := jokerAction(seat, a.Joker)
 	la.Targets = []CardID{srcID}
 	s.recordAction(la)
-	s.logAction(seat, jokerText(a.Joker, "put a token on card "+strconv.Itoa(s.Slot[srcID])))
+	s.logJoker(seat, nil, LogEntry{Joker: a.Joker, Slots: s.slotsOf(srcID)})
 	return ResultNone, nil
 }
 
@@ -162,7 +164,7 @@ func (e *Engine) jokerExtraLife(seat SeatID, slot *JokerSlot) (Result, error) {
 	slot.Used = true
 	s.LifePool++
 	s.recordAction(jokerAction(seat, JokerExtraLife))
-	s.logAction(seat, jokerText(JokerExtraLife, "gained a life"))
+	s.logJoker(seat, nil, LogEntry{Joker: JokerExtraLife})
 	return ResultNone, nil
 }
 
@@ -196,10 +198,10 @@ func (e *Engine) jokerSecondWind(seat SeatID, a Action, slot *JokerSlot) (Result
 	}
 	s.recordAction(jokerAction(seat, a.Joker))
 	if len(restore) == 0 {
-		s.logAction(seat, jokerText(a.Joker, "nobody had spent a Double Call"))
+		s.logJoker(seat, nil, LogEntry{Joker: a.Joker})
 	}
 	for _, r := range restore {
-		s.logActionOn(seat, r, jokerText(a.Joker, "restored the Double Call"))
+		s.logJoker(seat, &r, LogEntry{Joker: a.Joker})
 	}
 	return ResultNone, nil
 }
@@ -219,15 +221,15 @@ func (e *Engine) jokerCensus(seat SeatID, a Action, slot *JokerSlot) (Result, er
 	la.AnnouncedValue = asked
 	s.recordAction(la)
 	for i := range SeatID(seatCount) {
-		answer := "no"
+		answer := LogOutcomeNo
 		for _, id := range s.HandOrder[i] {
 			pc := s.Cards[id]
 			if pc.Facing == FaceDown && cardHasValue(pc.Card, SpecialKindNone, rank) {
-				answer = "yes"
+				answer = LogOutcomeYes
 				break
 			}
 		}
-		s.logAction(i, jokerText(a.Joker, "answered "+answer+" to a face-down "+announcedText(asked)))
+		s.logJoker(i, nil, LogEntry{Joker: a.Joker, Value: asked, Outcome: answer})
 	}
 	return ResultNone, nil
 }
@@ -242,7 +244,7 @@ func (e *Engine) jokerShield(seat SeatID, slot *JokerSlot) (Result, error) {
 	slot.Used = true
 	s.Shield = true
 	s.recordAction(jokerAction(seat, JokerShield))
-	s.logAction(seat, jokerText(JokerShield, "armed the shield"))
+	s.logJoker(seat, nil, LogEntry{Joker: JokerShield})
 	return ResultNone, nil
 }
 
@@ -259,6 +261,6 @@ func (e *Engine) jokerPass(seat SeatID, a Action, slot *JokerSlot) (Result, erro
 	slot.Used = true
 	s.CurrentSeat = target
 	s.recordAction(jokerAction(seat, a.Joker))
-	s.logActionOn(seat, target, jokerText(a.Joker, "passed the turn"))
+	s.logJoker(seat, &target, LogEntry{Joker: a.Joker})
 	return ResultNone, nil
 }

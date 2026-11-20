@@ -3,6 +3,7 @@
 export { Table } from "./Table.tsx";
 export { PromptPanel } from "./PromptPanel.tsx";
 export { GameLog } from "./GameLog.tsx";
+export { logCardRefs } from "./logCards.ts";
 export { matchHints } from "./matchHints.ts";
 export {
   emptySelection,

@@ -1,9 +1,5 @@
 package engine
 
-import "strings"
-
-import "strconv"
-
 // multiCall describes a call against several face-down cards of one other
 // seat: Safe_Call (2 targets), joker 4 (3 targets) and joker 6 (the whole hand).
 // Everything is already validated; resolveMultiTarget only applies the rules.
@@ -14,8 +10,19 @@ type multiCall struct {
 	targets      []CardID
 	joker        Rank // 0 for a plain Safe_Call
 	passTurn     bool
-	// text renders the log line for an outcome phrase such as "hit one".
-	text func(outcome string) string
+}
+
+// log records the call on all its targets.
+func (mc multiCall) log(s *GameState, outcome LogOutcome) {
+	s.logEntry(LogEntry{
+		Actor:   new(mc.seat),
+		Target:  new(mc.targetPlayer),
+		Event:   LogEventCall,
+		Joker:   mc.joker,
+		Value:   announcedValueOf(mc.source.Card),
+		Slots:   s.slotsOf(mc.targets...),
+		Outcome: outcome,
+	})
 }
 
 // resolveMultiTarget applies the Safe_Call rules to N targets:
@@ -56,11 +63,7 @@ func (e *Engine) resolveMultiTarget(mc multiCall) (Result, error) {
 		la.Outcome = OutcomeGoldHit
 		la.Revealed = append([]CardID(nil), mc.targets...)
 		s.recordAction(la)
-		phrase := "hit a gold card"
-		if len(mc.targets) > 1 {
-			phrase = "hit " + countWord(len(mc.targets)) + " gold cards"
-		}
-		s.logActionOn(mc.seat, mc.targetPlayer, mc.text(phrase))
+		mc.log(s, LogOutcomeHitGold)
 		return e.endGoldHit(), nil
 	}
 
@@ -81,11 +84,7 @@ func (e *Engine) resolveMultiTarget(mc multiCall) (Result, error) {
 		la.Outcome = OutcomeAwaitingChoice
 		la.Targets = append([]CardID(nil), matches...)
 		s.recordAction(la)
-		phrase := "hit several"
-		if len(matches) == 2 && len(mc.targets) == 2 {
-			phrase = "hit both"
-		}
-		s.logActionOn(mc.seat, mc.targetPlayer, mc.text(phrase))
+		mc.log(s, LogOutcomeHitSeveral)
 		return ResultNone, nil
 
 	case len(matches) == 1:
@@ -93,7 +92,7 @@ func (e *Engine) resolveMultiTarget(mc multiCall) (Result, error) {
 		la.Outcome = OutcomeHit
 		la.Revealed = []CardID{sourceID, matches[0]}
 		s.recordAction(la)
-		s.logActionOn(mc.seat, mc.targetPlayer, mc.text("hit one"))
+		mc.log(s, LogOutcomeHit)
 
 	default:
 		if s.LifePool > 0 {
@@ -121,12 +120,12 @@ func (e *Engine) resolveMultiTarget(mc multiCall) (Result, error) {
 			la.Outcome = OutcomeAwaitingToken
 			la.Targets = append([]CardID(nil), nonGold...)
 			s.recordAction(la)
-			s.logActionOn(mc.seat, mc.targetPlayer, mc.text("missed"))
+			mc.log(s, LogOutcomeMissed)
 			return ResultNone, nil
 		}
 		// Otherwise the last life is gone and the game ends below.
 		s.recordAction(la)
-		s.logActionOn(mc.seat, mc.targetPlayer, mc.text("missed"))
+		mc.log(s, LogOutcomeMissed)
 	}
 
 	return e.endCall(mc.seat, mc.passTurn), nil
@@ -140,41 +139,4 @@ func (e *Engine) endCall(caller SeatID, passTurn bool) Result {
 	}
 	e.state.noteSilverDone()
 	return e.checkTerminal()
-}
-
-// slotsText renders ascending slot numbers as "a, b and c" for the log.
-func (s *GameState) slotsText(ids []CardID) string {
-	slots := make([]int, len(ids))
-	for i, id := range ids {
-		slots[i] = s.Slot[id]
-	}
-	for i := range slots {
-		for j := i + 1; j < len(slots); j++ {
-			if slots[j] < slots[i] {
-				slots[i], slots[j] = slots[j], slots[i]
-			}
-		}
-	}
-	var out strings.Builder
-	for i, n := range slots {
-		switch {
-		case i == 0:
-		case i == len(slots)-1:
-			out.WriteString(" and ")
-		default:
-			out.WriteString(", ")
-		}
-		out.WriteString(strconv.Itoa(n))
-	}
-	return out.String()
-}
-
-func countWord(n int) string {
-	switch n {
-	case 2:
-		return "two"
-	case 3:
-		return "three"
-	}
-	return strconv.Itoa(n)
 }

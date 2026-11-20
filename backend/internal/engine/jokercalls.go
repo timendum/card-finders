@@ -2,7 +2,6 @@ package engine
 
 import (
 	"slices"
-	"strconv"
 )
 
 // jokerSource validates the owned, face-down, non-gold source card shared by
@@ -16,14 +15,6 @@ func (s *GameState) jokerSource(seat SeatID, id CardID) (*PlacedCard, error) {
 		return nil, ErrGoldSource
 	}
 	return source, nil
-}
-
-// callText builds the log renderer of a joker call on the given targets.
-func (s *GameState) callText(rank Rank, source *PlacedCard, targets []CardID) func(string) string {
-	return func(outcome string) string {
-		return jokerText(rank, "asked for a "+announcedText(announcedValueOf(source.Card))+
-			" at cards "+s.slotsText(targets)+" and "+outcome)
-	}
 }
 
 // jokerTripleCall (4) is a Safe_Call on three cards of one other seat. It is
@@ -60,7 +51,6 @@ func (e *Engine) jokerTripleCall(seat SeatID, a Action, slot *JokerSlot) (Result
 		targets:      targets,
 		joker:        a.Joker,
 		passTurn:     true,
-		text:         s.callText(a.Joker, source, targets),
 	})
 }
 
@@ -94,10 +84,6 @@ func (e *Engine) jokerSweep(seat SeatID, a Action, slot *JokerSlot) (Result, err
 		targets:      targets,
 		joker:        a.Joker,
 		passTurn:     true,
-		text: func(outcome string) string {
-			return jokerText(a.Joker, "asked for a "+announcedText(announcedValueOf(source.Card))+
-				" at every card and "+outcome)
-		},
 	})
 }
 
@@ -135,8 +121,17 @@ func (e *Engine) jokerReverseCall(seat SeatID, a Action, slot *JokerSlot) (Resul
 	slot.Used = true
 	la := jokerAction(seat, a.Joker)
 	la.Targets = []CardID{targetID}
-	where := "cards " + s.slotsText([]CardID{srcID1, srcID2}) +
-		" against card " + strconv.Itoa(s.Slot[targetID])
+	logCall := func(outcome LogOutcome) {
+		s.logEntry(LogEntry{
+			Actor:   new(seat),
+			Target:  new(target.Owner),
+			Event:   LogEventCall,
+			Joker:   a.Joker,
+			Sources: s.slotsOf(srcID1, srcID2),
+			Slots:   s.slotsOf(targetID),
+			Outcome: outcome,
+		})
+	}
 
 	var hit *PlacedCard
 	for _, src := range []*PlacedCard{src1, src2} {
@@ -151,7 +146,7 @@ func (e *Engine) jokerReverseCall(seat SeatID, a Action, slot *JokerSlot) (Resul
 		la.Outcome = OutcomeGoldHit
 		la.Revealed = []CardID{targetID}
 		s.recordAction(la)
-		s.logActionOn(seat, target.Owner, jokerText(a.Joker, where+" and hit a gold card"))
+		logCall(LogOutcomeHitGold)
 		return e.endGoldHit(), nil
 	case hit != nil:
 		id := hit.Card.ID
@@ -161,7 +156,7 @@ func (e *Engine) jokerReverseCall(seat SeatID, a Action, slot *JokerSlot) (Resul
 		la.SourceCard = &id
 		la.Revealed = []CardID{id, targetID}
 		s.recordAction(la)
-		s.logActionOn(seat, target.Owner, jokerText(a.Joker, where+" and hit"))
+		logCall(LogOutcomeHit)
 	default:
 		if s.LifePool > 0 {
 			s.LifePool--
@@ -170,7 +165,7 @@ func (e *Engine) jokerReverseCall(seat SeatID, a Action, slot *JokerSlot) (Resul
 		s.placeToken(targetID)
 		la.Outcome = OutcomeMiss
 		s.recordAction(la)
-		s.logActionOn(seat, target.Owner, jokerText(a.Joker, where+" and missed"))
+		logCall(LogOutcomeMissed)
 	}
 	return e.finishTurn(s.CurrentSeat), nil
 }
@@ -196,8 +191,7 @@ func (e *Engine) jokerSwap(seat SeatID, a Action, slot *JokerSlot) (Result, erro
 	la.Outcome = OutcomeAwaitingChoice // empty Targets: pick any own face-down card
 	la.SourceCard = &sourceID
 	s.recordAction(la)
-	s.logActionOn(seat, targetSeat, jokerText(a.Joker,
-		"offered card "+strconv.Itoa(s.Slot[sourceID])+" for a swap"))
+	s.logJoker(seat, &targetSeat, LogEntry{Joker: a.Joker, Slots: s.slotsOf(sourceID)})
 	return ResultNone, nil
 }
 
@@ -221,9 +215,10 @@ func (e *Engine) resolveSwap(seat SeatID, a Action, p *PendingSafeChoice) (Resul
 	la.Kind = ActionKindSafeChooseReveal
 	la.Targets = []CardID{given, taken}
 	s.recordAction(la)
-	s.logActionOn(p.Caller, seat, jokerText(p.Joker, "card in position "+strconv.Itoa(from)+
-		" goes to position "+strconv.Itoa(s.Slot[given])))
-	s.logActionOn(seat, p.Caller, jokerText(p.Joker, "card in position "+strconv.Itoa(to)+
-		" goes to position "+strconv.Itoa(s.Slot[taken])))
+	s.logJoker(p.Caller, &seat, LogEntry{
+		Joker:   p.Joker,
+		Slots:   []int{from, to},
+		Sources: []int{s.Slot[taken], s.Slot[given]},
+	})
 	return ResultNone, nil
 }

@@ -18,6 +18,8 @@ export interface CardRowProps {
   isSelectable?: (card: ViewCard) => boolean;
   isSelected?: (card: ViewCard) => boolean;
   matchHint?: (card: ViewCard) => MatchHint | undefined;
+  // Cards referenced by the hovered game log line.
+  isLogFocus?: (card: ViewCard) => boolean;
   onActivate?: (id: CardID) => void;
   // Lay slots out in descending order (top and right seats read ascending counterclockwise).
   reversed?: boolean;
@@ -29,6 +31,7 @@ export function CardRow({
   isSelectable,
   isSelected,
   matchHint,
+  isLogFocus,
   onActivate,
   reversed = false,
 }: CardRowProps) {
@@ -45,6 +48,7 @@ export function CardRow({
             selectable={isSelectable?.(card) ?? false}
             selected={isSelected?.(card) ?? false}
             match={matchHint?.(card)}
+            logFocus={isLogFocus?.(card) ?? false}
             onActivate={() => onActivate?.(card.ID)}
           />
         ) : (
@@ -59,11 +63,13 @@ export function TokenRow({
   cards,
   reversed = false,
   isHighlighted,
+  isLogFocus,
 }: {
   cards: readonly ViewCard[];
   reversed?: boolean;
   // Cards flipped face-up by the last action.
   isHighlighted?: (card: ViewCard) => boolean;
+  isLogFocus?: (card: ViewCard) => boolean;
 }) {
   const links = linkRoles(cards);
   return (
@@ -77,6 +83,7 @@ export function TokenRow({
                 facing={card.Facing}
                 value={card.Value}
                 highlighted={isHighlighted?.(card) ?? false}
+                logFocus={isLogFocus?.(card) ?? false}
               />
             </div>
           );

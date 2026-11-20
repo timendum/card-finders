@@ -30,6 +30,7 @@ export function PlayerSpace({
   isSelectable,
   isSelected,
   matchHint,
+  isLogFocus,
   onActivate,
   isHighlighted,
 }: PlayerSpaceProps) {
@@ -43,7 +44,12 @@ export function PlayerSpace({
       data-current={highlighted && !responder}
       data-responder={highlighted && responder}
     >
-      <TokenRow cards={cards} reversed={reversed} isHighlighted={isHighlighted} />
+      <TokenRow
+        cards={cards}
+        reversed={reversed}
+        isHighlighted={isHighlighted}
+        isLogFocus={isLogFocus}
+      />
       <CardRow
         cards={cards}
         own={isViewer}
@@ -51,6 +57,7 @@ export function PlayerSpace({
         isSelectable={isSelectable}
         isSelected={isSelected}
         matchHint={matchHint}
+        isLogFocus={isLogFocus}
         onActivate={onActivate}
       />
       <Indicators used={powerUsed} away={!connected} />

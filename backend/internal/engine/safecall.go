@@ -2,7 +2,6 @@ package engine
 
 import (
 	"slices"
-	"strconv"
 )
 
 // applySafeCall resolves a Safe_Call: a one-time power used in place of a guess,
@@ -71,10 +70,6 @@ func (e *Engine) applySafeCall(seat SeatID, action Action) (Result, error) {
 		targetPlayer: targetPlayer,
 		targets:      targets,
 		passTurn:     true,
-		text: func(outcome string) string {
-			return "asked for a " + announcedText(announcedValueOf(source.Card)) +
-				" at cards " + s.slotsText(targets) + " and " + outcome
-		},
 	})
 }
 
@@ -140,7 +135,7 @@ func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, erro
 		s.placeToken(chosen)
 		la.Outcome = OutcomeMiss
 		s.recordAction(la)
-		s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[chosen])+" to receive the token")
+		s.logChoice(seat, chosen, LogOutcomeMissed)
 		return e.endCall(caller, pending.PassTurn), nil
 	}
 
@@ -148,6 +143,16 @@ func (e *Engine) applySafeChooseReveal(seat SeatID, action Action) (Result, erro
 	la.Outcome = OutcomeHit
 	la.Revealed = []CardID{sourceID, chosen}
 	s.recordAction(la)
-	s.logAction(seat, "chose card "+strconv.Itoa(s.Slot[chosen])+" to reveal")
+	s.logChoice(seat, chosen, LogOutcomeHit)
 	return e.endCall(caller, pending.PassTurn), nil
+}
+
+// logChoice logs the target player's pick after a multi-call.
+func (s *GameState) logChoice(seat SeatID, chosen CardID, outcome LogOutcome) {
+	s.logEntry(LogEntry{
+		Actor:   new(seat),
+		Event:   LogEventChoice,
+		Slots:   s.slotsOf(chosen),
+		Outcome: outcome,
+	})
 }

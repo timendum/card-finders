@@ -57,7 +57,7 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 		s.placeToken(targetID)
 		la.Outcome = OutcomeMiss
 		s.recordAction(la)
-		s.logActionOn(seat, target.Owner, "called "+announcedText(la.AnnouncedValue)+" and the shield protected a gold card")
+		s.logGuess(seat, target.Owner, la, LogOutcomeShielded)
 		return e.finishTurn(s.CurrentSeat), nil
 	}
 
@@ -66,7 +66,7 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 		la.Outcome = OutcomeGoldHit
 		la.Revealed = []CardID{targetID}
 		s.recordAction(la)
-		s.logActionOn(seat, target.Owner, "called "+announcedText(la.AnnouncedValue)+" and hit a gold card")
+		s.logGuess(seat, target.Owner, la, LogOutcomeHitGold)
 		return e.endGoldHit(), nil
 	}
 
@@ -88,10 +88,22 @@ func (e *Engine) applyGuess(seat SeatID, action Action) (Result, error) {
 
 	s.recordAction(la)
 	if la.Outcome == OutcomeMiss {
-		s.logActionOn(seat, target.Owner, "called "+announcedText(la.AnnouncedValue)+" and missed")
+		s.logGuess(seat, target.Owner, la, LogOutcomeMissed)
 	}
 
 	return e.finishTurn(s.CurrentSeat), nil
+}
+
+// logGuess logs a guess whose outcome has no visual clue.
+func (s *GameState) logGuess(seat, owner SeatID, la *LastAction, outcome LogOutcome) {
+	s.logEntry(LogEntry{
+		Actor:   new(seat),
+		Target:  new(owner),
+		Event:   LogEventCall,
+		Value:   la.AnnouncedValue,
+		Slots:   s.slotsOf(la.Targets...),
+		Outcome: outcome,
+	})
 }
 
 // matchesAnnouncedValue reports whether target matches the value announced by

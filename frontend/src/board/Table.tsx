@@ -15,6 +15,7 @@ export interface TableProps {
   isSelectable?: (card: ViewCard) => boolean;
   isSelected?: (card: ViewCard) => boolean;
   matchHint?: (card: ViewCard) => MatchHint | undefined;
+  isLogFocus?: (card: ViewCard) => boolean;
   onActivate?: (id: CardID) => void;
 }
 
@@ -26,6 +27,7 @@ export function Table({
   isSelectable,
   isSelected,
   matchHint,
+  isLogFocus,
   onActivate,
 }: TableProps) {
   const layout = useMemo(() => seatLayout(view.Seat), [view.Seat]);
@@ -54,6 +56,7 @@ export function Table({
       isSelectable={isSelectable}
       isSelected={isSelected}
       matchHint={matchHint}
+      isLogFocus={isLogFocus}
       onActivate={onActivate}
       isHighlighted={(card) => revealed.has(card.ID)}
     />

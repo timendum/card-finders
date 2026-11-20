@@ -28,6 +28,8 @@ export interface CardElementProps {
   selected?: boolean;
   // Flipped face-up by the last action.
   highlighted?: boolean;
+  // Referenced by the game log line under the mouse.
+  logFocus?: boolean;
   // Exclusion hint for the selected source card; absent when not applicable.
   match?: MatchHint;
   onActivate?: () => void;
@@ -53,6 +55,7 @@ export function CardElement({
   selectable = false,
   selected = false,
   highlighted = false,
+  logFocus = false,
   match,
   onActivate,
 }: CardElementProps) {
@@ -81,6 +84,7 @@ export function CardElement({
       data-selectable={selectable}
       data-selected={selected}
       data-highlighted={highlighted}
+      data-log-focus={logFocus}
       data-match={match}
       onClick={activate}
       onKeyDown={onKeyDown}

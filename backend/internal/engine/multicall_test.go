@@ -22,7 +22,6 @@ func directCall(e *Engine, ids ...CardID) (Result, error) {
 		targetPlayer: 1,
 		targets:      ids,
 		passTurn:     true,
-		text:         func(o string) string { return o },
 	})
 }
 

@@ -225,17 +225,79 @@ export interface Level {
 // source: log.go
 
 /**
+ * LogEvent is the kind of a LogEntry. The client turns an entry into a
+ * sentence; the engine records facts only.
+ */
+export enum LogEvent {
+  /**
+   * LogEventCall is a call on face-down cards. Value is the announced value,
+   * Slots the called cards and Outcome how it resolved. Sources lists the
+   * own cards played when there are two (Reverse Call).
+   */
+  Call = 0,
+  /**
+   * LogEventChoice is the target player's pick after a call: Slots is the
+   * chosen card, Outcome LogOutcomeHit (revealed) or LogOutcomeMissed
+   * (receives the token).
+   */
+  Choice,
+  /**
+   * LogEventJoker is any other joker use; Joker says which. Slots, Value and
+   * Outcome carry its details. A resolved Swap has the actor's and target's
+   * card positions before it in Slots and after it in Sources, actor first.
+   */
+  Joker,
+  /**
+   * LogEventSilverDone is the system notice that every silver is face-up.
+   */
+  SilverDone,
+}
+/**
+ * LogOutcome is how a logged call or answer resolved.
+ */
+export enum LogOutcome {
+  None = 0,
+  /**
+   * LogOutcomeHit is a single hit.
+   */
+  Hit,
+  /**
+   * LogOutcomeHitSeveral is a multi-call with several matches, left to the
+   * target player's choice.
+   */
+  HitSeveral,
+  /**
+   * LogOutcomeHitGold is a hit on gold cards: the game is lost.
+   */
+  HitGold,
+  Missed,
+  /**
+   * LogOutcomeShielded is a guess at a gold card covered by the Shield.
+   */
+  Shielded,
+  /**
+   * LogOutcomeYes and LogOutcomeNo answer a Census.
+   */
+  Yes,
+  No,
+}
+/**
  * LogEntry is one line of the public game log, for events with no visual clue.
  * Seq is the Seq of the action that produced it. Actor is nil for system-level
- * notices (e.g. all silvers revealed); Target is nil unless the event was aimed
- * at another seat. The client renders both relative to the viewer. Text is
- * display-ready and excludes the actor and target.
+ * notices; Target is nil unless the event was aimed at another seat. Sources
+ * and Slots are card positions in ascending order. The client renders the
+ * sentence, with seats relative to the viewer.
  */
 export interface LogEntry {
   Seq: number /* uint64 */;
   Actor?: SeatID;
   Target?: SeatID;
-  Text: string;
+  Event: LogEvent;
+  Joker: Rank;
+  Value?: CardValue;
+  Sources: number /* int */[];
+  Slots: number /* int */[];
+  Outcome: LogOutcome;
 }
 
 //////////
