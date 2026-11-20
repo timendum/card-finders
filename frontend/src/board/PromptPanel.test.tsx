@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { makePlayers } from "../testPlayers.ts";
 import { describe, expect, it } from "vitest";
 import { PromptPanel } from "./PromptPanel.tsx";
 import { emptySelection } from "./selection.ts";
@@ -43,7 +44,7 @@ function playingView(overrides: Partial<PlayerView> = {}): PlayerView {
     MaxLife: 4,
     CurrentSeat: 0,
     YourTurn: true,
-    PowerUsed: [false, false, false, false],
+    Players: makePlayers(),
     Cards: [card(1, 0, 5, true), card(2, 1, 7, false), card(3, 1, 8, false)],
     Result: Result.None,
     SeatsFilled: 4,
@@ -96,7 +97,7 @@ describe("PromptPanel", () => {
         onPickSelfValue={noop}
       />,
     );
-    expect(html).toContain("the top player");
+    expect(html).toContain("Waiting for P2 to act");
     expect(html).not.toContain("prompt-confirm");
   });
 });
@@ -140,7 +141,7 @@ describe("PromptPanel safe-choose-reveal", () => {
 
   it("tells others the responder is choosing, even the caller on their turn", () => {
     const html = render(playingView({ ...base, Seat: 0, YourTurn: true, CurrentSeat: 0 }));
-    expect(html).toContain("The left player is choosing");
+    expect(html).toContain("P1 is choosing");
     expect(html).not.toContain("prompt-confirm");
   });
 });

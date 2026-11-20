@@ -176,7 +176,9 @@ function refineBySlots(
       const { lo } = neighbourBounds(hand, start);
       const { hi } = neighbourBounds(hand, end);
       const fits = (min: number, max: number) =>
-        feasible.some((v) => sortValue(v) >= Math.max(lo, min) && sortValue(v) <= Math.min(hi, max));
+        feasible.some(
+          (v) => sortValue(v) >= Math.max(lo, min) && sortValue(v) <= Math.min(hi, max),
+        );
       runs.push({
         cards: hand.slice(start, end + 1),
         lowNone: !fits(-Infinity, sv - 1),

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { makePlayers } from "../testPlayers.ts";
 import fc from "fast-check";
 import { sourceCards, targetsForSeat } from "./actions.ts";
 import { inferredAction, messageFor } from "./confirm.ts";
@@ -51,7 +52,7 @@ describe("Property 11: confirm message", () => {
           ...base,
           Phase: Phase.Playing,
           YourTurn: true,
-          PowerUsed: [false, false, false, false],
+          Players: makePlayers(),
         } as PlayerView;
         const source = sourceCards(view)[0];
         const seat = [1, 2, 3].find((o) => targetsForSeat(view, o).length >= 2);
@@ -82,7 +83,7 @@ describe("Property 11: confirm message", () => {
     expect(
       messageFor({ ...base, source: 1, targets: [2, 3] }, {
         ...view,
-        PowerUsed: [false, false, false, false],
+        Players: makePlayers(),
       } as PlayerView),
     ).toEqual({
       type: "safeCall",

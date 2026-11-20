@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { makePlayers } from "../testPlayers.ts";
 import { buildChoice, canConfirm, inferredAction } from "./confirm.ts";
 import { emptySelection, type SelectionState } from "./selection.ts";
 import {
@@ -37,7 +38,7 @@ function view(over: Partial<PlayerView> = {}): PlayerView {
     Phase: Phase.Playing,
     YourTurn: true,
     CurrentSeat: 0,
-    PowerUsed: [false, false, false, false],
+    Players: makePlayers(),
     Cards: cards,
     Jokers: [2, 4, 9, 11, 12].map((Rank) => ({ Rank, State: JokerState.Ready })),
     ...over,

@@ -17,6 +17,7 @@ export interface TableProps {
   matchHint?: (card: ViewCard) => MatchHint | undefined;
   isLogFocus?: (card: ViewCard) => boolean;
   onActivate?: (id: CardID) => void;
+  onRename?: (name: string) => void;
 }
 
 export function Table({
@@ -29,6 +30,7 @@ export function Table({
   matchHint,
   isLogFocus,
   onActivate,
+  onRename,
 }: TableProps) {
   const layout = useMemo(() => seatLayout(view.Seat), [view.Seat]);
   const bySeat = useMemo(() => cardsBySeat(view.Cards), [view.Cards]);
@@ -50,8 +52,10 @@ export function Table({
       isViewer={seat === view.Seat}
       highlighted={seat === highlightedSeat}
       responder={awaiting}
-      powerUsed={view.PowerUsed[seat] ?? false}
-      connected={view.Connected[seat] ?? true}
+      name={view.Players[seat]?.Name ?? ""}
+      onRename={onRename}
+      powerUsed={view.Players[seat]?.PowerUsed ?? false}
+      connected={view.Players[seat]?.Connected ?? true}
       cards={bySeat.get(seat) ?? []}
       isSelectable={isSelectable}
       isSelected={isSelected}

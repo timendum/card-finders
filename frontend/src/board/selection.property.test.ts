@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { makePlayers } from "../testPlayers.ts";
 import fc from "fast-check";
 import { sourceCards, targetCards } from "./actions.ts";
 import { canConfirm, inferredAction } from "./confirm.ts";
@@ -40,7 +41,7 @@ function assertInvariants(s: SelectionState, view: PlayerView) {
     expect(targetable.get(t)).toBe(s.targetSeat);
   }
   if (s.targets.length === 0) expect(s.targetSeat).toBeNull();
-  if (s.targets.length === 2) expect(view.PowerUsed[view.Seat]).toBe(false);
+  if (s.targets.length === 2) expect(view.Players[view.Seat]?.PowerUsed).toBe(false);
   if (s.chosen !== null) expect(chooseOptions(view)).toContain(s.chosen);
   if (s.selfValue !== null) {
     expect(s.source).toBeNull();
@@ -91,7 +92,7 @@ describe("Property 10: selection reducer", () => {
         viewArb,
         fc.array(fc.integer({ min: 0, max: 16 }), { maxLength: 20 }),
         (view, clicks) => {
-          const spent = { ...view, PowerUsed: [true, true, true, true] } as PlayerView;
+          const spent = { ...view, Players: makePlayers([true, true, true, true]) } as PlayerView;
           let s: SelectionState = emptySelection;
           for (const cardId of clicks) {
             s = selectionReducer(s, spent, { type: "clickCard", cardId });

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { makePlayers } from "../testPlayers.ts";
 import fc from "fast-check";
 import { buildValueSummary, buildValueSummaryOrder, sortValue } from "./ValueSummary.tsx";
 import { inPlayTotal, selfRevealOptions } from "../board/actions.ts";
@@ -76,8 +77,7 @@ function makeView(
     MaxLife: 4,
     CurrentSeat: SEAT,
     YourTurn: true,
-    PowerUsed: [false, false, false, false],
-    Connected: [true, true, true, true],
+    Players: makePlayers(),
     Cards: cards,
     Result: Result.None,
     SeatsFilled: 4,

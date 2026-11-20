@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { makePlayers } from "./testPlayers.ts";
 import fc from "fast-check";
 import {
   Face,
@@ -47,8 +48,7 @@ describe("shared types scaffold", () => {
       MaxLife: 4,
       CurrentSeat: 0,
       YourTurn: false,
-      PowerUsed: [false, false, false, false],
-      Connected: [true, true, true, true],
+      Players: makePlayers(),
       Cards: [],
       Result: Result.None,
       SeatsFilled: 1,

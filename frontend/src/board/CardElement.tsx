@@ -2,7 +2,7 @@
 // (a face-down card's token) and Indicators. All are presentational; state
 // arrives as props.
 
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { valueLabel } from "./cardLabel.ts";
 import type { MatchHint } from "./matchHints.ts";
 import type { LinkInfo } from "./links.ts";
@@ -120,9 +120,19 @@ export function LinkMarker({ link }: { link: LinkInfo }) {
   );
 }
 
-export function Indicators({ used, away = false }: { used: boolean; away?: boolean }) {
+export function Indicators({
+  used,
+  away = false,
+  children,
+}: {
+  used: boolean;
+  away?: boolean;
+  // Leading item, e.g. the player's name tag.
+  children?: ReactNode;
+}) {
   return (
     <div className="indicators">
+      {children}
       <span className="power-indicator" data-power={used ? "consumed" : "available"}>
         {used ? "Double call used" : "Double call available"}
       </span>

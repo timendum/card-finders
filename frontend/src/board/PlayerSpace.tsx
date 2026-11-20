@@ -1,5 +1,6 @@
 import { Indicators } from "./CardElement.tsx";
 import { CardRow, TokenRow, type CardRowProps } from "./CardRows.tsx";
+import { NameTag } from "./NameTag.tsx";
 import type { SeatID, ViewCard } from "../types.ts";
 
 export type Edge = "top" | "left" | "right" | "bottom";
@@ -11,6 +12,9 @@ export interface PlayerSpaceProps extends Omit<CardRowProps, "own"> {
   highlighted: boolean;
   // Marks the highlight as the pending responder rather than the acting seat.
   responder: boolean;
+  name: string;
+  // Called with a new name; only the viewer's own space uses it.
+  onRename?: (name: string) => void;
   powerUsed: boolean;
   // False = "Away" label.
   connected: boolean;
@@ -24,6 +28,8 @@ export function PlayerSpace({
   isViewer,
   highlighted,
   responder,
+  name,
+  onRename,
   powerUsed,
   connected,
   cards,
@@ -60,7 +66,9 @@ export function PlayerSpace({
         isLogFocus={isLogFocus}
         onActivate={onActivate}
       />
-      <Indicators used={powerUsed} away={!connected} />
+      <Indicators used={powerUsed} away={!connected}>
+        {name && <NameTag name={name} onRename={isViewer ? onRename : undefined} />}
+      </Indicators>
     </section>
   );
 }

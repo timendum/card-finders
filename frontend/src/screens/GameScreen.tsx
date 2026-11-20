@@ -71,6 +71,10 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
     if (msg) sendAction(msg);
   }, [view, selection, sendAction]);
 
+  const onRename = useCallback(
+    (name: string) => sendAction({ type: "setName", name }),
+    [sendAction],
+  );
   if (!view) {
     return (
       <main className="game-screen">
@@ -153,6 +157,7 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
         isSelected={selected}
         matchHint={hints ? (card) => hints.get(card.ID) : undefined}
         onActivate={ended ? undefined : onActivate}
+        onRename={onRename}
       />
     </main>
   );

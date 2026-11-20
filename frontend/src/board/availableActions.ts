@@ -62,7 +62,7 @@ function standardTurnActions(view: PlayerView): AvailableAction[] {
   const actions = [guess];
 
   // Once spent the double call is not offered at all rather than shown disabled.
-  if (!view.PowerUsed[view.Seat]) {
+  if (!view.Players[view.Seat]?.PowerUsed) {
     const safeName = "Double call";
     const safeDescription = "Add a second card of the same opponent to a guess.";
     const seatsWithPair = new Set<SeatID>();

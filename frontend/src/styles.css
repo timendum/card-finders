@@ -171,6 +171,36 @@ body {
   background: var(--color-surface);
 }
 
+.name-tag {
+  max-width: 10em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.5rem;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+button.name-tag {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: text;
+}
+
+.name-tag-input {
+  padding: 0 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1.5rem;
+  width: 10em;
+  max-width: 60%;
+}
+
 .player-space[data-edge="top"] {
   grid-template-rows: auto auto auto;
 }
@@ -295,8 +325,20 @@ body {
 }
 
 .indicators {
+  position: relative;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  place-self: stretch stretch;
+  min-block-size: 1.5rem;
   gap: 1em;
+}
+
+/* Pinned to the start corner of the row, against the panel border. */
+.indicators .name-tag {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
 }
 
 .power-indicator {
@@ -461,6 +503,14 @@ body {
 .player-space[data-edge="right"] .indicators {
   order: -1;
   writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/* The rotation flips the axis; keep the name at the top. */
+.player-space[data-edge="right"] .indicators .name-tag {
+  inset-inline: auto 0;
+
+  /* Undo the parent's rotation so the name reads like the left player's. */
   transform: rotate(180deg);
 }
 

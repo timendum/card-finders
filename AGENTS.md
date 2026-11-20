@@ -59,7 +59,7 @@ the lock:
 - `Connect(token SessionToken) (SeatID, error)` / `Disconnect(seat SeatID)` —
   transport marks a seat's `Player.Connected` as sockets open and close
   (`ErrSeatOccupied` if already connected). The flags reach clients as
-  `PlayerView.Connected`.
+  `PlayerView.Players[seat].Connected`, next to `Name` and `PowerUsed`.
 - `ResolveSeat(token SessionToken) (SeatID, error)` — reconnection.
 - `Apply(seat SeatID, action Action) (Result, error)` — single entry point for
   all gameplay actions (`Action` is a tagged union).
@@ -111,6 +111,7 @@ Inbound `{ "type", ...payload }`, decoded (`internal/server/wsmsg.go`) into an
 | `safeCall` | `{ sourceCardIds: [id], targetCardIds: [id, id] }` | safe call |
 | `safeChooseReveal` | `{ targetCardIds: [id] }` | multi-hit reveal choice, miss token choice, or the Swap (joker 3) target's pick of its own card |
 | `selfReveal` | `{ value }` (rank number, `"silver"`, or `"gold"`) | self-reveal |
+| `setName` | `{ name }` | rename own seat (`ActionKindSetName`, any phase; errors `name_invalid`, `name_taken`) |
 | `joker` | `{ joker, sourceCardIds?, targetCardIds?, targetSeats?, value? }` | joker use (array lengths per rank, see `jokerArities` in the engine; Differ/Match send both own cards in `sourceCardIds`; Census sends its rank in `value`) |
 
 Array lengths are validated by the engine (`invalid_input`), not by decoding.
@@ -214,6 +215,8 @@ REST status + envelope or a WS `error` code.
 | `ErrJokerUnavailable` | WS `joker_unavailable` |
 | `ErrJokerInvalid` | WS `joker_invalid` |
 | `ErrShieldActive` | WS `shield_active` |
+| `ErrNameInvalid` | WS `name_invalid` |
+| `ErrNameTaken` | WS `name_taken` |
 | any other `Apply` error | WS `invalid_action` |
 
 ## Correctness properties

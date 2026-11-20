@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { makePlayers } from "../testPlayers.ts";
 import {
   buildJoker,
   isAnytime,
@@ -39,7 +40,7 @@ function view(over: Partial<PlayerView> = {}): PlayerView {
     Seat: 0,
     Phase: Phase.Playing,
     YourTurn: true,
-    PowerUsed: [false, false, false, false],
+    Players: makePlayers(),
     Cards: [card(1, 0, 1), card(2, 0, 2), card(3, 1, 1), card(4, 1, 2), card(5, 1, 3)],
     Jokers: ranks.map((Rank) => ({ Rank, State: JokerState.Ready })),
     ...over,
@@ -76,7 +77,7 @@ describe("joker names and timing", () => {
 describe("joker shapes and messages", () => {
   it("asks Second wind for two seats only when more than two used a safe call", () => {
     expect(jokerShape(view(), JokerSecondWind).seats).toBe(0);
-    const three = view({ PowerUsed: [true, true, true, false] });
+    const three = view({ Players: makePlayers([true, true, true, false]) });
     expect(jokerShape(three, JokerSecondWind).seats).toBe(2);
     expect(jokerSeatChoices(three, JokerSecondWind)).toEqual([0, 1, 2]);
   });

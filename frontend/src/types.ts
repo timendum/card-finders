@@ -134,6 +134,12 @@ export interface JokerMessage {
   value?: SelfRevealValue;
 }
 
+/** Renames the sending seat. */
+export interface SetNameMessage {
+  type: "setName";
+  name: string;
+}
+
 /** Any message the client may send to the server. */
 export type ClientMessage =
   | OpeningRevealMessage
@@ -141,4 +147,5 @@ export type ClientMessage =
   | SafeCallMessage
   | SafeChooseRevealMessage
   | SelfRevealMessage
-  | JokerMessage;
+  | JokerMessage
+  | SetNameMessage;

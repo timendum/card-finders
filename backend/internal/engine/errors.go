@@ -31,6 +31,11 @@ var (
 )
 
 var (
+	ErrNameInvalid = errors.New("the name must be 1 to 20 characters without control characters")
+	ErrNameTaken   = errors.New("another player already uses that name")
+)
+
+var (
 	ErrInvalidSource  = errors.New("a valid owned face-down source card is required")
 	ErrGoldSource     = errors.New("a gold card cannot be used as a source card")
 	ErrInvalidTarget  = errors.New("a valid target must be selected")

@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { makePlayers } from "../testPlayers.ts";
 import { describe, expect, it } from "vitest";
 import { buildValueSummary, ValueSummary } from "./ValueSummary.tsx";
 import { Face, Phase, Result, SpecialKind, type PlayerView, type ViewCard } from "../types.ts";
@@ -29,8 +30,7 @@ function viewWith(silvers: number[], inPlay: number, cards: ViewCard[] = []): Pl
     MaxLife: 4,
     CurrentSeat: 0,
     YourTurn: true,
-    PowerUsed: [false, false, false, false],
-    Connected: [true, true, true, true],
+    Players: makePlayers(),
     Cards: cards,
     Result: Result.None,
     SeatsFilled: 4,

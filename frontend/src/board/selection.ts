@@ -143,7 +143,7 @@ function clickCard(state: SelectionState, view: PlayerView, cardId: CardID): Sel
     };
   }
 
-  const powerUnused = !view.PowerUsed[view.Seat];
+  const powerUnused = !view.Players[view.Seat]?.PowerUsed;
   const joinsExisting =
     state.targetSeat === card.Owner && state.targets.length === 1 && powerUnused;
   return {

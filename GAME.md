@@ -103,6 +103,13 @@ someone else takes the seat. Anyone with the join code takes the lowest away
 seat once the game has started, inherits its hand and Safe_Call, and locks the
 previous holder out. The game is full only while all four seats are connected.
 
+## Player names
+Each seat gets a random emoji as its name when its player joins, distinct from
+the other seats' names. A player can rename their seat at any time to 1 to 20
+characters (no control characters). Names are unique across the four seats,
+ignoring case. A player taking over an away seat gets a new default emoji.
+Everyone sees the names; the table shows "You" for your own seat in labels.
+
 ## Hand order and reveal in place
 
 Every hand is kept in a stable order for the whole game. At deal time each

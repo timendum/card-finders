@@ -100,11 +100,13 @@ func (e *Engine) Join(joinCode string) (seat SeatID, token SessionToken, err err
 	tok := e.newSessionToken()
 	if p := e.state.Players[seat]; p != nil {
 		p.Token = tok
+		p.Name = e.defaultName(seat)
 		return seat, tok, nil
 	}
 	e.state.Players[seat] = &Player{
 		Seat:  seat,
 		Token: tok,
+		Name:  e.defaultName(seat),
 	}
 
 	if e.state.Phase == PhaseWaiting && e.state.seatsFilled() == 4 {

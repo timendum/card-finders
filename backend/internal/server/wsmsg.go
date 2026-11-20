@@ -16,6 +16,7 @@ type inbound struct {
 	TargetSeats   []engine.SeatID `json:"targetSeats"`
 	Value         json.RawMessage `json:"value"`
 	Joker         engine.Rank     `json:"joker"`
+	Name          string          `json:"name"`
 }
 
 // outboundState is the `state` frame: the receiving seat's full PlayerView.
@@ -63,6 +64,8 @@ func decodeAction(in inbound) (engine.Action, string, bool) {
 			Kind:            engine.ActionKindSelfReveal,
 			SelfRevealValue: target,
 		}, "", true
+	case "setName":
+		return engine.Action{Kind: engine.ActionKindSetName, Name: in.Name}, "", true
 	case "joker":
 		a.Kind = engine.ActionKindJoker
 		a.Joker = in.Joker

@@ -136,7 +136,7 @@ const noNeeds: JokerShape = { own: 0, targets: 0, seats: 0, rank: false };
 export function jokerShape(view: PlayerView, rank: Rank): JokerShape {
   const shape = shapes[rank] ?? noNeeds;
   if (rank !== JokerSecondWind) return shape;
-  const used = view.PowerUsed.filter(Boolean).length;
+  const used = view.Players.filter((p) => p.PowerUsed).length;
   return { ...shape, seats: used > 2 ? 2 : 0 };
 }
 
@@ -159,7 +159,7 @@ export function censusRanks(view: PlayerView): number[] {
 
 export function jokerSeatChoices(view: PlayerView, rank: Rank): SeatID[] {
   if (rank === JokerSecondWind) {
-    return view.PowerUsed.flatMap((used, seat) => (used ? [seat] : []));
+    return view.Players.flatMap((p, seat) => (p.PowerUsed ? [seat] : []));
   }
   const withCards = seatsWithFaceDown(view);
   return [0, 1, 2, 3].filter((s) => s !== view.Seat && withCards.has(s));

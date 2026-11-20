@@ -1,5 +1,6 @@
 // Shared fast-check generators for the selection and confirm property tests.
 import fc from "fast-check";
+import { makePlayers } from "../testPlayers.ts";
 import {
   ActionKind,
   Face,
@@ -70,7 +71,7 @@ export const viewArb: fc.Arbitrary<PlayerView> = fc
         Phase: r.phase,
         CurrentSeat: r.yourTurn ? SEAT : 1,
         YourTurn: r.yourTurn && (r.phase === Phase.Opening || r.phase === Phase.Playing),
-        PowerUsed: [r.powerUsed, false, false, false],
+        Players: makePlayers([r.powerUsed]),
         Cards: r.cards,
         Result: Result.None,
         ResponsePlayer: r.responder,

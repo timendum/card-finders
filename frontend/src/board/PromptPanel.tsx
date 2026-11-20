@@ -13,7 +13,7 @@ import {
   jokerSeatChoices,
   jokerShape,
 } from "./jokers.ts";
-import { seatPositionName } from "./seatLayout.ts";
+import { seatName } from "./seatLayout.ts";
 import { canConfirm, confirmLabel } from "./confirm.ts";
 import type { SelectionState } from "./selection.ts";
 import type { SocketError } from "../api/useGameSocket.ts";
@@ -68,16 +68,14 @@ function resultText(last: LastAction): string {
 }
 
 function notActingText(view: PlayerView, actingSeat: number, awaitingChoice: boolean): string {
-  const pos = seatPositionName(view.Seat, actingSeat);
-  const who = pos === "you" ? "You are" : `The ${pos} player is`;
+  const name = seatName(view, actingSeat);
+  const who = actingSeat === view.Seat ? "You are" : `${name} is`;
   const verb = isSwapChoice(view)
     ? "give"
     : view.LastAction?.Outcome === Outcome.AwaitingToken
       ? "token"
       : "reveal";
-  return awaitingChoice
-    ? `${who} choosing a card to ${verb}.`
-    : `Waiting for the ${pos} player to act.`;
+  return awaitingChoice ? `${who} choosing a card to ${verb}.` : `Waiting for ${name} to act.`;
 }
 
 export function PromptPanel({
@@ -144,7 +142,7 @@ export function PromptPanel({
                   aria-pressed={selection.jokerSeats.includes(seat)}
                   onClick={() => onPickJokerSeat?.(seat)}
                 >
-                  {seat === view.Seat ? "You" : `The ${seatPositionName(view.Seat, seat)} player`}
+                  {seatName(view, seat)}
                 </button>
               ))}
             </div>
@@ -183,9 +181,7 @@ export function PromptPanel({
                 <span
                   className="card-small"
                   data-kind={
-                    option.value === "silver" || option.value === "gold"
-                      ? option.value
-                      : "suited"
+                    option.value === "silver" || option.value === "gold" ? option.value : "suited"
                   }
                 >
                   {typeof option.value === "number" ? rankLabel(option.value) : option.value}

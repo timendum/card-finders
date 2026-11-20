@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { makePlayers } from "../testPlayers.ts";
 import { emptySelection, isSelectable, selectionReducer } from "./selection.ts";
 import {
   ActionKind,
@@ -28,7 +29,7 @@ function awaiting(seat: number, responder: number): PlayerView {
     Phase: Phase.AwaitingResponse,
     CurrentSeat: 0,
     YourTurn: seat === 0,
-    PowerUsed: [true, false, false, false],
+    Players: makePlayers([true]),
     Cards: [card(1, 0), card(2, 1), card(3, 1), card(4, 1), card(5, 2)],
     Result: Result.None,
     ResponsePlayer: responder,

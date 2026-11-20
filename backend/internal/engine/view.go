@@ -64,6 +64,14 @@ type ViewCard struct {
 	TokenDisplay *CardValue
 }
 
+// PlayerInfo is the public per-seat data in a PlayerView. An unfilled seat is
+// the zero value.
+type PlayerInfo struct {
+	Name      string
+	PowerUsed bool // one-time Safe_Call spent
+	Connected bool
+}
+
 // PlayerView is the per-seat snapshot the transport sends on connect and after
 // every state change. Cards is already projected, so hidden values never appear.
 type PlayerView struct {
@@ -75,8 +83,7 @@ type PlayerView struct {
 	MaxLife     int // Level.StartLives; LifePool may exceed it (joker 7)
 	CurrentSeat SeatID
 	YourTurn    bool
-	PowerUsed   [4]bool
-	Connected   [4]bool // At next Player related field, create a substructure.
+	Players     [4]PlayerInfo // indexed by seat
 	Cards       []ViewCard
 	Result      Result
 	SeatsFilled int
@@ -118,8 +125,7 @@ func (e *Engine) View(seat SeatID) PlayerView {
 	}
 	for i := range 4 {
 		if p := s.Players[i]; p != nil {
-			v.PowerUsed[i] = p.PowerUsed
-			v.Connected[i] = p.Connected
+			v.Players[i] = PlayerInfo{Name: p.Name, PowerUsed: p.PowerUsed, Connected: p.Connected}
 		}
 	}
 	if s.Phase == PhaseAwaitingResponse && s.PendingSafeChoice != nil {

@@ -21,7 +21,8 @@ const (
 type Player struct {
 	Seat      SeatID
 	Token     SessionToken
-	PowerUsed bool // one-time Safe_Call spent
+	Name      string // default emoji or a player-chosen name, distinct per seat
+	PowerUsed bool   // one-time Safe_Call spent
 	Connected bool
 }
 

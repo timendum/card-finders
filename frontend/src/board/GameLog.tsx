@@ -24,12 +24,13 @@ import {
 } from "../types.ts";
 import { valueLabel } from "./cardLabel.ts";
 import { jokerLabel } from "./jokers.ts";
-import { seatPositionName } from "./seatLayout.ts";
+import { seatName } from "./seatLayout.ts";
 
-// A seat named by its position relative to the viewer, matching the table layout.
-function Seat({ viewer, seat }: { viewer: number; seat: number }) {
-  const name = seatPositionName(viewer, seat);
-  return <strong>{name.charAt(0).toUpperCase() + name.slice(1)}</strong>;
+type SeatNames = Pick<PlayerView, "Seat" | "Players">;
+
+// A seat shown by its player's name ("You" for the viewer).
+function Seat({ view, seat }: { view: SeatNames; seat: number }) {
+  return <strong>{seatName(view, seat)}</strong>;
 }
 
 // Go serializes an absent seat as null, which the generated optional type misses.
@@ -64,10 +65,10 @@ export function GameLog({
           >
             {hasSeat(entry.Actor) && (
               <>
-                <Seat viewer={view.Seat} seat={entry.Actor} />{" "}
+                <Seat view={view} seat={entry.Actor} />{" "}
               </>
             )}
-            {logText(entry, view.Seat)}
+            {logText(entry, view)}
           </li>
         ))}
         <li ref={endRef} aria-hidden="true" />
@@ -112,10 +113,10 @@ function Value({ value }: { value: CardValue }) {
   );
 }
 // "called 7 on Top at cards 3 and 4 and missed".
-function callText(entry: LogEntry, viewer: number): ReactNode {
+function callText(entry: LogEntry, view: SeatNames): ReactNode {
   const slots = entry.Slots ?? [];
   const outcome = outcomePhrase(entry, slots);
-  const target = entry.Target == null ? null : <Seat viewer={viewer} seat={entry.Target} />;
+  const target = entry.Target == null ? null : <Seat view={view} seat={entry.Target} />;
   if (entry.Joker === JokerReverseCall) {
     return (
       <>
@@ -132,10 +133,10 @@ function callText(entry: LogEntry, viewer: number): ReactNode {
   );
 }
 
-function jokerText(entry: LogEntry, viewer: number): ReactNode {
+function jokerText(entry: LogEntry, view: SeatNames): ReactNode {
   const slots = entry.Slots ?? [];
   const sources = entry.Sources ?? [];
-  const target = entry.Target == null ? null : <Seat viewer={viewer} seat={entry.Target} />;
+  const target = entry.Target == null ? null : <Seat view={view} seat={entry.Target} />;
   switch (entry.Joker) {
     case JokerDiffer:
       return `put a different token on ${cardsText(slots)}`;
@@ -178,14 +179,14 @@ function jokerText(entry: LogEntry, viewer: number): ReactNode {
   }
 }
 
-export function logText(entry: LogEntry, viewer: number): ReactNode {
+export function logText(entry: LogEntry, view: SeatNames): ReactNode {
   switch (entry.Event) {
     case LogEvent.Call:
       return entry.Joker === 0 ? (
-        callText(entry, viewer)
+        callText(entry, view)
       ) : (
         <>
-          used {jokerLabel(entry.Joker)}: {callText(entry, viewer)}
+          used {jokerLabel(entry.Joker)}: {callText(entry, view)}
         </>
       );
     case LogEvent.Choice: {
@@ -197,7 +198,7 @@ export function logText(entry: LogEntry, viewer: number): ReactNode {
     case LogEvent.Joker:
       return (
         <>
-          used {jokerLabel(entry.Joker)}: {jokerText(entry, viewer)}
+          used {jokerLabel(entry.Joker)}: {jokerText(entry, view)}
         </>
       );
     case LogEvent.SilverDone:

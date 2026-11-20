@@ -17,6 +17,7 @@ const (
 	ActionKindSafeChooseReveal
 	ActionKindSelfReveal
 	ActionKindJoker
+	ActionKindSetName
 )
 
 // SelfRevealTarget names the value chosen to self-reveal: Kind SpecialKindNone
@@ -38,6 +39,8 @@ type Action struct {
 	SelfRevealValue SelfRevealTarget
 	// Joker: the rank activated.
 	Joker Rank
+	// SetName: the requested player name.
+	Name string
 }
 
 // lenRange is the accepted length interval of one Action slice.
@@ -121,6 +124,8 @@ func (e *Engine) apply(seat SeatID, action Action) (Result, error) {
 		return e.applySelfReveal(seat, action)
 	case ActionKindJoker:
 		return e.applyJoker(seat, action)
+	case ActionKindSetName:
+		return e.applySetName(seat, action)
 	default:
 		return ResultNone, ErrUnknownAction
 	}

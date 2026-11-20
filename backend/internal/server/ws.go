@@ -232,6 +232,8 @@ var wsActionErrorMap = map[error]string{
 	engine.ErrJokerInvalid:            "joker_invalid",
 	engine.ErrInvalidInput:            "invalid_input",
 	engine.ErrShieldActive:            "shield_active",
+	engine.ErrNameInvalid:             "name_invalid",
+	engine.ErrNameTaken:               "name_taken",
 }
 
 // actionErrorCode resolves an Apply error to its WS code, else "invalid_action".

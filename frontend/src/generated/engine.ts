@@ -18,6 +18,7 @@ export enum ActionKind {
   SafeChooseReveal,
   SelfReveal,
   Joker,
+  SetName,
 }
 /**
  * SelfRevealTarget names the value chosen to self-reveal: Kind SpecialKindNone
@@ -45,6 +46,10 @@ export interface Action {
    * Joker: the rank activated.
    */
   Joker: Rank;
+  /**
+   * SetName: the requested player name.
+   */
+  Name: string;
 }
 
 //////////
@@ -327,6 +332,7 @@ export enum Phase {
 export interface Player {
   Seat: SeatID;
   Token: SessionToken;
+  Name: string; // default emoji or a player-chosen name, distinct per seat
   PowerUsed: boolean; // one-time Safe_Call spent
   Connected: boolean;
 }
@@ -535,6 +541,15 @@ export interface ViewCard {
   TokenDisplay?: CardValue;
 }
 /**
+ * PlayerInfo is the public per-seat data in a PlayerView. An unfilled seat is
+ * the zero value.
+ */
+export interface PlayerInfo {
+  Name: string;
+  PowerUsed: boolean; // one-time Safe_Call spent
+  Connected: boolean;
+}
+/**
  * PlayerView is the per-seat snapshot the transport sends on connect and after
  * every state change. Cards is already projected, so hidden values never appear.
  */
@@ -547,8 +562,7 @@ export interface PlayerView {
   MaxLife: number /* int */; // Level.StartLives; LifePool may exceed it (joker 7)
   CurrentSeat: SeatID;
   YourTurn: boolean;
-  PowerUsed: boolean[];
-  Connected: boolean[]; // At next Player related field, create a substructure.
+  Players: PlayerInfo[]; // indexed by seat
   Cards: ViewCard[];
   Result: Result;
   SeatsFilled: number /* int */;
