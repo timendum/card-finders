@@ -64,10 +64,16 @@ function bearer(password: string): Record<string, string> {
   return { Authorization: `Bearer ${password}` };
 }
 
-export async function fetchLevels(password: string): Promise<Level[]> {
+export async function fetchLevels(
+  password: string,
+): Promise<{ levels: Level[]; currentLevel: number }> {
   const res = await request("/api/levels", { method: "GET", headers: bearer(password) });
   const body = (await res.json()) as LevelsResponse;
-  return body.levels;
+  return { levels: body.levels, currentLevel: body.currentLevel };
+}
+
+export async function endGame(password: string): Promise<void> {
+  await request("/api/game", { method: "DELETE", headers: bearer(password) });
 }
 
 export async function createGame(levelNumber: number, password: string): Promise<string> {

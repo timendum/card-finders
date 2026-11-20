@@ -137,7 +137,7 @@ export function GameScreen({ token, seat, onLeave }: GameScreenProps) {
         }
         prompt={
           ended ? (
-            <EndBanner result={view.Result} onLeave={onLeave} />
+            <EndBanner result={view.Result} />
           ) : (
             <PromptPanel
               view={view}

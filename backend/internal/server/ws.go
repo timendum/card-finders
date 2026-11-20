@@ -19,11 +19,17 @@ const (
 	pingTimeout  = 5 * time.Second
 )
 
-// wsConn is one live client connection bound to a seat. coder/websocket's Write
+// wsConn is one live client connection bound to a session token. Its seat is
+// resolved per use, since a replay reshuffles seats. coder/websocket's Write
 // is concurrency-safe, so broadcast needs no per-connection lock.
 type wsConn struct {
-	conn *websocket.Conn
-	seat engine.SeatID
+	conn  *websocket.Conn
+	token engine.SessionToken
+}
+
+// seatOf resolves the connection's current seat; the caller holds s.mu.
+func (s *Server) seatOf(c *wsConn) (engine.SeatID, error) {
+	return s.engine.ResolveSeat(c.token)
 }
 
 // serveWS handles GET /ws?token=<SessionToken>. Token errors reject with HTTP
@@ -60,10 +66,10 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		slog.Error("ws accept failed", "seat", seat, "token", tokenTag(token), "err", err)
-		s.markDisconnected(seat)
+		s.markDisconnected(engine.SessionToken(token))
 		return
 	}
-	c := &wsConn{conn: conn, seat: seat}
+	c := &wsConn{conn: conn, token: engine.SessionToken(token)}
 
 	// Connect already guaranteed the seat is free, so register only fails on an
 	// inconsistency; the existing connection is left untouched.
@@ -77,8 +83,8 @@ func (s *Server) serveWS(w http.ResponseWriter, r *http.Request) {
 	// survives for reconnect.
 	defer func() {
 		s.hub.release(c)
-		s.markDisconnected(seat)
-		slog.Info("ws disconnect", "seat", seat, "token", tokenTag(token))
+		s.markDisconnected(c.token)
+		slog.Info("ws disconnect", "token", tokenTag(token))
 	}()
 
 	ctx := r.Context()
@@ -119,7 +125,7 @@ func (s *Server) pingLoop(ctx context.Context, c *wsConn) {
 			cancel()
 			if err != nil {
 				if ctx.Err() == nil {
-					slog.Warn("ws ping failed", "seat", c.seat, "err", err)
+					slog.Warn("ws ping failed", "token", tokenTag(string(c.token)), "err", err)
 					_ = c.conn.Close(websocket.StatusPolicyViolation, "ping timeout")
 				}
 				return
@@ -133,11 +139,11 @@ func (s *Server) readLoop(ctx context.Context, c *wsConn) {
 	for {
 		var in inbound
 		if err := wsjson.Read(ctx, c.conn, &in); err != nil {
-			slog.Info("ws read loop ended", "seat", c.seat, "err", err,
+			slog.Info("ws read loop ended", "token", tokenTag(string(c.token)), "err", err,
 				"closeStatus", websocket.CloseStatus(err))
 			return
 		}
-		slog.Debug("ws recv", "seat", c.seat, "type", in.Type, "msg", in)
+		slog.Debug("ws recv", "token", tokenTag(string(c.token)), "type", in.Type, "msg", in)
 
 		action, code, ok := decodeAction(in)
 		if !ok {
@@ -146,7 +152,10 @@ func (s *Server) readLoop(ctx context.Context, c *wsConn) {
 		}
 
 		s.mu.Lock()
-		_, applyErr := s.engine.Apply(c.seat, action)
+		seat, applyErr := s.seatOf(c)
+		if applyErr == nil {
+			_, applyErr = s.engine.Apply(seat, action)
+		}
 		s.mu.Unlock()
 
 		if applyErr != nil {
@@ -161,10 +170,13 @@ func (s *Server) readLoop(ctx context.Context, c *wsConn) {
 // pushView sends the seat's PlayerView as a `state` frame, read under the lock.
 func (s *Server) pushView(ctx context.Context, c *wsConn) error {
 	s.mu.Lock()
-	view := s.engine.View(c.seat)
+	seat, err := s.seatOf(c)
+	view := s.engine.View(seat)
 	s.mu.Unlock()
+	if err != nil {
+		return err
+	}
 	msg := outboundState{Type: "state", View: view}
-	// slog.Debug("ws send", "seat", c.seat, "type", msg.Type, "msg", msg)
 	return wsjson.Write(ctx, c.conn, msg)
 }
 
@@ -185,11 +197,14 @@ func (s *Server) broadcastOthers(ctx context.Context, c *wsConn) {
 	}
 }
 
-// markDisconnected clears the seat's connected flag and tells the remaining
-// seats. The request context is already cancelled by now, so it uses its own.
-func (s *Server) markDisconnected(seat engine.SeatID) {
+// markDisconnected clears the connected flag of the seat bound to token (if the
+// game still has it) and tells the remaining seats. The request context is
+// already cancelled by now, so it uses its own.
+func (s *Server) markDisconnected(token engine.SessionToken) {
 	s.mu.Lock()
-	s.engine.Disconnect(seat)
+	if seat, err := s.engine.ResolveSeat(token); err == nil {
+		s.engine.Disconnect(seat)
+	}
 	s.mu.Unlock()
 
 	ctx, cancel := context.WithTimeout(context.Background(), broadcastTimeout)
@@ -199,7 +214,7 @@ func (s *Server) markDisconnected(seat engine.SeatID) {
 
 // sendError sends an `error` frame; a write failure is left to the read loop.
 func (s *Server) sendError(ctx context.Context, c *wsConn, code, message string) {
-	slog.Debug("ws send", "seat", c.seat, "type", "error", "code", code, "message", message)
+	slog.Debug("ws send", "token", tokenTag(string(c.token)), "type", "error", "code", code, "message", message)
 	_ = wsjson.Write(ctx, c.conn, outboundError{
 		Type:    "error",
 		Code:    code,

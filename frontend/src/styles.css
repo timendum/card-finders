@@ -607,6 +607,22 @@ button.name-tag {
   outline: var(--outline-width) solid var(--color-accent);
 }
 
+/* Same quiet look as a joker chip. */
+.end-banner-admin {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.end-banner-admin:hover {
+  color: var(--color-text);
+}
+
 .shield-indicator {
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-accent);

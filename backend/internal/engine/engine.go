@@ -18,6 +18,15 @@ func NewEngine(levels []Level, rng *rand.Rand) *Engine {
 	}
 }
 
+// CurrentLevel returns the number of the level of the current game, 0 when
+// there is none.
+func (e *Engine) CurrentLevel() int {
+	if e.state == nil {
+		return 0
+	}
+	return e.state.Level.Number
+}
+
 // Levels returns a defensive copy, so callers cannot mutate engine state.
 func (e *Engine) Levels() []Level {
 	out := make([]Level, len(e.levels))

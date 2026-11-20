@@ -54,7 +54,8 @@ func (e *Engine) findLevel(number int) (Level, bool) {
 // The level is re-validated via ValidateLevel so a bad level table surfaces
 // here (ErrLevelConfig). Any rejection retains no game state.
 func (e *Engine) CreateGame(levelNumber int) (joinCode string, err error) {
-	if e.state != nil {
+	replay := e.state != nil && e.state.Phase == PhaseEnded
+	if e.state != nil && !replay {
 		return "", ErrGameExists
 	}
 	if levelNumber == 0 {
@@ -68,6 +69,10 @@ func (e *Engine) CreateGame(levelNumber int) (joinCode string, err error) {
 		return "", err
 	}
 
+	if replay {
+		return e.restart(level)
+	}
+
 	e.state = &GameState{
 		Phase:    PhaseWaiting,
 		Level:    level,
@@ -76,6 +81,54 @@ func (e *Engine) CreateGame(levelNumber int) (joinCode string, err error) {
 		LifePool: level.StartLives,
 	}
 	return e.state.JoinCode, nil
+}
+
+// restart replaces an Ended game with a fresh one for the same players: new
+// join code, new level, seats shuffled, tokens and names kept, then dealt
+// as on the fourth join. Players are only moved after the deal succeeds.
+func (e *Engine) restart(level Level) (string, error) {
+	old := e.state
+	next := &GameState{
+		Phase:    PhaseWaiting,
+		Level:    level,
+		JoinCode: e.randString(joinCodeAlphabet, joinCodeLength),
+		Cards:    make(map[CardID]*PlacedCard),
+		LifePool: level.StartLives,
+	}
+	for seat, from := range e.rng.Perm(seatCount) {
+		if p := old.Players[from]; p != nil {
+			moved := *p
+			moved.Seat = SeatID(seat)
+			moved.PowerUsed = false
+			next.Players[seat] = &moved
+		}
+	}
+	e.state = next
+	if next.seatsFilled() == seatCount {
+		if err := e.startGame(); err != nil {
+			e.state = old
+			return "", err
+		}
+	}
+	return next.JoinCode, nil
+}
+
+// EndGame closes the game. Waiting and Ended games are dropped (closed=true,
+// the transport must drop its connections); a running game ends as a loss and
+// is kept so the table can replay.
+func (e *Engine) EndGame() (closed bool, err error) {
+	if e.state == nil {
+		return false, ErrNoGame
+	}
+	switch e.state.Phase {
+	case PhaseWaiting, PhaseEnded:
+		e.state = nil
+		return true, nil
+	}
+	e.state.PendingSafeChoice = nil
+	e.state.Phase = PhaseEnded
+	e.state.GameResult = ResultLoss
+	return false, nil
 }
 
 // Join seats a player into the lowest-numbered free seat with a token unique
@@ -162,6 +215,18 @@ func (e *Engine) Disconnect(seat SeatID) {
 	if e.state.Phase == PhaseWaiting {
 		e.state.Players[seat] = nil
 	}
+	if e.state.Phase == PhaseEnded && !e.anyConnected() {
+		e.state = nil
+	}
+}
+
+func (e *Engine) anyConnected() bool {
+	for _, p := range e.state.Players {
+		if p != nil && p.Connected {
+			return true
+		}
+	}
+	return false
 }
 
 // ResolveSeat returns the seat bound to token, for reconnection.

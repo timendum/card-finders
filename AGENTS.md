@@ -84,8 +84,17 @@ Three independent paths on one `http.ServeMux`:
   - `POST /api/game` `{ levelNumber }` → `201 { joinCode }`. Errors:
     `level_required` (400), `level_invalid` (400), `level_config_invalid` (400),
     `game_exists` (409).
-  - `GET /api/levels` and `POST /api/game` require `Authorization: Bearer
-    <password>` (hash setup: INSTALL.md). Any failure → 403 `forbidden`.
+  - `POST /api/game` on an `Ended` game is a replay: same players, tokens and
+    names, seats shuffled, new join code, dealt immediately. Any other existing
+    game → `game_exists`.
+  - `DELETE /api/game` → `204`. Waiting/Ended: game dropped, every socket closed
+    with reason `game_closed`. Opening/Playing: ended as a loss, kept for replay.
+    No game → 404 `no_game`. An Ended game is also dropped when its last seat
+    disconnects.
+  - `GET /api/levels` also returns `currentLevel` (0 when no game).
+  - `GET /api/levels`, `POST /api/game` and `DELETE /api/game` require
+    `Authorization: Bearer <password>` (hash setup: INSTALL.md). Any failure →
+    403 `forbidden`.
   - `POST /api/game/join` `{ joinCode }` → `200 { sessionToken, seat }`. Errors:
     `code_required` (400), `code_invalid` (404), `game_full` (409).
 - `/ws` — WebSocket; `GET /ws?token=<SessionToken>`. On connect the token is

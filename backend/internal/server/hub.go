@@ -3,40 +3,43 @@ package server
 import (
 	"cardfinders/internal/engine"
 	"sync"
+
+	"github.com/coder/websocket"
 )
 
-// hub maps each occupied seat to its one live WebSocket connection. Guarded by
-// its own mutex, independent of the engine mutex, since it holds only transport
-// associations.
+// hub maps each session token to its one live WebSocket connection. Keyed by
+// token, not seat, because a replay reshuffles seats. Guarded by its own mutex,
+// independent of the engine mutex, since it holds only transport associations.
 type hub struct {
 	mu    sync.Mutex
-	conns map[engine.SeatID]*wsConn
+	conns map[engine.SessionToken]*wsConn
 }
 
 func newHub() *hub {
-	return &hub{conns: make(map[engine.SeatID]*wsConn)}
+	return &hub{conns: make(map[engine.SessionToken]*wsConn)}
 }
 
-// register binds c to its seat if free, returning false when another connection
-// already holds the seat (left untouched so the caller rejects the newcomer).
+// register binds c to its token if free, returning false when another
+// connection already holds it (left untouched so the caller rejects the
+// newcomer).
 func (h *hub) register(c *wsConn) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if _, taken := h.conns[c.seat]; taken {
+	if _, taken := h.conns[c.token]; taken {
 		return false
 	}
-	h.conns[c.seat] = c
+	h.conns[c.token] = c
 	return true
 }
 
-// release unbinds c's seat only if c still holds it. The guard matters on
+// release unbinds c only if c still holds its token. The guard matters on
 // reconnect races: an older connection's deferred release must not evict a
-// newer one that already took the seat.
+// newer one that already took the slot.
 func (h *hub) release(c *wsConn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if h.conns[c.seat] == c {
-		delete(h.conns, c.seat)
+	if h.conns[c.token] == c {
+		delete(h.conns, c.token)
 	}
 }
 
@@ -50,4 +53,12 @@ func (h *hub) snapshot() []*wsConn {
 		out = append(out, c)
 	}
 	return out
+}
+
+// closeAll closes every registered connection with reason; each read loop then
+// ends and releases its own entry.
+func (h *hub) closeAll(reason string) {
+	for _, c := range h.snapshot() {
+		_ = c.conn.Close(websocket.StatusPolicyViolation, reason)
+	}
 }

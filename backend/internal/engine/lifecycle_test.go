@@ -193,3 +193,111 @@ func TestResolveSeatNoGame(t *testing.T) {
 		t.Errorf("err = %v, want ErrNoGame", err)
 	}
 }
+
+// startedGame returns an engine with four connected players in PhaseOpening
+// and their tokens by seat.
+func startedGame(t *testing.T) (*Engine, [4]SessionToken) {
+	t.Helper()
+	e := newTestEngine()
+	code, err := e.CreateGame(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var toks [4]SessionToken
+	for i := range 4 {
+		_, tok, err := e.Join(code)
+		if err != nil {
+			t.Fatal(err)
+		}
+		toks[i] = tok
+		if _, err := e.Connect(tok); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return e, toks
+}
+
+func TestEndGame(t *testing.T) {
+	e := newTestEngine()
+	if _, err := e.EndGame(); !errors.Is(err, ErrNoGame) {
+		t.Fatalf("no game: err = %v, want ErrNoGame", err)
+	}
+
+	if _, err := e.CreateGame(1); err != nil {
+		t.Fatal(err)
+	}
+	if closed, err := e.EndGame(); err != nil || !closed || e.state != nil {
+		t.Fatalf("waiting: closed=%v err=%v state=%v, want dropped", closed, err, e.state)
+	}
+
+	e, _ = startedGame(t)
+	if closed, err := e.EndGame(); err != nil || closed {
+		t.Fatalf("running: closed=%v err=%v, want kept", closed, err)
+	}
+	if e.state.Phase != PhaseEnded || e.state.GameResult != ResultLoss {
+		t.Fatalf("running: phase=%v result=%v, want Ended/Loss", e.state.Phase, e.state.GameResult)
+	}
+	if closed, err := e.EndGame(); err != nil || !closed || e.state != nil {
+		t.Fatalf("ended: closed=%v err=%v state=%v, want dropped", closed, err, e.state)
+	}
+}
+
+func TestEndedGameDroppedWhenLastSeatLeaves(t *testing.T) {
+	e, _ := startedGame(t)
+	for i := range 4 {
+		e.Disconnect(SeatID(i))
+		if e.state == nil {
+			t.Fatalf("running game dropped after disconnect %d", i)
+		}
+	}
+	if _, err := e.EndGame(); err != nil {
+		t.Fatal(err)
+	}
+	e, toks := startedGame(t)
+	_, _ = e.EndGame()
+	for i := range 4 {
+		if e.state == nil {
+			t.Fatalf("ended game dropped before last seat left (%d)", i)
+		}
+		seat, _ := e.ResolveSeat(toks[i])
+		e.Disconnect(seat)
+	}
+	if e.state != nil {
+		t.Fatal("ended game kept after every seat left")
+	}
+}
+
+func TestReplayKeepsTokensAndReshuffles(t *testing.T) {
+	e, toks := startedGame(t)
+	oldCode := e.state.JoinCode
+	names := map[SessionToken]string{}
+	for _, p := range e.state.Players {
+		names[p.Token] = p.Name
+	}
+	if _, err := e.CreateGame(2); !errors.Is(err, ErrGameExists) {
+		t.Fatalf("running game: err = %v, want ErrGameExists", err)
+	}
+	_, _ = e.EndGame()
+
+	code, err := e.CreateGame(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code == oldCode || code != e.state.JoinCode {
+		t.Errorf("join code = %q (old %q, state %q), want a new one", code, oldCode, e.state.JoinCode)
+	}
+	if e.state.Phase != PhaseOpening || e.state.Level.Number != 2 || e.state.LifePool != 7 {
+		t.Errorf("phase=%v level=%d life=%d, want Opening/2/7",
+			e.state.Phase, e.state.Level.Number, e.state.LifePool)
+	}
+	for _, tok := range toks {
+		seat, err := e.ResolveSeat(tok)
+		if err != nil {
+			t.Fatalf("token lost: %v", err)
+		}
+		p := e.state.Players[seat]
+		if p.Seat != seat || p.Name != names[tok] || !p.Connected || p.PowerUsed {
+			t.Errorf("player %+v not carried over", p)
+		}
+	}
+}

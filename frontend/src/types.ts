@@ -31,6 +31,8 @@ import type { Level } from "./generated/engine";
 /** GET /api/levels */
 export interface LevelsResponse {
   levels: Level[];
+  /** Level number of the current game, 0 when there is none. */
+  currentLevel: number;
 }
 
 /** POST /api/game request body. */

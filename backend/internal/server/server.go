@@ -39,7 +39,7 @@ func (s *Server) Handler() *http.ServeMux {
 
 	// Each handler enforces its method, so a wrong method yields 405 not a miss.
 	mux.HandleFunc("/api/levels", s.requireAuth(s.handleLevels))
-	mux.HandleFunc("/api/game", s.requireAuth(s.handleCreateGame))
+	mux.HandleFunc("/api/game", s.requireAuth(s.handleGame))
 	mux.HandleFunc("/api/game/join", s.handleJoin)
 
 	mux.HandleFunc("/ws", s.serveWS)

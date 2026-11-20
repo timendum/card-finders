@@ -2,7 +2,14 @@
 // the issued session up to the parent via onJoined.
 
 import { useCallback, useState } from "react";
-import { ApiError, FORBIDDEN_CODE, createGame, fetchLevels, joinGame } from "../api/api.ts";
+import {
+  ApiError,
+  FORBIDDEN_CODE,
+  createGame,
+  endGame,
+  fetchLevels,
+  joinGame,
+} from "../api/api.ts";
 import type { JoinGameResponse, Level } from "../types.ts";
 
 export interface JoinScreenProps {
@@ -21,13 +28,17 @@ function messageOf(err: unknown): string {
 // A shared link (/?join=CODE) opens straight into the join panel.
 const JOIN_PARAM = "join";
 const linkedCode = new URLSearchParams(window.location.search).get(JOIN_PARAM) ?? "";
+// /?admin opens straight into the admin panel (linked from the end screen).
+const linkedAdmin = new URLSearchParams(window.location.search).has("admin");
 
 export function JoinScreen({ onJoined }: JoinScreenProps) {
-  const [mode, setMode] = useState<Mode | null>(linkedCode ? "join" : null);
+  const [mode, setMode] = useState<Mode | null>(
+    linkedCode ? "join" : linkedAdmin ? "create" : null,
+  );
 
-  // Back is a full page reload so all in-memory state (including the auth
-  // password) is dropped.
-  const onBack = () => window.location.reload();
+  // Back is a full page load of the bare path, so all in-memory state
+  // (including the auth password) is dropped and ?admin / ?join do not stick.
+  const onBack = () => window.location.assign(window.location.pathname);
 
   return (
     <main>
@@ -35,7 +46,7 @@ export function JoinScreen({ onJoined }: JoinScreenProps) {
       {mode === null ? (
         <nav aria-label="Lobby mode">
           <button type="button" onClick={() => setMode("create")}>
-            Create game
+            Admin panel
           </button>
           <button type="button" onClick={() => setMode("join")}>
             Join game
@@ -86,8 +97,10 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
       setError(null);
       try {
         const loaded = await fetchLevels(password);
-        setLevels(loaded);
-        setSelected(loaded.length > 0 ? loaded[0].Number : null);
+        setLevels(loaded.levels);
+        // Default to the current game's level so a replay keeps it.
+        const current = loaded.levels.find((l) => l.Number === loaded.currentLevel);
+        setSelected(current?.Number ?? loaded.levels[0]?.Number ?? null);
       } catch (err) {
         if (err instanceof ApiError && err.code === FORBIDDEN_CODE) {
           setError("Wrong password. Please try again.");
@@ -115,6 +128,20 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
     }
   }, [selected, busy, password]);
 
+  const onEnd = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await endGame(password);
+      setJoinCode(null);
+    } catch (err) {
+      setError(messageOf(err));
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, password]);
+
   const onJoinCreated = useCallback(async () => {
     if (!joinCode || busy) return;
     setBusy(true);
@@ -128,25 +155,6 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
       setBusy(false);
     }
   }, [joinCode, busy, onJoined]);
-
-  if (joinCode) {
-    const shareUrl = `${window.location.origin}/?${JOIN_PARAM}=${encodeURIComponent(joinCode)}`;
-    return (
-      <section aria-label="Game created">
-        <h2>Game created</h2>
-        <p>
-          Share this join code: <strong>{joinCode}</strong>
-        </p>
-        <p>
-          Share this URL: <a href={shareUrl}>{shareUrl}</a>
-        </p>
-        {error && <p role="alert">{error}</p>}
-        <button type="button" onClick={onJoinCreated} disabled={busy}>
-          {busy ? "Joining…" : "Join this game"}
-        </button>
-      </section>
-    );
-  }
 
   if (!levels) {
     return (
@@ -171,8 +179,26 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
     );
   }
 
+  const shareUrl = joinCode
+    ? `${window.location.origin}/?${JOIN_PARAM}=${encodeURIComponent(joinCode)}`
+    : null;
+
   return (
-    <section aria-label="Create game">
+    <section aria-label="Admin panel">
+      {joinCode && shareUrl && (
+        <section aria-label="Game created">
+          <h2>Game created</h2>
+          <p>
+            Share this join code: <strong>{joinCode}</strong>
+          </p>
+          <p>
+            Share this URL: <a href={shareUrl}>{shareUrl}</a>
+          </p>
+          <button type="button" onClick={onJoinCreated} disabled={busy}>
+            {busy ? "Joining…" : "Join this game"}
+          </button>
+        </section>
+      )}
       <h2>Pick a level</h2>
       <ul>
         {levels.map((level) => (
@@ -193,6 +219,9 @@ function CreatePanel({ onJoined }: JoinScreenProps) {
       {error && <p role="alert">{error}</p>}
       <button type="button" onClick={onCreate} disabled={busy || selected === null}>
         {busy ? "Creating…" : "Create game"}
+      </button>
+      <button type="button" onClick={onEnd} disabled={busy}>
+        End game
       </button>
     </section>
   );
