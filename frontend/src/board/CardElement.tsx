@@ -95,6 +95,7 @@ export function TokenSquare({ value }: { value: CardValue }) {
     <div
       className="token-square"
       data-kind={kindName(value.Kind)}
+      data-rank={value.Rank}
       aria-label={`Token ${valueLabel(value)}`}
     >
       {valueLabel(value)}

@@ -255,6 +255,12 @@ body {
   font-weight: var(--font-weight-bold);
 }
 
+/* 6 and 9 look alike when rotated; a dash under the label tells them apart. */
+.token-square:is([data-rank="6"], [data-rank="9"]) {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 .token-square[data-kind="suited"] {
   background: var(--color-suited);
   color: var(--color-on-suited);
@@ -336,6 +342,11 @@ body {
 
 .card-element[data-selectable="true"] {
   cursor: pointer;
+  border-color: var(--color-accent);
+}
+/* Same accent border as selectable cards, for the hovered log line. The extra
+   attribute outranks the face-down rule for other players' cards. */
+.card-element[data-facing][data-log-focus="true"] {
   border-color: var(--color-accent);
 }
 
