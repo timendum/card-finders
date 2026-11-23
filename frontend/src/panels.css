@@ -1,0 +1,271 @@
+.status-panel,
+.prompt-panel {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+
+.status-panel {
+  justify-self: center;
+  inline-size: 100%;
+}
+
+.life-display {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Top row: lives left, jokers right; value summary sits below. */
+.status-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.status-panel-jokers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.joker-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.joker {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-sm);
+}
+
+.joker[data-state="inactive"] {
+  color: var(--color-text-muted);
+}
+
+.joker[data-state="ready"] {
+  border-color: var(--color-success);
+}
+
+.joker[data-state="used"] {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.joker:disabled .joker-rank {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.joker[data-usable="true"] {
+  cursor: pointer;
+}
+
+.joker[data-active="true"] {
+  border-color: var(--color-accent);
+  outline: var(--outline-width) solid var(--color-accent);
+}
+
+/* Same quiet look as a joker chip. */
+.end-banner-admin {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.end-banner-admin:hover {
+  color: var(--color-text);
+}
+
+.shield-indicator {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Azure-tinted silver, local to this panel so it stands apart from the text. */
+.value-summary {
+  --color-silver: #7fc3f0;
+}
+
+.value-summary-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--space-2);
+}
+
+.value-summary-title {
+  margin: 0.5em 0 0.4em;
+  font-size: var(--font-size-lg);
+}
+
+/* Decoy note: "2/3 silver" = 2 in play out of 3 listed. */
+.value-summary-decoys {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.value-summary-decoy[data-decoy-kind="silver"] {
+  color: var(--color-silver);
+}
+
+.value-summary-decoy[data-decoy-kind="gold"] {
+  color: var(--color-gold);
+}
+
+.value-summary-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.value-summary-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+/* Top line: colored by kind (suited / silver / gold). */
+.value-summary-label {
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.value-summary-row[data-kind="silver"] .value-summary-label {
+  color: var(--color-silver);
+}
+
+.value-summary-row[data-kind="gold"] .value-summary-label {
+  color: var(--color-gold);
+}
+
+/* Bottom line: colored by progress (none / partial / complete). */
+.value-summary-count {
+  color: var(--color-text-muted);
+}
+
+.value-summary-row[data-count="partial"] .value-summary-count {
+  color: var(--color-accent);
+}
+
+.value-summary-row[data-count="complete"] .value-summary-count {
+  color: var(--color-success);
+}
+
+.prompt-error {
+  color: var(--color-danger);
+}
+
+.prompt-actions {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prompt-action {
+  display: grid;
+}
+
+.prompt-action-name {
+  font-weight: var(--font-weight-bold);
+}
+
+.prompt-action-description,
+.prompt-action-reason {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.prompt-single {
+  display: grid;
+}
+
+.prompt-self-values,
+.prompt-joker-seats,
+.prompt-joker-ranks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.prompt-self-value,
+.prompt-joker-seat,
+.prompt-joker-rank,
+.prompt-confirm {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.prompt-self-value,
+.prompt-joker-seat,
+.prompt-joker-rank {
+  padding: var(--space-1) var(--space-2);
+}
+
+.prompt-self-value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-color: var(--color-accent);
+}
+
+.prompt-self-value[aria-pressed="true"] {
+  background: var(--color-accent-soft, var(--color-border));
+}
+
+.prompt-self-value[aria-pressed="true"],
+.prompt-joker-seat[aria-pressed="true"],
+.prompt-joker-rank[aria-pressed="true"] {
+  border-color: var(--color-accent);
+}
+
+.prompt-confirm {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: var(--font-weight-bold);
+}
+
+.prompt-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
