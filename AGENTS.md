@@ -21,21 +21,106 @@ transport.
 
 ## Layout
 
-```
-backend/            Go module `cardfinders` (go 1.25)
-  cmd/server/       entrypoint: resolve config path, load levels, wire + listen
-  internal/engine/  pure engine (types, rules, view projection)
-  internal/config/  TOML level-config loader (BurntSushi/toml)
-  internal/server/  HTTP mux, REST, WS hub, seat/session mgmt, JSON DTOs
-  gen.go, tygo.yaml go:generate directive + tygo config
-frontend/           React + TS + Vite, built with Bun
-  src/generated/    engine.ts — GENERATED from Go, do not hand-edit
-  dist/             build output served by Go from disk
-levels.toml         sample level config (repo root)
-```
+Go module `cardfinders` (go 1.25) in `backend/`; React + TS + Vite built with
+Bun in `frontend/`. Key deps: `github.com/coder/websocket`,
+`github.com/BurntSushi/toml`, `pgregory.net/rapid` (property tests).
 
-Key deps: `github.com/coder/websocket`, `github.com/BurntSushi/toml`,
-`pgregory.net/rapid` (property tests).
+## File index
+
+`X_test.go` / `X.test.ts(x)` sit next to `X` and test it; they are listed with
+it as `(+test)`. `dist/` is build output served by Go.
+
+### Backend entry and config
+
+| File | Contents |
+|------|----------|
+| `backend/cmd/server/main.go` | Flags, config path resolution, level loading, listen |
+| `backend/internal/config/config.go` (+test) | TOML level loader and validation |
+
+### Engine (`backend/internal/engine/`)
+
+| File | Contents |
+|------|----------|
+| `engine.go` | `Engine` type, `NewEngine`, `Apply` dispatch, `Levels` |
+| `state.go` | `GameState`, `Player`, `Phase`, `SessionToken`, `Result` |
+| `card.go` | `Card`, `Rank`, `Suit`, `SeatID`, special kinds |
+| `token.go` | `Face`, value/link token types |
+| `action.go` (+test) | `Action` tagged union and kinds |
+| `errors.go` | Typed sentinel errors |
+| `level.go` (+test) | `Level`, `ValidateLevel`, `dummyLevel` |
+| `lifecycle.go` (+test) | Create/join/connect/disconnect, replay, tokens, join codes |
+| `name.go` (+test) | Default emoji names, rename validation |
+| `deck.go` (+test) | Base deck, Special_Pool (real + decoy) |
+| `deal.go` (+test) | Shuffle, deal, first player, slots |
+| `order.go` (+test) | Hand sort order |
+| `hand.go` (+test) | Hand helpers: flip, token, link pairs, swap |
+| `opening.go` (+test) | Opening reveal |
+| `turn.go` (+test) | Turn advance, terminal check |
+| `guess.go` (+test) | Guess and silver feat |
+| `safecall.go` (+test) | Safe call |
+| `multicall.go` (+test) | Shared multi-target call resolution (safe call, jokers 4, 6) |
+| `selfreveal.go` (+test) | Self-reveal by value or gold |
+| `joker.go` (+test) | Joker ranks, readiness, arities |
+| `jokeractions.go` (+test) | Joker dispatch and anytime jokers |
+| `jokercalls.go` (+test) | Call jokers (4, 6, 11) |
+| `log.go` | Game log events |
+| `view.go` (+test) | Per-seat `PlayerView` projection |
+| `testutil_test.go` | Shared test helpers |
+
+### Server (`backend/internal/server/`)
+
+| File | Contents |
+|------|----------|
+| `server.go` | `Server`, mux wiring, static files |
+| `rest.go` | `/api` handlers |
+| `auth.go` (+test) | Bearer password check (Argon2id hash) |
+| `errors.go` | Engine error → REST status / WS code mapping, JSON writers |
+| `http.go` | Method and JSON-decode helpers |
+| `hub.go` | Token → live connection map |
+| `ws.go` | `/ws` upgrade, read/ping loops, view push, broadcast |
+| `wsmsg.go` | Inbound WS message → `engine.Action` |
+| `levels_test.go`, `state_frame_test.go` | Levels endpoint, state frame tests |
+
+### Frontend (`frontend/src/`)
+
+| File | Contents |
+|------|----------|
+| `main.tsx`, `App.tsx` | Entry, join/game screen switch |
+| `vite-env.d.ts` | Vite type refs |
+| `types.ts` (+test) | Hand-written WS/REST envelopes, re-exports generated types |
+| `generated/engine.ts` | GENERATED engine types (do not edit) |
+| `testPlayers.ts` | Test player fixtures |
+| `styles.css` | Imports `base`, `cards`, `player`, `panels` `.css` in order |
+| `base.css`, `cards.css`, `player.css`, `panels.css` | Global, card, player-area, panel styles |
+| `api/api.ts` | REST client |
+| `api/session.ts` | Session token in URL hash |
+| `api/useGameSocket.ts` | WebSocket hook with reconnect |
+| `screens/JoinScreen.tsx` | Create/join lobby |
+| `screens/GameScreen.tsx` | Game screen composing board and status |
+| `board/index.ts` | Public API of `board/` |
+| `board/Table.tsx`, `PlayerSpace.tsx` | Table layout, one seat's area |
+| `board/CardRows.tsx`, `CardElement.tsx` (+test) | Card and token rows, card visuals |
+| `board/NameTag.tsx` | Seat name, editable for own seat |
+| `board/GameLog.tsx` | Public event log |
+| `board/PromptPanel.tsx` (+test) | Action prompt, confirm button, errors |
+| `board/actions.ts` (+test) | Pickable cards/values, message builders |
+| `board/availableActions.ts` | Prompt variant and enabled actions |
+| `board/selection.ts` (+test, +property, +joker) | Click-selection reducer |
+| `board/selectionArbs.ts` | fast-check generators for selection tests |
+| `board/confirm.ts` (+test, +property) | Move completeness, label, send message |
+| `board/jokers.ts` (+test) | Joker names, usability, selection shape, messages |
+| `board/lastReveal.ts` (+test) | Cards flipped by the last action |
+| `board/links.ts` (+test) | Pairs link tokens |
+| `board/logCards.ts` | Cards a log entry refers to |
+| `board/matchHints.ts` (+test) | Guess exclusion hints |
+| `board/cardLabel.ts` | Rank/suit display labels |
+| `board/seatLayout.ts` | Viewer-bottom seat placement |
+| `board/slots.ts` | Group cards by slot |
+| `status/index.ts` | Public API of `status/` |
+| `status/StatusPanel.tsx` | Lives, jokers, value summary panel |
+| `status/ValueSummary.tsx` (+test, +property) | Found/total per value |
+| `status/JokerBar.tsx` (+test) | Joker buttons |
+| `status/EndBanner.tsx` | Win/loss overlay |
 
 ## Concurrency
 
@@ -164,6 +249,9 @@ deployment are in [INSTALL.md](INSTALL.md).
 - Keep the engine **pure**: no HTTP/WS/JSON/config imports in
   `internal/engine`. Rules and view projection stay there; transport only
   serializes and routes.
+- Validate first, mutate second: a rejected action is a no-op. The engine
+  returns typed sentinel errors (`errors.go`); `internal/server/errors.go` maps
+  them to REST statuses and WS codes.
 - All engine access goes through the single server mutex; don't add parallel
   state paths.
 - Rule changes belong in `internal/engine` with tests; update
@@ -185,48 +273,6 @@ conns), the `internal/config` loader (the four startup outcomes + named-table
 round-trip), and routing/serving. Frontend pure logic (hand sort, Value_Summary
 order + counts, seat layout) uses `fast-check` (≥100 runs); components use
 Vitest + Testing Library; `useGameSocket` uses a mock WebSocket.
-
-## Engine errors
-
-Validate-first, mutate-second: every rejected action is a no-op leaving state
-unchanged. The engine returns typed sentinel errors; transport maps them to a
-REST status + envelope or a WS `error` code.
-
-| Engine error | REST status / WS code |
-|--------------|-----------------------|
-| `ErrLevelRequired` | 400 `level_required` |
-| `ErrLevelInvalid` | 400 `level_invalid` |
-| any other `CreateGame` error (`ValidateLevel` failure) | 400 `level_config_invalid` |
-| `ErrGameExists` | 409 `game_exists` |
-| `ErrGameFull` | 409 `game_full` |
-| `ErrCodeInvalid` / `ErrNoGame` (join) | 404 `code_invalid` |
-| `ErrCodeRequired` | 400 `code_required` |
-| any other `Join` error | 400 `bad_request` |
-| `ErrNoGame` (WS action) | WS `no_game` |
-| `ErrGameEnded` | WS `game_ended` |
-| `ErrUnknownAction` | WS `unknown_action` |
-| `ErrInvalidInput` | WS `invalid_input` |
-| `ErrWrongPhase` | WS `wrong_phase` |
-| `ErrNotYourTurn` | WS `not_your_turn` |
-| `ErrInvalidOpeningSelection` | WS `invalid_opening_selection` |
-| `ErrSpecialOpening` | WS `special_opening` |
-| `ErrInvalidSource` | WS `invalid_source` |
-| `ErrGoldSource` | WS `gold_source` |
-| `ErrInvalidTarget` | WS `invalid_target` |
-| `ErrTargetRevealed` | WS `target_revealed` |
-| `ErrTargetOwn` | WS `target_own` |
-| `ErrSafeCallSpent` | WS `safe_call_spent` |
-| `ErrSafeCallTargets` | WS `safe_call_targets` |
-| `ErrNoPendingChoice` | WS `no_pending_choice` |
-| `ErrInvalidChoice` | WS `invalid_choice` |
-| `ErrSelfRevealIncomplete` | WS `self_reveal_incomplete` |
-| `ErrGoldRevealIneligible` | WS `gold_reveal_ineligible` |
-| `ErrJokerUnavailable` | WS `joker_unavailable` |
-| `ErrJokerInvalid` | WS `joker_invalid` |
-| `ErrShieldActive` | WS `shield_active` |
-| `ErrNameInvalid` | WS `name_invalid` |
-| `ErrNameTaken` | WS `name_taken` |
-| any other `Apply` error | WS `invalid_action` |
 
 ## Correctness properties
 
