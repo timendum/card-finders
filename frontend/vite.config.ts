@@ -34,5 +34,6 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    pool: "threads",
   },
 });
